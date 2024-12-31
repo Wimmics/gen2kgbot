@@ -1,0 +1,15 @@
+.langgraph_api
+tmp
+data
+logs
+
+__pycache__
+
+notebooks
+tests
+.env.example
+
+environment_*.yml
+
+app/config/sparql.ini
+app/config/params.ini
