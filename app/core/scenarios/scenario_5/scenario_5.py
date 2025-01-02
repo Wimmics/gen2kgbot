@@ -12,7 +12,11 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph import MessagesState
 from rdflib import Graph
-from app.core.scenarios.scenario_5.utils.prompt import system_prompt, interpreter_prompt
+from app.core.scenarios.scenario_5.utils.prompt import (
+    system_prompt,
+    interpreter_prompt,
+    retry_prompt,
+)
 from app.core.utils import construct_util
 from app.core.utils.printing import new_log
 from app.core.utils.utils import setup_logger
@@ -26,10 +30,13 @@ from langgraph.constants import Send
 from langchain_core.documents import Document
 import time
 
+from rdflib.plugins.sparql.algebra import translateQuery
+from rdflib.plugins.sparql.parser import parseQuery
 
 logger = setup_logger(__name__)
 
 # openai_api_key = os.getenv("OPENAI_API_KEY")
+# llm = ChatOllama(model="llama3.2:1b")
 llm = ChatOllama(model="llama3.2")
 # llm = ChatOpenAI(
 #                 model="gpt-4o",
@@ -43,6 +50,8 @@ faiss_embedding_directory = (
     / "v3_4_full_nomic_faiss_index"
 )
 
+MAX_NUMBER_OF_TRIES: int = 3
+
 
 # State Class
 
@@ -55,9 +64,11 @@ class OverAllState(MessagesState):
     merged_classes_context: str
     query_generation_prompt: str
 
+    number_of_tries: int
+    last_generated_query: str
+
 
 # Router
-
 
 
 def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
@@ -69,15 +80,21 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
         return END
 
 
-def verify_query_router(state: OverAllState) -> Literal["create_retry_prompt","run_query",END]:
-    if state["messages"][-1].content.find("```sparql") != -1:
+def verify_query_router(
+    state: OverAllState,
+) -> Literal["create_retry_prompt", "run_query", END]:
+    if state["last_generated_query"] != None:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
     else:
         logger.warning(
             f"query generated task completed without generating a proper SPARQL query"
         )
-        logger.info(f"Ending the process")
+        if state["number_of_tries"] < MAX_NUMBER_OF_TRIES:
+            logger.info(f"Tries left {MAX_NUMBER_OF_TRIES - state['number_of_tries']}")
+            return "create_retry_prompt"
+        else:
+            logger.info(f"Max retries ... Ending the process")
         return END
 
 
@@ -109,7 +126,11 @@ def preprocess_question(state: OverAllState) -> OverAllState:
         f"{extract_relevant_entities_spacy(state["messages"][-1].content)}"
     )
     logger.info(f"Preprocessing the question was done succesfully")
-    return {"initial_question": state["messages"][-1].content, "messages": result}
+    return {
+        "messages": result,
+        "initial_question": state["messages"][-1].content,
+        "number_of_tries": 0,
+    }
 
 
 def get_context_class_from_cache(cls_path: str) -> OverAllState:
@@ -190,18 +211,49 @@ def generate_query(state: OverAllState):
     result = llm.invoke(state["query_generation_prompt"])
     return {"messages": result}
 
-def verify_query(state: OverAllState)->OverAllState:
-    return {}
 
-def create_retry_prompt(state: OverAllState)->OverAllState:
-    return {}
+def verify_query(state: OverAllState) -> OverAllState:
+    queries = re.findall(
+        "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
+    )
+    if len(queries) == 0:
+        return {
+            "number_of_tries": state["number_of_tries"] + 1,
+            "messages": [HumanMessage("No properly formatted SPARQL query was generated.")],
+            "last_generated_query": None
+        }
+
+    try:
+        translateQuery(parseQuery(queries[0]))
+    except Exception as e:
+        return {
+            "number_of_tries": state["number_of_tries"] + 1,
+            "messages": [AIMessage(f"{e}")],
+        }
+
+    return {"last_generated_query": queries[0]}
+
+
+def create_retry_prompt(state: OverAllState) -> OverAllState:
+    logger.info(f"retry_prompt created successfuly.")
+
+    query_regeneration_prompt = (
+        f"{retry_prompt.content}\n\n"
+        + f"The properties and their type when using the classes: \n {state["merged_classes_context"]}\n\n"
+        + f"The user question:\n{state['initial_question']}\n\n"
+        + f"The last answer you provided that either don't contain or have a unparsable SPARQL query:\n"
+        + f"-------------------------------------\n{state['messages'][-2].content}\n--------------------------------------------------\n\n"
+        + f"The verification didn't pass because:\n-------------------------\n{state["messages"][-1].content}\n--------------------------------\n"
+    )
+
+    return {
+        "query_generation_prompt": query_regeneration_prompt,
+    }
 
 
 def run_query(state: OverAllState):
 
-    query = re.findall(
-        "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
-    )[0]
+    query = state["last_generated_query"]
 
     try:
         csv_result = run_sparql_query(query=query)
