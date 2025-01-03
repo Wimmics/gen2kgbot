@@ -12,7 +12,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph import MessagesState
 from rdflib import Graph
-from app.core.scenarios.scenario_5.utils.prompt import (
+from app.core.scenarios.scenario_6.utils.prompt import (
     system_prompt,
     interpreter_prompt,
     retry_prompt,
@@ -23,7 +23,7 @@ from app.core.utils.utils import setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 from langchain_community.vectorstores import FAISS
-from app.core.scenarios.scenario_5.utils.preprocessing import (
+from app.core.scenarios.scenario_6.utils.preprocessing import (
     extract_relevant_entities_spacy,
 )
 from langgraph.constants import Send
@@ -36,19 +36,26 @@ from rdflib.plugins.sparql.parser import parseQuery
 logger = setup_logger(__name__)
 
 # openai_api_key = os.getenv("OPENAI_API_KEY")
-# llm = ChatOllama(model="llama3.2:1b")
+llm = ChatOllama(model="llama3.2:1b")
 # llm = ChatOllama(model="llama3.2")
-llm = ChatOllama(model="mistral:7b")
 # llm = ChatOpenAI(
 #                 model="gpt-4o",
 #                 openai_api_key=openai_api_key,
 #             )
-faiss_embedding_directory = (
+faiss_embedding_classes_directory = (
     Path(__file__).resolve().parent.parent.parent.parent
     / "data"
     / "faiss_embeddings"
     / "idsm"
     / "v3_4_full_nomic_faiss_index"
+)
+
+faiss_embedding_query_directory = (
+    Path(__file__).resolve().parent.parent.parent.parent
+    / "data"
+    / "faiss_embeddings"
+    / "idsm"
+    / "query_v1_nomic_faiss_index"
 )
 
 MAX_NUMBER_OF_TRIES: int = 3
@@ -60,6 +67,7 @@ MAX_NUMBER_OF_TRIES: int = 3
 class OverAllState(MessagesState):
     initial_question: str
     selected_classes: List[Document]
+    selected_queries: str
 
     selected_classes_context: Annotated[list[str], operator.add]
     merged_classes_context: str
@@ -151,7 +159,7 @@ def select_similar_classes(state: OverAllState) -> OverAllState:
     )
 
     db = FAISS.load_local(
-        faiss_embedding_directory,
+        faiss_embedding_classes_directory,
         embeddings=embeddings,
         allow_dangerous_deserialization=True,
     )
@@ -172,40 +180,66 @@ def select_similar_classes(state: OverAllState) -> OverAllState:
 
     return {"messages": AIMessage(result), "selected_classes": retrieved_documents}
 
+def select_similar_query_examples(state: OverAllState) -> OverAllState: 
+    embeddings = OllamaEmbeddings(
+        model="nomic-embed-text",
+    )
+
+    db = FAISS.load_local(
+        faiss_embedding_query_directory,
+        embeddings=embeddings,
+        allow_dangerous_deserialization=True,
+    )
+
+    query = state["messages"][-1].content
+
+    # Retrieve the most similar text
+    retrieved_documents = db.similarity_search(query, k=3)
+
+    result = "These are some relevant queries for the query generation:\n"
+    # show the retrieved document's content
+    for doc in retrieved_documents:
+        result = f"{result}\n```sparql\n{doc.page_content}\n```\n"
+
+    logger.info(f"Done with selecting some similar queries to help query generation")
+
+    return {"messages": AIMessage(result), "selected_queries": result}
 
 def create_prompt(state: OverAllState) -> OverAllState:
 
-    merged_graph = construct_util.get_graph_with_prefixes()
+    # if "selected_queries" in state and "selected_classes" in state:
+        merged_graph = construct_util.get_graph_with_prefixes()
 
-    for cls_context in state["selected_classes_context"]:
-        g = Graph()
-        merged_graph = merged_graph + g.parse(data=cls_context)
+        for cls_context in state["selected_classes_context"]:
+            g = Graph()
+            merged_graph = merged_graph + g.parse(data=cls_context)
 
-    # Save the graph
-    timestr = time.strftime("%Y%m%d-%H%M%S")
-    merged_graph.serialize(
-        destination=f"{construct_util.tmp_directory}/context-{timestr}.ttl",
-        format="turtle",
-    )
+        # Save the graph
+        timestr = time.strftime("%Y%m%d-%H%M%S")
+        merged_graph.serialize(
+            destination=f"{construct_util.tmp_directory}/context-{timestr}.ttl",
+            format="turtle",
+        )
 
-    merged_graph_ttl = merged_graph.serialize(format="turtle")
+        merged_graph_ttl = merged_graph.serialize(format="turtle")
 
-    logger.info(
-        f"Context graph saved locally in {construct_util.tmp_directory}/context-{timestr}.ttl"
-    )
-    logger.info(f"prompt created successfuly.")
+        logger.info(
+            f"Context graph saved locally in {construct_util.tmp_directory}/context-{timestr}.ttl"
+        )
+        logger.info(f"prompt created successfuly.")
 
-    query_generation_prompt = (
-        f"{system_prompt.content}\n"
-        + f"{state['messages'][-1].content}\n"
-        + f"The properties and their type when using the classes: \n {merged_graph_ttl}\n\n"
-        + f"The user question is: \n\n{state['initial_question']}\n"
-    )
+        query_generation_prompt = (
+            f"{system_prompt.content}\n"
+            + f"{state['messages'][-1].content}\n"
+            + f"{state['selected_queries']}\n"
+            + f"The properties and their type when using the classes: \n {merged_graph_ttl}\n\n"
+            + f"The user question is: \n\n{state['initial_question']}\n"
+        )
 
-    return {
-        "merged_classes_context": merged_graph_ttl,
-        "query_generation_prompt": query_generation_prompt,
-    }
+        return {
+            "merged_classes_context": merged_graph_ttl,
+            "query_generation_prompt": query_generation_prompt,
+        }
 
 
 def generate_query(state: OverAllState):
@@ -225,11 +259,12 @@ def verify_query(state: OverAllState) -> OverAllState:
         }
 
     try:
-        translateQuery(parseQuery(queries[0]))
+        translateQuery(parseQuery(construct_util.add_known_prefixes_to_query(queries[0])))
     except Exception as e:
         return {
             "number_of_tries": state["number_of_tries"] + 1,
             "messages": [AIMessage(f"{e}")],
+            "last_generated_query": None
         }
 
     return {"last_generated_query": queries[0]}
@@ -241,6 +276,7 @@ def create_retry_prompt(state: OverAllState) -> OverAllState:
     query_regeneration_prompt = (
         f"{retry_prompt.content}\n\n"
         + f"The properties and their type when using the classes: \n {state["merged_classes_context"]}\n\n"
+        + f"{state['selected_queries']}\n\n"
         + f"The user question:\n{state['initial_question']}\n\n"
         + f"The last answer you provided that either don't contain or have a unparsable SPARQL query:\n"
         + f"-------------------------------------\n{state['messages'][-2].content}\n--------------------------------------------------\n\n"
@@ -274,41 +310,46 @@ def interpret_results(state: OverAllState):
     return {"messages": result}
 
 
-s5_builder = StateGraph(OverAllState)
+s6_builder = StateGraph(OverAllState)
 
-s5_builder.add_node("preprocess_question", preprocess_question)
-s5_builder.add_node("select_similar_classes", select_similar_classes)
-s5_builder.add_node("get_context_class_from_cache", get_context_class_from_cache)
-s5_builder.add_node("get_context_class_from_kg", get_context_class_from_kg)
+s6_builder.add_node("preprocess_question", preprocess_question)
+s6_builder.add_node("select_similar_classes", select_similar_classes)
+s6_builder.add_node("get_context_class_from_cache", get_context_class_from_cache)
+s6_builder.add_node("get_context_class_from_kg", get_context_class_from_kg)
 
-s5_builder.add_node("create_prompt", create_prompt)
-s5_builder.add_node("generate_query", generate_query)
-s5_builder.add_node("run_query", run_query)
+s6_builder.add_node("select_similar_query_examples", select_similar_query_examples)
 
-s5_builder.add_node("verify_query", verify_query)
-s5_builder.add_node("create_retry_prompt", create_retry_prompt)
+s6_builder.add_node("create_prompt", create_prompt)
+s6_builder.add_node("generate_query", generate_query)
+s6_builder.add_node("run_query", run_query)
 
-s5_builder.add_node("interpret_results", interpret_results)
+s6_builder.add_node("verify_query", verify_query)
+s6_builder.add_node("create_retry_prompt", create_retry_prompt)
 
-s5_builder.add_edge(START, "preprocess_question")
-s5_builder.add_edge("preprocess_question", "select_similar_classes")
-s5_builder.add_conditional_edges("select_similar_classes", get_context_class_router)
-s5_builder.add_edge("get_context_class_from_cache", "create_prompt")
-s5_builder.add_edge("get_context_class_from_kg", "create_prompt")
-s5_builder.add_edge("create_prompt", "generate_query")
-s5_builder.add_edge("generate_query", "verify_query")
-s5_builder.add_conditional_edges("verify_query", verify_query_router)
-s5_builder.add_edge("create_retry_prompt", "generate_query")
-s5_builder.add_conditional_edges("run_query", run_query_router)
-s5_builder.add_edge("interpret_results", END)
+s6_builder.add_node("interpret_results", interpret_results)
 
-graph = s5_builder.compile()
+s6_builder.add_edge(START, "preprocess_question")
+s6_builder.add_edge("preprocess_question", "select_similar_query_examples")
+s6_builder.add_edge("preprocess_question", "select_similar_classes")
+s6_builder.add_edge("select_similar_query_examples", "create_prompt")
+s6_builder.add_conditional_edges("select_similar_classes", get_context_class_router)
+s6_builder.add_edge("get_context_class_from_cache", "create_prompt")
+s6_builder.add_edge("get_context_class_from_kg", "create_prompt")
+# s6_builder.add_edge(["select_similar_query_examples","get_context_class_from_cache","get_context_class_from_kg"], "create_prompt")
+s6_builder.add_edge("create_prompt", "generate_query")
+s6_builder.add_edge("generate_query", "verify_query")
+s6_builder.add_conditional_edges("verify_query", verify_query_router)
+s6_builder.add_edge("create_retry_prompt", "generate_query")
+s6_builder.add_conditional_edges("run_query", run_query_router)
+s6_builder.add_edge("interpret_results", END)
+
+graph = s6_builder.compile()
 
 
-# question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
-# state = graph.invoke({"messages": [HumanMessage(question)]})
+question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
+state = graph.invoke({"messages": [HumanMessage(question)]})
 
-# new_log()
-# for m in state["messages"]:
-#     m.pretty_print()
-# new_log()
+new_log()
+for m in state["messages"]:
+    m.pretty_print()
+new_log()

@@ -89,8 +89,8 @@ def format_class_graph_file(class_uri:str) -> str:
     return f"{classes_directory}/{class_name}.ttl"
 
 
-def get_graph_with_prefixes() -> Graph:
-    prefix_map = {'http://schema.org/':'schema',
+def get_known_prefixes() -> dict:
+    return {'http://schema.org/':'schema',
                 'https://enpkg.commons-lab.org/module/':'enpkg_module',
                 'http://purl.org/pav/':'pav',
                 'http://example.org/':'example',
@@ -104,6 +104,20 @@ def get_graph_with_prefixes() -> Graph:
                 'http://semanticscience.org/resource/CHEMINF_':'cheminf',
                 'http://rdf.ebi.ac.uk/terms/chembl#':'chembl'
                 }
+
+def add_known_prefixes_to_query(query:str) -> str :
+    prefixes = get_known_prefixes()
+
+    final_query = ""
+    for k,v in prefixes.items():
+        final_query += f"prefix {v}: <{k}>\n" 
+
+    final_query += query
+
+    return final_query
+
+def get_graph_with_prefixes() -> Graph:
+    prefix_map = get_known_prefixes()
 
     g = Graph()
 
