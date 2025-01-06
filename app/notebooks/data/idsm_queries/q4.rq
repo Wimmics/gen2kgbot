@@ -1,0 +1,16 @@
+# PubChemRDF Case 4: What substances have a pharmacological role of NSAID as defined by ChEBI and the depositor-provided chemical vendor information? 
+
+SELECT DISTINCT ?substance ?source
+FROM pubchem:substance
+FROM pubchem:source
+FROM ebi:chebi
+WHERE
+{
+  ?substance dcterms:source ?source.
+  ?source dcterms:subject concept:Chemical_Vendors.
+  ?substance rdf:type ?chebi.
+  ?chebi rdfs:subClassOf [
+    a owl:Restriction;
+    owl:onProperty obo:RO_0000087;
+    owl:someValuesFrom obo:CHEBI_35475 ].
+}

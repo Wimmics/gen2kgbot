@@ -1,0 +1,32 @@
+# PubChemRDF Case 16: What chemicals are co-mentioned with a set of three genes, i.e., kinase insert domain receptor (KDR), platelet derived growth factor receptor beta (PDGFRB), and fibroblast growth factor receptor 1 (FGFR1)?
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX sio: <http://semanticscience.org/resource/>
+PREFIX gene: <http://rdf.ncbi.nlm.nih.gov/pubchem/gene/>
+
+SELECT ?score1 ?score2 ?score3 ?compound
+FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/cooccurrence>
+FROM <http://rdf.ncbi.nlm.nih.gov/pubchem/gene>
+WHERE {
+  ?cooccurrence1 rdf:subject ?genesymbol1 .
+  ?genesymbol1 rdf:type sio:SIO_001383 ;
+               sio:SIO_000300 "kdr" .
+  ?cooccurrence1 rdf:object ?compound .
+  ?cooccurrence1 rdf:type sio:SIO_001257 .
+  ?cooccurrence1 sio:SIO_000300 ?score1 .
+
+  ?cooccurrence2 rdf:subject ?genesymbol2 .
+  ?genesymbol2 rdf:type sio:SIO_001383 ;
+               sio:SIO_000300 "pdgfrb" .
+  ?cooccurrence2 rdf:object ?compound .
+  ?cooccurrence2 rdf:type sio:SIO_001257 .
+  ?cooccurrence2 sio:SIO_000300 ?score2 .
+
+  ?cooccurrence3 rdf:subject ?genesymbol3 .
+  ?genesymbol3 rdf:type sio:SIO_001383 ;
+               sio:SIO_000300 "fgfr1" .
+  ?cooccurrence3 rdf:object ?compound .
+  ?cooccurrence3 rdf:type sio:SIO_001257 .
+  ?cooccurrence3 sio:SIO_000300 ?score3 .
+}
+ORDER BY DESC(?score1) DESC(?score2) DESC(?score3)

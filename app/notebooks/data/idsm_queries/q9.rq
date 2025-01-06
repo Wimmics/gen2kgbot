@@ -1,0 +1,23 @@
+# PubChemRDF Case 9: What the pharmacological roles defined by ChEBI are for the substances that inhibit protein target ACCQ12809 with an IC50 less than 10 µM? 
+
+SELECT DISTINCT ?role
+FROM pubchem:measuregroup
+FROM pubchem:endpoint
+FROM pubchem:substance
+FROM ebi:chebi
+WHERE
+{
+  ?sub obo:RO_0000056 ?mg.
+  ?mg obo:RO_0000057 protein:ACCQ12809;
+    obo:OBI_0000299 ?ep.
+  ?sub rdf:type ?chebi.
+  ?chebi rdfs:subClassOf [
+    a owl:Restriction;
+    owl:onProperty obo:RO_0000087;
+    owl:someValuesFrom ?role ].
+  ?ep obo:IAO_0000136 ?sub;
+    rdf:type bao:BAO_0000190;
+    sio:SIO_000300|sio:SIO_000738 ?value.
+
+  filter (?value < 10)
+}

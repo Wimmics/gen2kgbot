@@ -37,7 +37,7 @@ logger = setup_logger(__name__)
 
 # openai_api_key = os.getenv("OPENAI_API_KEY")
 # llm = ChatOllama(model="llama3.2:1b")
-llm = ChatOllama(model="llama3.2")
+llm = ChatOllama(model="llama3.2:1b")
 # llm = ChatOpenAI(
 #                 model="gpt-4o",
 #                 openai_api_key=openai_api_key,

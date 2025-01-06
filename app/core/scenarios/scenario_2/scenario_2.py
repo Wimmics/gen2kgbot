@@ -13,7 +13,7 @@ from app.core.utils.sparql_toolkit import run_sparql_query
 logger = setup_logger(__name__)
 
 
-llm = ChatOllama(model="llama3.2")
+llm = ChatOllama(model="llama3.2:1b")
 
 
 # Router

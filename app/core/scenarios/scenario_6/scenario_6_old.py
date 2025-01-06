@@ -37,7 +37,7 @@ logger = setup_logger(__name__)
 
 # openai_api_key = os.getenv("OPENAI_API_KEY")
 llm = ChatOllama(model="llama3.2:1b")
-# llm = ChatOllama(model="llama3.2")
+# llm = ChatOllama(model="llama3.2:1b")
 # llm = ChatOpenAI(
 #                 model="gpt-4o",
 #                 openai_api_key=openai_api_key,
@@ -346,10 +346,10 @@ s6_builder.add_edge("interpret_results", END)
 graph = s6_builder.compile()
 
 
-question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
-state = graph.invoke({"messages": [HumanMessage(question)]})
+# question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
+# state = graph.invoke({"messages": [HumanMessage(question)]})
 
-new_log()
-for m in state["messages"]:
-    m.pretty_print()
-new_log()
+# new_log()
+# for m in state["messages"]:
+#     m.pretty_print()
+# new_log()

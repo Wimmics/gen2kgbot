@@ -1,0 +1,18 @@
+# PubChemRDF Case 6: Which substances inhibit protein targets similar to ACCNP_542158 and have the function domain PSSMID188648? 
+
+SELECT DISTINCT ?substance ?protein ?endpoint
+FROM pubchem:substance
+FROM pubchem:measuregroup
+FROM pubchem:endpoint
+FROM pubchem:protein
+FROM pubchem:conserveddomain
+WHERE
+{
+  ?substance obo:RO_0000056 ?measuregroup.
+  ?measuregroup obo:RO_0000057 ?protein.
+  protein:ACCNP_542158 vocab:hasSimilarProtein ?protein.
+  ?protein obo:RO_0002180 conserveddomain:PSSMID188648.
+  ?measuregroup obo:OBI_0000299 ?endpoint.
+  ?endpoint obo:IAO_0000136 ?substance.
+  ?endpoint rdf:type bao:BAO_0000190.
+}
