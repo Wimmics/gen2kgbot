@@ -48,8 +48,8 @@ python -m app.core.scenarios.scenario_1.scenario_1
 ````
 
 ## Project Structure
-- **Each scenario** have its own [subfolder](https://github.com/holobiomics-lab/kgbot/blob/dev/app/notebooks) in `app.core.scenarios`
-- **The notebooks** for creating the embeddings are in [the folder](https://github.com/holobiomics-lab/kgbot/blob/dev/app/notebooks) `app.notebooks`
+- **Each scenario** have its own [subfolder](./app/core/scenarios) in `app.core.scenarios`
+- **The notebooks** for creating the embeddings are in [the folder](./app/notebooks) `app.notebooks`
 
 ````bash
 .
