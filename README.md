@@ -33,7 +33,9 @@ It is recomanded to use the [LangGraph Studio](https://studio.langchain.com/) in
 ````bash
 langgraph dev
 ````
-The you can select the scenario and input the question.
+This will initialize LangGraph studio based on local file langgraph.json.
+
+Then you can select the scenario and input the question.
 
 However, it is also possible to run each of the scenarios in the terminal. You should use the `-m` option from the Python command line interface, for example, to run scenario_6 with the default question use: 
 ````bash
