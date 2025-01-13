@@ -1,4 +1,4 @@
-name: kgbot-rag-backend
+name: genkgbot
 channels:
   - defaults
   - conda-forge

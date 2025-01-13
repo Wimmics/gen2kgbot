@@ -17,19 +17,31 @@ from langchain_community.vectorstores import FAISS
 
 logger = setup_logger(__name__)
 
-# openai_api_key = os.getenv("OPENAI_API_KEY")
-llm = ChatOllama(model="llama3.2:1b")
-# llm = ChatOpenAI(
-#                 model="gpt-4o",
-#                 openai_api_key=openai_api_key,
-#             )  
-faiss_embedding_directory = Path(__file__).resolve().parent.parent.parent.parent / "data" / "faiss_embeddings" / "idsm" / "v3_4_full_nomic_faiss_index" 
-
-
-# Router
+openai_api_key = os.getenv("OPENAI_API_KEY")
+# llm = ChatOllama(model="llama3.2:1b")
+llm = ChatOpenAI(
+    model="gpt-4o",
+    openai_api_key=openai_api_key,
+)
+faiss_embedding_directory = (
+    Path(__file__).resolve().parent.parent.parent.parent
+    / "data"
+    / "faiss_embeddings"
+    / "idsm"
+    / "v3_4_full_nomic_faiss_index"
+)
 
 
 def run_query_router(state: MessagesState) -> Literal["interpret_results", END]:
+    """
+    Check if the query was run successfully and routes to the next step accordingly.
+
+    Args:
+        state (MessagesState): The current state of the conversation
+
+    Returns:
+        Literal["interpret_results", END]: The next step in the conversation
+    """
     if state["messages"][-1].content.find("Error when running the query") == -1:
         logger.info(f"query run succesfully and it yielded")
         return "interpret_results"
@@ -51,8 +63,6 @@ def generate_query_router(state: MessagesState) -> Literal["run_query", END]:
 
 
 # Node
-
-
 def select_similar_classes(state: MessagesState) -> MessagesState:
 
     embeddings = OllamaEmbeddings(
@@ -74,7 +84,7 @@ def select_similar_classes(state: MessagesState) -> MessagesState:
     # show the retrieved document's content
     for doc in retrieved_documents:
         result = f"{result}\n{doc.page_content}\n"
-        
+
     logger.info(f"Done with selecting some similar classes to help query generation")
 
     return {"messages": AIMessage(result)}
