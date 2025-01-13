@@ -1,6 +1,8 @@
+import os
 import re
 from typing import Literal
 from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
@@ -13,15 +15,20 @@ from app.core.utils.sparql_toolkit import run_sparql_query
 logger = setup_logger(__name__)
 
 
-llm = ChatOllama(model="llama3.2:1b")
+SPARQL_QUERY_EXEC_ERROR = "SPARQL query execution failed"
+
+# llm = ChatOllama(model="llama3.2:1b")
+openai_api_key = os.getenv("OPENAI_API_KEY")
+llm = ChatOpenAI(
+    model="gpt-4o",
+    openai_api_key=openai_api_key,
+)
 
 
 # Router
-
-
 def run_query_router(state: MessagesState) -> Literal["interpret_results", END]:
-    if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info(f"query run succesfully and it yielded")
+    if state["messages"][-1].content.find(SPARQL_QUERY_EXEC_ERROR) == -1:
+        logger.info(f"query executed successfully")
         return "interpret_results"
     else:
         logger.info(f"Ending the process")
@@ -30,11 +37,11 @@ def run_query_router(state: MessagesState) -> Literal["interpret_results", END]:
 
 def generate_query_router(state: MessagesState) -> Literal["run_query", END]:
     if state["messages"][-1].content.find("```sparql") != -1:
-        logger.info(f"query generated task completed with a generated SPARQL query")
+        logger.info(f"query generation task completed successfully")
         return "run_query"
     else:
         logger.warning(
-            f"query generated task completed without generating a proper SPARQL query"
+            f"query generation task completed without generating a proper SPARQL query"
         )
         logger.info(f"Ending the process")
         return END
@@ -44,7 +51,6 @@ def generate_query_router(state: MessagesState) -> Literal["run_query", END]:
 def create_prompt(state: MessagesState):
     result = [system_prompt] + state["messages"]
     state["messages"].clear()
-    logger.info(f"prompt created successfuly.")
     return {"messages": result}
 
 
@@ -54,26 +60,26 @@ def generate_query(state: MessagesState):
 
 
 def run_query(state: MessagesState):
-
     query = re.findall(
         "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
     )[0]
+    logger.info(f"Executing SPARQL query extracted from llm's response: \n{query}")
 
     try:
         csv_result = run_sparql_query(query=query)
         return {"messages": csv_result}
     except ParserError as e:
         logger.warning(f"A parsing error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the query")}
+        return {"messages": AIMessage(SPARQL_QUERY_EXEC_ERROR)}
     except Exception as e:
         logger.warning(f"An error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the query")}
+        return {"messages": AIMessage(SPARQL_QUERY_EXEC_ERROR)}
 
 
 def interpret_results(state: MessagesState):
     csv_results_message = state["messages"][-1]
     result = llm.invoke([interpreter_prompt] + [csv_results_message])
-    logger.info(f"the interpretatin of the query result is done")
+    logger.info(f"Interpretation of query results by llm: {result.content}")
     return {"messages": result}
 
 
