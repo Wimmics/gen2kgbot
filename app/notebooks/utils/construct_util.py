@@ -4,29 +4,43 @@ from pathlib import Path
 from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper
 from rdflib import Graph, Namespace, URIRef, BNode, RDFS, term
+import yaml
 
-def setup_logger(name):
+
+def setup_logger(package=__package__, file=__file__):
     """
     Set up logging configuration.
 
     Parameters:
-    - name (str): Typically __name__ from the calling module.
+    - package (str): the calling package name, usually returned by __package__.
+    - file (str): the calling file name, usually returned by __file__.
 
     Returns:
-    - logger (logging.Logger): Configured logger object.
+    - logger (logging.Logger): configured logger object with module name
     """
+
+    # Normalize the file path: in case of Langgraph Studio, it is always '/'
+    file = file.replace("/", os.path.sep)
+
+    if package == "":
+        package = "[no_mod]"
+    _mod_name = package + "." + file.split(os.path.sep)[-1]
+    if _mod_name.endswith(".py"):
+        _mod_name = _mod_name[: -len(".py")]
+
     # Resolve the path to the configuration file
     parent_dir = Path(__file__).resolve().parent.parent.parent
-    config_path = parent_dir / "config" / "logging.ini"
+    config_path = parent_dir / "config" / "logging.yml"
 
     # Configure logging
-    logging.config.fileConfig(config_path, disable_existing_loggers=False)
+    with open(config_path, "rt") as f:
+        log_config = yaml.safe_load(f.read())
+    logging.config.dictConfig(log_config)
 
     # Get and return the logger
-    return logging.getLogger(name)
+    return logging.getLogger(_mod_name)
 
-
-logger = setup_logger(__name__)
+logger = setup_logger(__package__, __file__)
 
 query_cls_rel = """
 SELECT ?property (SAMPLE(COALESCE(?type, STR(DATATYPE(?value)), "Untyped")) AS ?valueType) WHERE {{

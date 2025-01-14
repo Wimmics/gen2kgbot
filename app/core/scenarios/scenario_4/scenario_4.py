@@ -28,7 +28,7 @@ from langchain_core.documents import Document
 import time
 
 
-logger = setup_logger(__name__)
+logger = setup_logger(__package__, __file__)
 
 # openai_api_key = os.getenv("OPENAI_API_KEY")
 llm = ChatOllama(model="llama3.2:1b")

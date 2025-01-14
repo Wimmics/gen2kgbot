@@ -12,12 +12,12 @@ from app.core.scenarios.scenario_1.utils.prompt import PROMPT
 
 logger = setup_logger(__package__, __file__)
 
-# llm = ChatOllama(model="llama3.2:1b")
-openai_api_key = os.getenv("OPENAI_API_KEY")
-llm = ChatOpenAI(
-    model="gpt-4o",
-    openai_api_key=openai_api_key,
-)
+llm = ChatOllama(model="llama3.2:1b")
+# openai_api_key = os.getenv("OPENAI_API_KEY")
+# llm = ChatOpenAI(
+#     model="gpt-4o",
+#     openai_api_key=openai_api_key,
+# )
 logger.info(f"LLM initialized")
 
 def interpret_results(state: MessagesState):

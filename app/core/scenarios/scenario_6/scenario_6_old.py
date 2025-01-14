@@ -34,11 +34,10 @@ import time
 from rdflib.plugins.sparql.algebra import translateQuery
 from rdflib.plugins.sparql.parser import parseQuery
 
-logger = setup_logger(__name__)
+logger = setup_logger(__package__, __file__)
 
 # openai_api_key = os.getenv("OPENAI_API_KEY")
 llm = ChatOllama(model="llama3.2:1b")
-# llm = ChatOllama(model="llama3.2:1b")
 # llm = ChatOpenAI(
 #                 model="gpt-4o",
 #                 openai_api_key=openai_api_key,

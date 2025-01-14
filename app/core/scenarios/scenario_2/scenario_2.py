@@ -14,17 +14,17 @@ from app.core.utils.utils import setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 
-logger = setup_logger(__name__)
+logger = setup_logger(__package__, __file__)
 
 
 SPARQL_QUERY_EXEC_ERROR = "SPARQL query execution failed"
 
-# llm = ChatOllama(model="llama3.2:1b")
-openai_api_key = os.getenv("OPENAI_API_KEY")
-llm = ChatOpenAI(
-    model="gpt-4o",
-    openai_api_key=openai_api_key,
-)
+llm = ChatOllama(model="llama3.2:1b")
+# openai_api_key = os.getenv("OPENAI_API_KEY")
+# llm = ChatOpenAI(
+#     model="gpt-4o",
+#     openai_api_key=openai_api_key,
+# )
 
 
 # Router

@@ -16,14 +16,14 @@ from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 from langchain_community.vectorstores import FAISS
 
-logger = setup_logger(__name__)
+logger = setup_logger(__package__, __file__)
 
-openai_api_key = os.getenv("OPENAI_API_KEY")
-# llm = ChatOllama(model="llama3.2:1b")
-llm = ChatOpenAI(
-    model="gpt-4o",
-    openai_api_key=openai_api_key,
-)
+# openai_api_key = os.getenv("OPENAI_API_KEY")
+llm = ChatOllama(model="llama3.2:1b")
+# llm = ChatOpenAI(
+#     model="gpt-4o",
+#     openai_api_key=openai_api_key,
+# )
 faiss_embedding_directory = (
     Path(__file__).resolve().parent.parent.parent.parent
     / "data"

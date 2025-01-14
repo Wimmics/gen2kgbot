@@ -7,7 +7,7 @@ from rdflib import Graph, Namespace, URIRef, BNode, RDFS, term
 
 from app.core.utils.utils import setup_logger
 
-logger = setup_logger(__name__)
+logger = setup_logger(__package__, __file__)
 
 query_cls_rel = """
 SELECT ?property (SAMPLE(COALESCE(?type, STR(DATATYPE(?value)), "Untyped")) AS ?valueType) WHERE {{
