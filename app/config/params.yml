@@ -1,10 +1,11 @@
 # Suggestion of how the configuration could look like
 scenario_3:
+  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm: 
     id: gpt-4
     temperature: 0
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
-  embedding_llm:
+  text_embedding_llm:
     id: nomic-embed-text
     vector_db: FAISS
