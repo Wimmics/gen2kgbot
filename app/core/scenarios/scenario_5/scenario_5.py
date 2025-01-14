@@ -1,3 +1,4 @@
+import argparse
 import ast
 from math import log
 import operator
@@ -304,10 +305,27 @@ s5_builder.add_edge("interpret_results", END)
 graph = s5_builder.compile()
 
 
-# question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
-# state = graph.invoke({"messages": [HumanMessage(question)]})
+def main():
 
-# new_log()
-# for m in state["messages"]:
-#     m.pretty_print()
-# new_log()
+    parser = argparse.ArgumentParser(description="Process the scenario with the predifined or custom question.")
+    
+    parser.add_argument('-c', '--custom', type=str,
+                        help="Provide a custom question.")
+    
+    args = parser.parse_args()
+    
+    if args.custom:
+        question = args.custom
+    else:
+        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
+    
+    state = graph.invoke({"messages":HumanMessage(question)})
+
+    new_log()
+    for m in state["messages"]:
+        m.pretty_print()
+    new_log()
+
+
+if __name__ == "__main__":
+    main()

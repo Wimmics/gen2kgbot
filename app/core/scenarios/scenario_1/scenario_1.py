@@ -12,12 +12,6 @@ from app.core.scenarios.scenario_1.utils.prompt import PROMPT
 
 llm = ChatOllama(model="llama3.2:1b")
 
-# Node
-# def interpret_results(state: MessagesState):
-#     result =  llm.invoke((PROMPT + state["messages"]).messages)
-#     return { "messages": (result + state["messages"]).messages}
-
-
 def interpret_results(state: MessagesState):
     result = llm.invoke([PROMPT] + state["messages"])
     return {"messages": result}

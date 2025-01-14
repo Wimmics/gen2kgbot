@@ -1,3 +1,4 @@
+import argparse
 import re
 from typing import Literal
 from langchain_ollama import ChatOllama
@@ -6,6 +7,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph import MessagesState
 from app.core.scenarios.scenario_2.utils.prompt import system_prompt, interpreter_prompt
+from app.core.utils.printing import new_log
 from app.core.utils.utils import setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
@@ -92,13 +94,28 @@ s2_builder.add_edge("interpret_results", END)
 
 graph = s2_builder.compile()
 
-# question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
-# state = graph.invoke({"messages": [HumanMessage(f"User question: {question}")]})
 
-# csv_result = HumanMessage("[{'cls': 'http://www.w3.org/2000/01/rdf-schema#Class', 'comment': 'The class of classes.', 'label': 'Class'}]")
-# state = graph.invoke({"messages": [csv_result]})
+def main():
 
-# new_log()
-# for m in state["messages"]:
-#     m.pretty_print()
-# new_log()
+    parser = argparse.ArgumentParser(description="Process the scenario with the predifined or custom question.")
+    
+    parser.add_argument('-c', '--custom', type=str,
+                        help="Provide a custom question.")
+    
+    args = parser.parse_args()
+    
+    if args.custom:
+        question = args.custom
+    else:
+        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
+    
+    state = graph.invoke({"messages":HumanMessage(question)})
+
+    new_log()
+    for m in state["messages"]:
+        m.pretty_print()
+    new_log()
+
+
+if __name__ == "__main__":
+    main()
