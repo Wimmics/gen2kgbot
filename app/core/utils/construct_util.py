@@ -27,8 +27,8 @@ SELECT ?property (SAMPLE(COALESCE(?type, STR(DATATYPE(?value)), "Untyped")) AS ?
     LIMIT 300
 """
 
-classes_directory = Path(__file__).resolve().parent.parent.parent / "data" / "classes_context" / "idsm"
-tmp_directory = Path(__file__).resolve().parent.parent.parent / "tmp" 
+classes_directory = Path(__file__).resolve().parent.parent.parent.parent / "data" / "classes_context" / "idsm"
+tmp_directory = Path(__file__).resolve().parent.parent.parent.parent / "tmp" 
 endpoint_url_corese = 'http://localhost:8080/sparql'
 endpoint_url_idsm = 'https://idsm.elixir-czech.cz/sparql/endpoint/idsm'
 

@@ -37,7 +37,7 @@ llm = ChatOllama(model="llama3.2:1b")
 #                 openai_api_key=openai_api_key,
 #             )
 faiss_embedding_directory = (
-    Path(__file__).resolve().parent.parent.parent.parent
+    Path(__file__).resolve().parent.parent.parent.parent.parent
     / "data"
     / "faiss_embeddings"
     / "idsm"
@@ -238,6 +238,9 @@ s4_builder.add_conditional_edges("run_query", run_query_router)
 s4_builder.add_edge("interpret_results", END)
 
 graph = s4_builder.compile()
+
+def run_scenario(question: str):
+    return graph.invoke({"messages": HumanMessage(question)})
 
 
 def main():

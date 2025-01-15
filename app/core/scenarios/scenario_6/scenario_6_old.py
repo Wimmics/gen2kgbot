@@ -43,7 +43,7 @@ llm = ChatOllama(model="llama3.2:1b")
 #                 openai_api_key=openai_api_key,
 #             )
 faiss_embedding_classes_directory = (
-    Path(__file__).resolve().parent.parent.parent.parent
+    Path(__file__).resolve().parent.parent.parent.parent.parent
     / "data"
     / "faiss_embeddings"
     / "idsm"
@@ -51,7 +51,7 @@ faiss_embedding_classes_directory = (
 )
 
 faiss_embedding_query_directory = (
-    Path(__file__).resolve().parent.parent.parent.parent
+    Path(__file__).resolve().parent.parent.parent.parent.parent
     / "data"
     / "faiss_embeddings"
     / "idsm"

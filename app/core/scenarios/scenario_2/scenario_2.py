@@ -100,6 +100,8 @@ s2_builder.add_edge("interpret_results", END)
 
 graph = s2_builder.compile()
 
+def run_scenario(question: str):
+    return graph.invoke({"messages": HumanMessage(question)})
 
 def main():
 

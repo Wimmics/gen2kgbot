@@ -20,6 +20,7 @@ llm = ChatOllama(model="llama3.2:1b")
 # )
 logger.info(f"LLM initialized")
 
+
 def interpret_results(state: MessagesState):
     logger.info(f"Question: {state["messages"]}")
     result = llm.invoke([PROMPT] + state["messages"])
@@ -33,6 +34,10 @@ s1_builder.add_edge("Interpret_results", END)
 
 
 graph = s1_builder.compile()
+
+
+def run_scenario(question: str):
+    return graph.invoke({"messages": HumanMessage(question)})
 
 
 def main():
