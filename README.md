@@ -20,6 +20,21 @@ conda env create -f ./environment_{os}.yml
 conda env remove --name kgbot-rag-backend
 ```
 
+3) At the root of the repository, create the follwing directories:
+    - `logs`: will store the log files produces while running the application (see configuration in `app/config/logging.yml`)
+    - `data`: will store the descriptions extracted from the knowledge graph, as well as the embeddings thereof.
+
+4) Install the [Ollama](https://github.com/ollama/ollama) application for your platform and, as a startup config, insttall the models `ollama3.2:1b`, `nomic-embed-text`
+```sh
+ollama pull ollama3.2:1b
+ollama pull nomic-embed-text
+```
+
+⚠️ To run Ollama on Windows, you may need to install Microsoft Visual C++ 14+: install and run [Build Tools](https://visualstudio.microsoft.com/fr/visual-cpp-build-tools/) then install Desktop C++ Development with default packages.
+
+5) Set up the following environment variables:
+    - `LANGCHAIN_API_KEY`
+    - `OPENAI_API_KEY` if you use OpenAI models
 
 
 ## Application Startup Instructions
