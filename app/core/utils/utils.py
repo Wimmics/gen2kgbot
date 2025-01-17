@@ -1,24 +1,35 @@
+import argparse
+from langchain_core.messages import HumanMessage
 import json
 import logging
 import logging.config
 import os
 from pathlib import Path
-import tiktoken
-import tempfile
-from uuid import uuid4
+from langchain_ollama import ChatOllama, OllamaEmbeddings
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_core.language_models import BaseChatModel
+from langchain_core.embeddings import Embeddings
+from langchain_core.vectorstores import VectorStore
+from langchain_community.vectorstores import FAISS
+from langchain_chroma import Chroma
 import yaml
+from langgraph.graph.state import CompiledStateGraph
+
+from app.core.utils.printing import new_log
 
 
-def setup_logger(package=__package__, file=__file__):
+def setup_logger(package: str = __package__, file: str = __file__) -> logging.Logger:
     """
     Set up logging configuration.
 
-    Parameters:
-    - package (str): the calling package name, usually returned by __package__.
-    - file (str): the calling file name, usually returned by __file__.
+    Args:
+      package (str): specify the package name of the module for which the logger is being set up.
+    If no package name is provided, it defaults to `__package__` which is the package name of the current module.
+      file (str): specify the file path of the module where the logger is being set up.
+    It is used to determine the name of the logger based on the module's file path.
 
     Returns:
-    - logger (logging.Logger): configured logger object with module name
+      returns a configured `logging.Logger` object with module name.
     """
 
     # Normalize the file path: in case of Langgraph Studio, it is always '/'
@@ -46,71 +57,170 @@ def setup_logger(package=__package__, file=__file__):
 logger = setup_logger(__package__, __file__)
 
 
-def create_user_session(session_id=None, user_session_dir=False, input_dir=False):
+def get_yml_config():
+
+    # # Resolve the path to the configuration file
+    parent_dir = Path(__file__).resolve().parent.parent.parent
+    config_path = parent_dir / "config" / "params.yml"
+
+    # # Configure logging
+    with open(config_path, "rt") as f:
+        return yaml.safe_load(f.read())
+
+
+config = get_yml_config()
+
+
+def get_openai_key():
+    return os.getenv("OPENAI_API_KEY")
+
+def get_ovh_key():
+    return os.getenv("OVHCLOUD_API_KEY")
+
+
+def get_llm_from_config(scenario: str) -> BaseChatModel:
+
+    model_type = config[scenario]["seq2seq_llm"]["type"]
+    model_id = config[scenario]["seq2seq_llm"]["id"]
+    base_url = config[scenario]["seq2seq_llm"]["base_url"]
+    temperature = config[scenario]["seq2seq_llm"]["temperature"]
+    max_retries = config[scenario]["seq2seq_llm"]["max_retries"]
+    model_kwargs = config[scenario]["seq2seq_llm"]["model_kwargs"]
+
+    if model_type == "openai":
+        llm = ChatOpenAI(
+            temperature=temperature,
+            model=model_id,
+            max_retries=max_retries,
+            verbose=True,
+            openai_api_key=get_openai_key(),
+            model_kwargs=model_kwargs,
+        )
+        logger.info(f"LLM initialized: OpenAI")
+
+    elif model_type == "ollama":
+        llm = ChatOllama(
+            temperature=temperature,
+            model=model_id,
+            max_retries=max_retries,
+            verbose=True,
+            model_kwargs=model_kwargs,
+        )
+    
+    elif model_type == "ovh":
+        llm = ChatOpenAI(
+            temperature=temperature,
+            model=model_id,
+            max_retries=max_retries,
+            verbose=True,
+            base_url=base_url,  
+            api_key=get_ovh_key(),
+            model_kwargs=model_kwargs,
+        )
+        logger.info(f"LLM initialized: OVH")
+
+    return llm
+
+
+def get_embedding_type_from_config(scenario: str) -> Embeddings:
+
+    embedding_type = config[scenario]["text_embedding_llm"]["type"]
+    model_id = config[scenario]["text_embedding_llm"]["id"]
+
+    if embedding_type == "ollama-embeddings":
+        embeddings = OllamaEmbeddings(model=model_id)
+        logger.info(f"Embedding initialized: OllamaEmbeddings")
+
+    elif embedding_type == "openai-embeddings":
+        embeddings = OpenAIEmbeddings(model=model_id)
+
+        logger.info(f"Embedding initialized: OpenAiEmbeddings")
+
+    return embeddings
+
+
+def get_class_vector_db_from_config(scenario: str) -> VectorStore:
+
+    embeddings = get_embedding_type_from_config(scenario=scenario)
+    model_id = config[scenario]["text_embedding_llm"]["id"]
+
+    vector_db = config[scenario]["text_embedding_llm"]["vector_db"]
+
+    embedding_map = {
+        "nomic-embed-text": "nomic",
+        "mxbai-embed-large": "mxbai",
+        "all-minilm": "minilm"
+    }
+    embedding_id = embedding_map.get(model_id)
+
+    embedding_directory = f"data/{vector_db}_embeddings/idsm/v3_4_full_{embedding_id}_{vector_db}_index"
+
+    if vector_db == "faiss":
+        db = FAISS.load_local(
+            embedding_directory,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
+        logger.info(f"Class Vector DB initialized: {embedding_directory}")
+
+    elif vector_db == "chroma":
+        db = Chroma(persist_directory=embedding_directory, embedding_function=embeddings)
+        logger.info(f"Class Vector DB initialized: {embedding_directory}")
+
+
+    return db
+
+def get_query_vector_db_from_config(scenario: str) -> VectorStore:
+
+    embeddings = get_embedding_type_from_config(scenario=scenario)
+    model_id = config[scenario]["text_embedding_llm"]["id"]
+
+    vector_db = config[scenario]["text_embedding_llm"]["vector_db"]
+
+    embedding_map = {
+        "nomic-embed-text": "nomic",
+        "mxbai-embed-large": "mxbai",
+        "all-minilm": "minilm"
+    }
+    embedding_id = embedding_map.get(model_id)
+
+    embedding_directory = f"data/{vector_db}_embeddings/idsm/query_v1_{embedding_id}_{vector_db}_index"
+
+    if vector_db == "faiss":
+        db = FAISS.load_local(
+            embedding_directory,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
+        logger.info(f"Query Vector DB initialized: {embedding_directory}")
+
+    elif vector_db == "chroma":
+        db = Chroma(persist_directory=embedding_directory, embedding_function=embeddings)
+        logger.info(f"Query Vector DB initialized: {embedding_directory}")
+
+
+    return db
+
+
+def main(graph: CompiledStateGraph):
     """
-    If no session_id is provided, creates a new session_id and all the temporary directory for the kgbot to save generated and input files.
-    If session_id is provided, returns the path to the temporary directory for the kgbot depending on the provided argument.
-
-    Args:
-        session_id (str, optional): The session_id to use. Defaults to None.
-        user_session_dir (bool, optional): If True, returns the path to the temporary directory for the kgbot. Defaults to False.
-        input_dir (bool, optional): If True, returns the path to the input files directory for the kgbot. Defaults to False.
-
-    Returns:
-        str: The session_id if no session_id is provided.
-        Path: The path to the temporary directory for the kgbot if user_session_dir is True.
-        Path: The path to the input files directory for the kgbot if input_dir is True.
+    Process a predefined or custom question, invokes a graph with the question, and logs the messages returned by the graph.
     """
 
-    if session_id is None:
-        session_id = str(uuid4().hex)
+    parser = argparse.ArgumentParser(
+        description="Process the scenario with the predifined or custom question."
+    )
+    parser.add_argument("-c", "--custom", type=str, help="Provide a custom question.")
+    args = parser.parse_args()
 
-        # Create a temporary directory for the kgbot
-        kgbot_temp_dir = Path(tempfile.gettempdir()) / "kgbot"
-        kgbot_temp_dir.mkdir(parents=True, exist_ok=True)
-
-        user_session_dir = kgbot_temp_dir / session_id
-        user_session_dir.mkdir(parents=True, exist_ok=True)
-
-        input_dir = user_session_dir / "input_files"
-        input_dir.mkdir(parents=True, exist_ok=True)
-
-        return session_id
-
+    if args.custom:
+        question = args.custom
     else:
-        if user_session_dir:
-            user_session_dir = Path(tempfile.gettempdir()) / "kgbot" / session_id
-            return user_session_dir
+        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 20 µM?"
 
-        if input_dir:
-            input_dir = (
-                Path(tempfile.gettempdir()) / "kgbot" / session_id / "input_files"
-            )
-            return input_dir
+    state = graph.invoke({"messages": HumanMessage(question)})
 
-
-def load_config():
-    config_path = Path(__file__).resolve().parent.parent / "config" / "langgraph.json"
-    with open(config_path, "r") as file:
-        return json.load(file)
-
-
-def get_module_prefix(name):
-    """
-    Extracts the module prefix based on the current file's __name__,
-    excluding the last part to get the parent module path.
-
-    Example:
-    __name__ = "app.core.agents.enpkg.agent"
-    get_module_prefix(__name__) -> "app.core.agents.enpkg"
-    """
-    current_module = name
-    module_parts = current_module.split(".")
-    return ".".join(module_parts[:-1])
-
-
-def token_counter(text: str) -> int:
-    tokenizer = tiktoken.encoding_for_model(model_name="gpt-4o")
-    # TODO [Franck]: the model name should be a config param
-    tokens = tokenizer.encode(text)
-    return len(tokens)
+    new_log()
+    for m in state["messages"]:
+        m.pretty_print()
+    new_log()

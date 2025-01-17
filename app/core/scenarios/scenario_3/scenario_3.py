@@ -11,26 +11,16 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph import MessagesState
 from app.core.scenarios.scenario_3.utils.prompt import system_prompt, interpreter_prompt
 from app.core.utils.printing import new_log
-from app.core.utils.utils import setup_logger
+from app.core.utils.utils import get_llm_from_config, get_class_vector_db_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 from langchain_community.vectorstores import FAISS
 
 logger = setup_logger(__package__, __file__)
 
-# openai_api_key = os.getenv("OPENAI_API_KEY")
-llm = ChatOllama(model="llama3.2:1b")
-# llm = ChatOpenAI(
-#     model="gpt-4o",
-#     openai_api_key=openai_api_key,
-# )
-faiss_embedding_directory = (
-    Path(__file__).resolve().parent.parent.parent.parent.parent
-    / "data"
-    / "faiss_embeddings"
-    / "idsm"
-    / "v3_4_full_nomic_faiss_index"
-)
+SCENARIO = "scenario_3"
+
+llm = get_llm_from_config(SCENARIO)
 
 
 def run_query_router(state: MessagesState) -> Literal["interpret_results", END]:
@@ -66,15 +56,7 @@ def generate_query_router(state: MessagesState) -> Literal["run_query", END]:
 # Node
 def select_similar_classes(state: MessagesState) -> MessagesState:
 
-    embeddings = OllamaEmbeddings(
-        model="nomic-embed-text",
-    )
-
-    db = FAISS.load_local(
-        faiss_embedding_directory,
-        embeddings=embeddings,
-        allow_dangerous_deserialization=True,
-    )
+    db = get_class_vector_db_from_config(scenario=SCENARIO)
 
     query = state["messages"][-1].content
 
@@ -145,31 +127,9 @@ s3_builder.add_edge("interpret_results", END)
 
 graph = s3_builder.compile()
 
+
 def run_scenario(question: str):
     return graph.invoke({"messages": HumanMessage(question)})
 
-
-def main():
-
-    parser = argparse.ArgumentParser(description="Process the scenario with the predifined or custom question.")
-    
-    parser.add_argument('-c', '--custom', type=str,
-                        help="Provide a custom question.")
-    
-    args = parser.parse_args()
-    
-    if args.custom:
-        question = args.custom
-    else:
-        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
-    
-    state = graph.invoke({"messages":HumanMessage(question)})
-
-    new_log()
-    for m in state["messages"]:
-        m.pretty_print()
-    new_log()
-
-
 if __name__ == "__main__":
-    main()
+    main(graph)

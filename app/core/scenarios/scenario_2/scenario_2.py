@@ -10,7 +10,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.graph import MessagesState
 from app.core.scenarios.scenario_2.utils.prompt import system_prompt, interpreter_prompt
 from app.core.utils.printing import new_log
-from app.core.utils.utils import setup_logger
+from app.core.utils.utils import get_llm_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 
@@ -18,14 +18,9 @@ logger = setup_logger(__package__, __file__)
 
 
 SPARQL_QUERY_EXEC_ERROR = "SPARQL query execution failed"
+SCENARIO = "scenario_2"
 
-llm = ChatOllama(model="llama3.2:1b")
-# openai_api_key = os.getenv("OPENAI_API_KEY")
-# llm = ChatOpenAI(
-#     model="gpt-4o",
-#     openai_api_key=openai_api_key,
-# )
-
+llm = get_llm_from_config(SCENARIO)
 
 # Router
 def run_query_router(state: MessagesState) -> Literal["interpret_results", END]:
@@ -103,27 +98,5 @@ graph = s2_builder.compile()
 def run_scenario(question: str):
     return graph.invoke({"messages": HumanMessage(question)})
 
-def main():
-
-    parser = argparse.ArgumentParser(description="Process the scenario with the predifined or custom question.")
-    
-    parser.add_argument('-c', '--custom', type=str,
-                        help="Provide a custom question.")
-    
-    args = parser.parse_args()
-    
-    if args.custom:
-        question = args.custom
-    else:
-        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
-    
-    state = graph.invoke({"messages":HumanMessage(question)})
-
-    new_log()
-    for m in state["messages"]:
-        m.pretty_print()
-    new_log()
-
-
 if __name__ == "__main__":
-    main()
+    main(graph)

@@ -1,25 +1,20 @@
 import argparse
 import ast
-from math import log
 import operator
 import os
-from pathlib import Path
 import re
 from typing import Annotated, List, Literal
-from langchain_ollama import ChatOllama, OllamaEmbeddings
-from langchain_openai import ChatOpenAI
 from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph import MessagesState
 from rdflib import Graph
 from app.core.scenarios.scenario_4.utils.prompt import system_prompt, interpreter_prompt
-from app.core.utils import construct_util
+from app.core.utils.construct_util import format_class_graph_file, get_context_class, get_empty_graph_with_prefixes, tmp_directory
 from app.core.utils.printing import new_log
-from app.core.utils.utils import setup_logger
+from app.core.utils.utils import get_class_vector_db_from_config, get_llm_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
-from langchain_community.vectorstores import FAISS
 from app.core.scenarios.scenario_4.utils.preprocessing import (
     extract_relevant_entities_spacy,
 )
@@ -30,23 +25,11 @@ import time
 
 logger = setup_logger(__package__, __file__)
 
-# openai_api_key = os.getenv("OPENAI_API_KEY")
-llm = ChatOllama(model="llama3.2:1b")
-# llm = ChatOpenAI(
-#                 model="gpt-4o",
-#                 openai_api_key=openai_api_key,
-#             )
-faiss_embedding_directory = (
-    Path(__file__).resolve().parent.parent.parent.parent.parent
-    / "data"
-    / "faiss_embeddings"
-    / "idsm"
-    / "v3_4_full_nomic_faiss_index"
-)
+SCENARIO = "scenario_4"
 
+llm = get_llm_from_config(SCENARIO)
 
 # State Class
-
 
 class OverAllState(MessagesState):
     initial_question: str
@@ -60,7 +43,7 @@ class OverAllState(MessagesState):
 # Router
 
 
-def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
+def run_query_router(state: OverAllState) -> Literal["interpret_results",END]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
         logger.info(f"query run succesfully and it yielded")
         return "interpret_results"
@@ -69,7 +52,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
         return END
 
 
-def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
+def generate_query_router(state: OverAllState) -> Literal["run_query",END]:
     if state["messages"][-1].content.find("```sparql") != -1:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
@@ -89,7 +72,7 @@ def get_context_class_router(
 
     for doc in state["selected_classes"]:
         cls = ast.literal_eval(doc.page_content)
-        cls_path = construct_util.format_class_graph_file(cls[0])
+        cls_path = format_class_graph_file(cls[0])
 
         if os.path.exists(cls_path):
             logger.info(f"Classe context file path at {cls_path} found.")
@@ -118,21 +101,13 @@ def get_context_class_from_cache(cls_path: str) -> OverAllState:
 
 
 def get_context_class_from_kg(cls: str) -> OverAllState:
-    graph_ttl = construct_util.get_context_class(cls)
+    graph_ttl = get_context_class(cls)
     return {"selected_classes_context": [graph_ttl]}
 
 
 def select_similar_classes(state: OverAllState) -> OverAllState:
 
-    embeddings = OllamaEmbeddings(
-        model="nomic-embed-text",
-    )
-
-    db = FAISS.load_local(
-        faiss_embedding_directory,
-        embeddings=embeddings,
-        allow_dangerous_deserialization=True,
-    )
+    db = get_class_vector_db_from_config(scenario=SCENARIO)
 
     query = state["messages"][-1].content
 
@@ -153,7 +128,7 @@ def select_similar_classes(state: OverAllState) -> OverAllState:
 
 def create_prompt(state: OverAllState) -> OverAllState:
 
-    merged_graph = construct_util.get_graph_with_prefixes()
+    merged_graph = get_empty_graph_with_prefixes()
 
     for cls_context in state["selected_classes_context"]:
         g = Graph()
@@ -162,14 +137,14 @@ def create_prompt(state: OverAllState) -> OverAllState:
     # Save the graph
     timestr = time.strftime("%Y%m%d-%H%M%S")
     merged_graph.serialize(
-        destination=f"{construct_util.tmp_directory}/context-{timestr}.ttl",
+        destination=f"{tmp_directory}/context-{timestr}.ttl",
         format="turtle",
     )
 
     merged_graph_ttl = merged_graph.serialize(format="turtle")
 
     logger.info(
-        f"Context graph saved locally in {construct_util.tmp_directory}/context-{timestr}.ttl"
+        f"Context graph saved locally in {tmp_directory}/context-{timestr}.ttl"
     )
     logger.info(f"prompt created successfuly.")
 
@@ -242,28 +217,5 @@ graph = s4_builder.compile()
 def run_scenario(question: str):
     return graph.invoke({"messages": HumanMessage(question)})
 
-
-def main():
-
-    parser = argparse.ArgumentParser(description="Process the scenario with the predifined or custom question.")
-    
-    parser.add_argument('-c', '--custom', type=str,
-                        help="Provide a custom question.")
-    
-    args = parser.parse_args()
-    
-    if args.custom:
-        question = args.custom
-    else:
-        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
-    
-    state = graph.invoke({"messages":HumanMessage(question)})
-
-    new_log()
-    for m in state["messages"]:
-        m.pretty_print()
-    new_log()
-
-
 if __name__ == "__main__":
-    main()
+    main(graph)

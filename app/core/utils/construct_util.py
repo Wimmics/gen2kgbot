@@ -1,9 +1,8 @@
-import logging
 import os
 from pathlib import Path
 from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper
-from rdflib import Graph, Namespace, URIRef, BNode, RDFS, term
+from rdflib import Graph, URIRef, BNode, RDFS, term
 
 from app.core.utils.utils import setup_logger
 
@@ -34,14 +33,15 @@ endpoint_url_idsm = 'https://idsm.elixir-czech.cz/sparql/endpoint/idsm'
 
 
 
-def get_context_class(cl:str) ->str:
-    graph = get_graph_with_prefixes()
+def get_context_class(class_label_comment:tuple) -> str:
+    graph = get_empty_graph_with_prefixes()
 
-    class_ref = URIRef(cl[0])
-    properties_and_values = get_prop_and_val_types(cl[0],)
-    # print(properties_and_values)
-    if (cl[1]): graph.add((class_ref, RDFS.label, term.Literal(cl[1])))
-    if (cl[2]): graph.add((class_ref, RDFS.comment, term.Literal(cl[2])))
+    class_ref = URIRef(class_label_comment[0])
+    properties_and_values = get_prop_and_val_types(class_label_comment[0],)
+
+    if (class_label_comment[1]): graph.add((class_ref, RDFS.label, term.Literal(class_label_comment[1])))
+    if (class_label_comment[2]): graph.add((class_ref, RDFS.comment, term.Literal(class_label_comment[2])))
+    
     for property_uri, prop_type in properties_and_values:
         value_ref = (
             BNode() if (prop_type == "Untyped" or prop_type == None) else URIRef(prop_type)
@@ -49,7 +49,7 @@ def get_context_class(cl:str) ->str:
         graph.add((class_ref, URIRef(property_uri), value_ref))
     
     # save the graph
-    class_file_path = format_class_graph_file(cl[0])
+    class_file_path = format_class_graph_file(class_label_comment[0])
 
     graph.serialize(destination=class_file_path)
     return graph.serialize(format="turtle")
@@ -57,6 +57,7 @@ def get_context_class(cl:str) ->str:
 
 
 def get_prop_and_val_types(cls: str,endpoint_url:str=endpoint_url_idsm) -> List[Tuple[str, str]]:
+        
     query = query_cls_rel.replace("{class_uri}",cls)
 
     values = [(nested_value(x, ['property','value']),(nested_value(x, ['valueType','value']) )) for x in run_sparql(query,endpoint_url)]
@@ -116,7 +117,10 @@ def add_known_prefixes_to_query(query:str) -> str :
 
     return final_query
 
-def get_graph_with_prefixes() -> Graph:
+def get_empty_graph_with_prefixes() -> Graph:
+    """
+    Creates an empty RDF graph with predefined prefixes.
+    """
     prefix_map = get_known_prefixes()
 
     g = Graph()

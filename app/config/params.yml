@@ -1,11 +1,83 @@
 # Suggestion of how the configuration could look like
+scenario_1:
+  seq2seq_llm:
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    # type: openai
+    # id: gpt-4o-mini
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
+
+scenario_2:
+  seq2seq_llm:
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    # type: openai
+    # id: gpt-4o-mini
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
+
 scenario_3:
   endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm: 
-    id: gpt-4
+    type: ollama
+    id: llama3.2:1b
     temperature: 0
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
   text_embedding_llm:
+    type: ollama-embeddings
+    # type: openai-embeddings
+    id: mxbai-embed-large
+    vector_db: faiss
+    # vector_db: chroma
+
+scenario_4:
+  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
+  seq2seq_llm: 
+    type: ollama
+    id: llama3.2:1b
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
+  text_embedding_llm:
+    type: ollama-embeddings
+    # type: openai-embeddings
+    id: mxbai-embed-large
+    vector_db: faiss
+    # vector_db: chroma
+
+scenario_5:
+  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
+  seq2seq_llm: 
+    type: ollama
+    id: llama3.2:1b
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
+  text_embedding_llm:
+    type: ollama-embeddings
+    # type: openai-embeddings
+    id: mxbai-embed-large
+    vector_db: faiss
+    # vector_db: chroma
+
+scenario_6:
+  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
+  seq2seq_llm: 
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
+  text_embedding_llm:
+    type: ollama-embeddings
+    # type: openai-embeddings
     id: nomic-embed-text
-    vector_db: FAISS
+    vector_db: faiss
+    # vector_db: chroma
