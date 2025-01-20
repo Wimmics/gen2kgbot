@@ -1,18 +1,23 @@
 import ast
-import operator
 import os
 import re
-from typing import Annotated, List, Literal
-from langgraph.graph import MessagesState
-from langchain_core.messages import AIMessage, HumanMessage
-from langgraph.graph import StateGraph, START, END
-from langgraph.graph import MessagesState
+import time
+from typing import Literal
 from rdflib import Graph
+from rdflib.plugins.sparql.algebra import translateQuery
+from rdflib.plugins.sparql.parser import parseQuery
+from rdflib.exceptions import ParserError
+from langgraph.constants import Send
+from langgraph.graph import StateGraph, START, END
+from langchain_core.messages import AIMessage, HumanMessage
 from app.core.scenarios.scenario_6.utils.prompt import (
     system_prompt,
-    interpreter_prompt,
     retry_prompt,
 )
+from app.core.utils.graph_nodes import interpret_csv_query_results, preprocess_question, select_similar_classes
+from app.core.utils.graph_state import InputState, OverAllState
+from app.core.utils.utils import get_llm_from_config, get_class_vector_db_from_config, get_query_vector_db_from_config, main, setup_logger
+from app.core.utils.sparql_toolkit import run_sparql_query
 from app.core.utils.construct_util import (
     add_known_prefixes_to_query,
     format_class_graph_file,
@@ -20,42 +25,12 @@ from app.core.utils.construct_util import (
     get_empty_graph_with_prefixes,
     tmp_directory,
 )
-from app.core.utils.utils import get_llm_from_config, get_class_vector_db_from_config, get_query_vector_db_from_config, main, setup_logger
-from rdflib.exceptions import ParserError
-from app.core.utils.sparql_toolkit import run_sparql_query
-from app.core.scenarios.scenario_6.utils.preprocessing import (
-    extract_relevant_entities_spacy,
-)
-from langgraph.constants import Send
-from langchain_core.documents import Document
-import time
-
-from rdflib.plugins.sparql.algebra import translateQuery
-from rdflib.plugins.sparql.parser import parseQuery
-
-logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_6"
-
-llm = get_llm_from_config(SCENARIO)
-
-
 MAX_NUMBER_OF_TRIES: int = 3
 
-
-# State Class
-
-class OverAllState(MessagesState):
-    initial_question: str
-    selected_classes: List[Document]
-    selected_queries: str
-
-    selected_classes_context: Annotated[list[str], operator.add]
-    merged_classes_context: str
-    query_generation_prompt: str
-
-    number_of_tries: int
-    last_generated_query: str
+logger = setup_logger(__package__, __file__)
+llm = get_llm_from_config(SCENARIO)
 
 
 # Router
@@ -104,20 +79,7 @@ def get_context_class_router(
 
     return next_nodes
 
-
 # Node
-
-
-def preprocess_question(state: OverAllState) -> OverAllState:
-    result = AIMessage(
-        f"{extract_relevant_entities_spacy(state["messages"][-1].content)}"
-    )
-    logger.info(f"Preprocessing the question was done succesfully")
-    return {
-        "messages": result,
-        "initial_question": state["messages"][-1].content,
-        "number_of_tries": 0,
-    }
 
 
 def get_context_class_from_cache(cls_path: str) -> OverAllState:
@@ -128,28 +90,6 @@ def get_context_class_from_cache(cls_path: str) -> OverAllState:
 def get_context_class_from_kg(cls: str) -> OverAllState:
     graph_ttl = get_context_class(cls)
     return {"selected_classes_context": [graph_ttl]}
-
-
-def select_similar_classes(state: OverAllState) -> OverAllState:
-
-    db = get_class_vector_db_from_config(scenario=SCENARIO)
-
-
-    query = state["messages"][-1].content
-
-    logger.info(f"query: {query}")
-
-    # Retrieve the most similar text
-    retrieved_documents = db.similarity_search(query, k=10)
-
-    result = "These are some relevant classes for the query generation:\n"
-    # show the retrieved document's content
-    for doc in retrieved_documents:
-        result = f"{result}\n{doc.page_content}\n"
-
-    logger.info(f"Done with selecting some similar classes to help query generation")
-
-    return {"messages": AIMessage(result), "selected_classes": retrieved_documents}
 
 
 def select_similar_query_examples(state: OverAllState) -> OverAllState:
@@ -269,15 +209,9 @@ def run_query(state: OverAllState):
         return {"messages": AIMessage("Error when running the query")}
 
 
-def interpret_results(state: OverAllState):
-    csv_results_message = state["messages"][-1]
-    result = llm.invoke([interpreter_prompt] + [csv_results_message])
-    logger.info(f"the interpretatin of the query result is done")
-    return {"messages": result}
 
-
-s6_builder = StateGraph(OverAllState)
-s6_preprocessing_builder = StateGraph(OverAllState)
+s6_builder = StateGraph(state_schema=OverAllState,input=InputState,output=OverAllState)
+s6_preprocessing_builder = StateGraph(state_schema=OverAllState,input=OverAllState,output=OverAllState)
 
 s6_preprocessing_builder.add_node("preprocess_question", preprocess_question)
 s6_preprocessing_builder.add_node("select_similar_classes", select_similar_classes)
@@ -310,7 +244,7 @@ s6_builder.add_node("generate_query", generate_query)
 s6_builder.add_node("run_query", run_query)
 s6_builder.add_node("verify_query", verify_query)
 s6_builder.add_node("create_retry_prompt", create_retry_prompt)
-s6_builder.add_node("interpret_results", interpret_results)
+s6_builder.add_node("interpret_results", interpret_csv_query_results)
 
 s6_builder.add_edge(START, "preprocessing_subgraph")
 s6_builder.add_edge("preprocessing_subgraph", "create_prompt")

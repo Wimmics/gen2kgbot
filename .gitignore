@@ -16,3 +16,5 @@ app/config/params.ini
 
 !app/notebooks/data
 app/notebooks/evaluation
+
+.vscode

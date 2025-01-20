@@ -1,4 +1,5 @@
 import argparse
+from multiprocessing.connection import Client
 from langchain_core.messages import HumanMessage
 import json
 import logging
@@ -50,8 +51,11 @@ def setup_logger(package: str = __package__, file: str = __file__) -> logging.Lo
         log_config = yaml.safe_load(f.read())
     logging.config.dictConfig(log_config)
 
+    logger = logging.getLogger(_mod_name)
+    # logger.info(f"Setup Logger Done for {package} - {file}")
+
     # Get and return the logger
-    return logging.getLogger(_mod_name)
+    return logger
 
 
 logger = setup_logger(__package__, __file__)
@@ -70,9 +74,27 @@ def get_yml_config():
 
 config = get_yml_config()
 
+current_llm = None
+current_scenario = None
+
+
+def get_current_llm() -> BaseChatModel:
+    if current_llm:
+        return current_llm
+    else:
+        logger.error("No LLM is currently initialised")
+
+
+def get_current_scenario() -> str:
+    if current_scenario:
+        return current_scenario
+    else:
+        logger.error("No Current scenario is currently running!")
+
 
 def get_openai_key():
     return os.getenv("OPENAI_API_KEY")
+
 
 def get_ovh_key():
     return os.getenv("OVHCLOUD_API_KEY")
@@ -82,7 +104,6 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
 
     model_type = config[scenario]["seq2seq_llm"]["type"]
     model_id = config[scenario]["seq2seq_llm"]["id"]
-    base_url = config[scenario]["seq2seq_llm"]["base_url"]
     temperature = config[scenario]["seq2seq_llm"]["temperature"]
     max_retries = config[scenario]["seq2seq_llm"]["max_retries"]
     model_kwargs = config[scenario]["seq2seq_llm"]["model_kwargs"]
@@ -106,19 +127,24 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             verbose=True,
             model_kwargs=model_kwargs,
         )
-    
+        logger.info(f"LLM initialized: Ollama")
+
     elif model_type == "ovh":
+        base_url = config[scenario]["seq2seq_llm"]["base_url"]
+
         llm = ChatOpenAI(
             temperature=temperature,
             model=model_id,
             max_retries=max_retries,
             verbose=True,
-            base_url=base_url,  
+            base_url=base_url,
             api_key=get_ovh_key(),
             model_kwargs=model_kwargs,
         )
         logger.info(f"LLM initialized: OVH")
 
+    globals()["current_llm"] = llm
+    globals()["current_scenario"] = scenario
     return llm
 
 
@@ -139,8 +165,9 @@ def get_embedding_type_from_config(scenario: str) -> Embeddings:
     return embeddings
 
 
-def get_class_vector_db_from_config(scenario: str) -> VectorStore:
+def get_class_vector_db_from_config() -> VectorStore:
 
+    scenario = get_current_scenario()
     embeddings = get_embedding_type_from_config(scenario=scenario)
     model_id = config[scenario]["text_embedding_llm"]["id"]
 
@@ -149,11 +176,13 @@ def get_class_vector_db_from_config(scenario: str) -> VectorStore:
     embedding_map = {
         "nomic-embed-text": "nomic",
         "mxbai-embed-large": "mxbai",
-        "all-minilm": "minilm"
+        "all-minilm": "minilm",
     }
     embedding_id = embedding_map.get(model_id)
 
-    embedding_directory = f"data/{vector_db}_embeddings/idsm/v3_4_full_{embedding_id}_{vector_db}_index"
+    embedding_directory = (
+        f"data/{vector_db}_embeddings/idsm/v3_4_full_{embedding_id}_{vector_db}_index"
+    )
 
     if vector_db == "faiss":
         db = FAISS.load_local(
@@ -164,11 +193,13 @@ def get_class_vector_db_from_config(scenario: str) -> VectorStore:
         logger.info(f"Class Vector DB initialized: {embedding_directory}")
 
     elif vector_db == "chroma":
-        db = Chroma(persist_directory=embedding_directory, embedding_function=embeddings)
+        db = Chroma(
+            persist_directory=embedding_directory, embedding_function=embeddings
+        )
         logger.info(f"Class Vector DB initialized: {embedding_directory}")
 
-
     return db
+
 
 def get_query_vector_db_from_config(scenario: str) -> VectorStore:
 
@@ -180,11 +211,13 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
     embedding_map = {
         "nomic-embed-text": "nomic",
         "mxbai-embed-large": "mxbai",
-        "all-minilm": "minilm"
+        "all-minilm": "minilm",
     }
     embedding_id = embedding_map.get(model_id)
 
-    embedding_directory = f"data/{vector_db}_embeddings/idsm/query_v1_{embedding_id}_{vector_db}_index"
+    embedding_directory = (
+        f"data/{vector_db}_embeddings/idsm/query_v1_{embedding_id}_{vector_db}_index"
+    )
 
     if vector_db == "faiss":
         db = FAISS.load_local(
@@ -195,9 +228,10 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
         logger.info(f"Query Vector DB initialized: {embedding_directory}")
 
     elif vector_db == "chroma":
-        db = Chroma(persist_directory=embedding_directory, embedding_function=embeddings)
+        db = Chroma(
+            persist_directory=embedding_directory, embedding_function=embeddings
+        )
         logger.info(f"Query Vector DB initialized: {embedding_directory}")
-
 
     return db
 
@@ -216,11 +250,34 @@ def main(graph: CompiledStateGraph):
     if args.custom:
         question = args.custom
     else:
-        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 20 µM?"
+        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"
 
-    state = graph.invoke({"messages": HumanMessage(question)})
+    state = graph.invoke({"initial_question": question})
 
     new_log()
     for m in state["messages"]:
         m.pretty_print()
     new_log()
+
+    if "last_generated_query" in state:
+        new_log()
+        print(state["last_generated_query"])
+        new_log()
+
+
+def langsmith_setup():
+    # Setting up the LangSmith
+    # For now, all runs will be stored in the "KGBot Testing - GPT4"
+    # If you want to separate the traces to have a better control of specific traces.
+    # Metadata as llm version and temperature can be obtained from traces.
+
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = (
+        f"Gen KGBot Refactoring"  # Please update the name here if you want to create a new project for separating the traces.
+    )
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+
+    client = Client()
+
+    # #Check if the client was initialized
+    print(f"Langchain client was initialized: {client}")

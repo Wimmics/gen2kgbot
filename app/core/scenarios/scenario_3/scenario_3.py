@@ -1,20 +1,18 @@
-import argparse
-import os
-from pathlib import Path
 import re
 from typing import Literal
-from langchain_ollama import ChatOllama, OllamaEmbeddings
-from langchain_openai import ChatOpenAI
-from langgraph.graph import MessagesState
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-from langgraph.graph import MessagesState
 from app.core.scenarios.scenario_3.utils.prompt import system_prompt, interpreter_prompt
-from app.core.utils.printing import new_log
-from app.core.utils.utils import get_llm_from_config, get_class_vector_db_from_config, main, setup_logger
+from app.core.utils.graph_nodes import interpret_csv_query_results, select_similar_classes
+from app.core.utils.graph_state import InputState, OverAllState
+from app.core.utils.utils import (
+    get_llm_from_config,
+    get_class_vector_db_from_config,
+    main,
+    setup_logger,
+)
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
-from langchain_community.vectorstores import FAISS
 
 logger = setup_logger(__package__, __file__)
 
@@ -23,7 +21,7 @@ SCENARIO = "scenario_3"
 llm = get_llm_from_config(SCENARIO)
 
 
-def run_query_router(state: MessagesState) -> Literal["interpret_results", END]:
+def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
     """
     Check if the query was run successfully and routes to the next step accordingly.
 
@@ -41,7 +39,7 @@ def run_query_router(state: MessagesState) -> Literal["interpret_results", END]:
         return END
 
 
-def generate_query_router(state: MessagesState) -> Literal["run_query", END]:
+def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
     if state["messages"][-1].content.find("```sparql") != -1:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
@@ -54,38 +52,19 @@ def generate_query_router(state: MessagesState) -> Literal["run_query", END]:
 
 
 # Node
-def select_similar_classes(state: MessagesState) -> MessagesState:
-
-    db = get_class_vector_db_from_config(scenario=SCENARIO)
-
-    query = state["messages"][-1].content
-
-    # Retrieve the most similar text
-    retrieved_documents = db.similarity_search(query, k=10)
-
-    result = "These are some relevant classes for the query generation:\n"
-    # show the retrieved document's content
-    for doc in retrieved_documents:
-        result = f"{result}\n{doc.page_content}\n"
-
-    logger.info(f"Done with selecting some similar classes to help query generation")
-
-    return {"messages": AIMessage(result)}
-
-
-def create_prompt(state: MessagesState):
+def create_prompt(state: OverAllState):
     result = [system_prompt] + state["messages"]
     state["messages"].clear()
     logger.info(f"prompt created successfuly.")
     return {"messages": result}
 
 
-def generate_query(state: MessagesState):
+def generate_query(state: OverAllState):
     result = llm.invoke(state["messages"])
     return {"messages": result}
 
 
-def run_query(state: MessagesState):
+def run_query(state: OverAllState):
 
     query = re.findall(
         "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
@@ -99,24 +78,22 @@ def run_query(state: MessagesState):
         return {"messages": AIMessage("Error when running the query")}
     except Exception as e:
         logger.warning(f"An error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the query")}
+        return {
+            "messages": AIMessage("Error when running the query"),
+            "last_generated_query": query,
+        }
 
 
-def interpret_results(state: MessagesState):
-    csv_results_message = state["messages"][-1]
-    result = llm.invoke([interpreter_prompt] + [csv_results_message])
-    logger.info(f"the interpretatin of the query result is done")
-    return {"messages": result}
-
-
-s3_builder = StateGraph(MessagesState)
+s3_builder = StateGraph(
+    state_schema=OverAllState, input=InputState, output=OverAllState
+)
 
 
 s3_builder.add_node("select_similar_classes", select_similar_classes)
 s3_builder.add_node("create_prompt", create_prompt)
 s3_builder.add_node("generate_query", generate_query)
 s3_builder.add_node("run_query", run_query)
-s3_builder.add_node("interpret_results", interpret_results)
+s3_builder.add_node("interpret_results", interpret_csv_query_results)
 
 s3_builder.add_edge(START, "select_similar_classes")
 s3_builder.add_edge("select_similar_classes", "create_prompt")
@@ -130,6 +107,7 @@ graph = s3_builder.compile()
 
 def run_scenario(question: str):
     return graph.invoke({"messages": HumanMessage(question)})
+
 
 if __name__ == "__main__":
     main(graph)

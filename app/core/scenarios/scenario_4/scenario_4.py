@@ -1,23 +1,18 @@
-import argparse
 import ast
 import operator
 import os
 import re
-from typing import Annotated, List, Literal
-from langgraph.graph import MessagesState
+from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-from langgraph.graph import MessagesState
 from rdflib import Graph
-from app.core.scenarios.scenario_4.utils.prompt import system_prompt, interpreter_prompt
+from app.core.scenarios.scenario_4.utils.prompt import system_prompt
 from app.core.utils.construct_util import format_class_graph_file, get_context_class, get_empty_graph_with_prefixes, tmp_directory
-from app.core.utils.printing import new_log
+from app.core.utils.graph_nodes import interpret_csv_query_results, preprocess_question, select_similar_classes
+from app.core.utils.graph_state import InputState, OverAllState
 from app.core.utils.utils import get_class_vector_db_from_config, get_llm_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
-from app.core.scenarios.scenario_4.utils.preprocessing import (
-    extract_relevant_entities_spacy,
-)
 from langgraph.constants import Send
 from langchain_core.documents import Document
 import time
@@ -28,17 +23,6 @@ logger = setup_logger(__package__, __file__)
 SCENARIO = "scenario_4"
 
 llm = get_llm_from_config(SCENARIO)
-
-# State Class
-
-class OverAllState(MessagesState):
-    initial_question: str
-    selected_classes: List[Document]
-
-    selected_classes_context: Annotated[list[str], operator.add]
-    merged_classes_context: str
-    query_generation_prompt: str
-
 
 # Router
 
@@ -86,15 +70,6 @@ def get_context_class_router(
 
 # Node
 
-
-def preprocess_question(state: OverAllState) -> OverAllState:
-    result = AIMessage(
-        f"{extract_relevant_entities_spacy(state["messages"][-1].content)}"
-    )
-    logger.info(f"Preprocessing the question was done succesfully")
-    return {"initial_question": state["messages"][-1].content, "messages": result}
-
-
 def get_context_class_from_cache(cls_path: str) -> OverAllState:
     with open(cls_path) as f:
         return {"selected_classes_context": ["\n".join(f.readlines())]}
@@ -103,27 +78,6 @@ def get_context_class_from_cache(cls_path: str) -> OverAllState:
 def get_context_class_from_kg(cls: str) -> OverAllState:
     graph_ttl = get_context_class(cls)
     return {"selected_classes_context": [graph_ttl]}
-
-
-def select_similar_classes(state: OverAllState) -> OverAllState:
-
-    db = get_class_vector_db_from_config(scenario=SCENARIO)
-
-    query = state["messages"][-1].content
-
-    logger.info(f"query: {query}")
-
-    # Retrieve the most similar text
-    retrieved_documents = db.similarity_search(query, k=10)
-
-    result = "These are some relevant classes for the query generation:\n"
-    # show the retrieved document's content
-    for doc in retrieved_documents:
-        result = f"{result}\n{doc.page_content}\n"
-
-    logger.info(f"Done with selecting some similar classes to help query generation")
-
-    return {"messages": AIMessage(result), "selected_classes": retrieved_documents}
 
 
 def create_prompt(state: OverAllState) -> OverAllState:
@@ -174,7 +128,7 @@ def run_query(state: OverAllState):
 
     try:
         csv_result = run_sparql_query(query=query)
-        return {"messages": csv_result}
+        return {"messages": csv_result, "last_generated_query": query}
     except ParserError as e:
         logger.warning(f"A parsing error occurred when running the query: {e}")
         return {"messages": AIMessage("Error when running the query")}
@@ -183,14 +137,7 @@ def run_query(state: OverAllState):
         return {"messages": AIMessage("Error when running the query")}
 
 
-def interpret_results(state: OverAllState):
-    csv_results_message = state["messages"][-1]
-    result = llm.invoke([interpreter_prompt] + [csv_results_message])
-    logger.info(f"the interpretatin of the query result is done")
-    return {"messages": result}
-
-
-s4_builder = StateGraph(OverAllState)
+s4_builder = StateGraph(state_schema=OverAllState, input=InputState, output=OverAllState)
 
 s4_builder.add_node("preprocess_question", preprocess_question)
 s4_builder.add_node("select_similar_classes", select_similar_classes)
@@ -200,7 +147,7 @@ s4_builder.add_node("get_context_class_from_kg", get_context_class_from_kg)
 s4_builder.add_node("create_prompt", create_prompt)
 s4_builder.add_node("generate_query", generate_query)
 s4_builder.add_node("run_query", run_query)
-s4_builder.add_node("interpret_results", interpret_results)
+s4_builder.add_node("interpret_results", interpret_csv_query_results)
 
 s4_builder.add_edge(START, "preprocess_question")
 s4_builder.add_edge("preprocess_question", "select_similar_classes")

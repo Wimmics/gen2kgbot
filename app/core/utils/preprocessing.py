@@ -2,7 +2,7 @@ import spacy
 
 
 # Function to preprocess and extract relevant entities
-def extract_relevant_entities_spacy(question):
+def extract_relevant_entities_spacy(question) -> list[str]:
     
     # Load the pre-trained spaCy model (en_core_web_sm is a small English model)
     # nlp = spacy.load("en_core_web_sm")
@@ -20,7 +20,7 @@ def extract_relevant_entities_spacy(question):
     # Define a list of entity types to keep (you can modify this as per your needs)
     # relevant_entity_types = ['PERSON', 'ORG', 'GPE', 'LOC', 'DATE', 'TIME']
 
-    relevant_entities = ", ".join([doc.text for doc in doc.ents])
+    relevant_entities = [doc.text for doc in doc.ents]
 
     # for ent in doc.ents:
     #     if ent.label_ in relevant_entity_types:

@@ -1,28 +1,49 @@
-# Suggestion of how the configuration could look like
+# Global parameters
+
+# absolute or relative path from the root of the repository
+# tmp_directory: "tmp"
+
+# Endpoint serving the KG to be queried 
+# kg_sparql_endpoint_url: "" 
+
+
+# Embedding Generation
+# embedding_generation:
+  # Utilitary endpoint to store the ontologies (if not present in the endpoint to be queried) 
+  # sparql_endpoint_url: ""
+
+  # text_embedding_llm:
+    # type: ollama-embeddings
+    # id: mxbai-embed-large
+    # vector_db: faiss
+  
+    # output_directory: "data/"
+
+# Scenarios
+
 scenario_1:
   seq2seq_llm:
-    type: ovh
-    id: Meta-Llama-3_1-70B-Instruct
+    # type: ovh
+    # id: Meta-Llama-3_1-70B-Instruct
     base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-    # type: openai
-    # id: gpt-4o-mini
+    type: ollama
+    id: llama3.2:1b
     temperature: 0
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
 
 scenario_2:
   seq2seq_llm:
-    type: ovh
-    id: Meta-Llama-3_1-70B-Instruct
+    # type: ovh
+    # id: Meta-Llama-3_1-70B-Instruct
     base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-    # type: openai
-    # id: gpt-4o-mini
+    type: ollama
+    id: llama3.2:1b
     temperature: 0
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
 
 scenario_3:
-  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm: 
     type: ollama
     id: llama3.2:1b
@@ -39,8 +60,11 @@ scenario_3:
 scenario_4:
   endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm: 
-    type: ollama
-    id: llama3.2:1b
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    # type: ollama
+    # id: llama3.2:1b
     temperature: 0
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
@@ -54,23 +78,27 @@ scenario_4:
 scenario_5:
   endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm: 
-    type: ollama
-    id: llama3.2:1b
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    # type: ollama
+    # id: llama3.2:1b
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
     temperature: 0
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
   text_embedding_llm:
     type: ollama-embeddings
     # type: openai-embeddings
-    id: mxbai-embed-large
+    id: nomic-embed-text
     vector_db: faiss
-    # vector_db: chroma
 
 scenario_6:
   endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm: 
     type: ovh
     id: Meta-Llama-3_1-70B-Instruct
+    # type: ollama
+    # id: llama3.2:1b
     base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
     temperature: 0
     max_retries: 3 
@@ -81,3 +109,4 @@ scenario_6:
     id: nomic-embed-text
     vector_db: faiss
     # vector_db: chroma
+
