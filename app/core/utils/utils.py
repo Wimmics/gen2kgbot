@@ -1,11 +1,10 @@
 import argparse
 from multiprocessing.connection import Client
-from langchain_core.messages import HumanMessage
-import json
 import logging
 import logging.config
 import os
 from pathlib import Path
+from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.language_models import BaseChatModel
@@ -18,6 +17,16 @@ from langgraph.graph.state import CompiledStateGraph
 
 from app.core.utils.printing import new_log
 
+
+def setup_cli():
+    parser = argparse.ArgumentParser(
+        description="Process the scenario with the predifined or custom question and configuration."
+    )
+    parser.add_argument("-c", "--custom", type=str, help="Provide a custom question.")
+    parser.add_argument("-p", "--params", type=str, help="Provide a custom configuration path.")
+    return parser.parse_args()
+
+args = setup_cli()
 
 def setup_logger(package: str = __package__, file: str = __file__) -> logging.Logger:
     """
@@ -49,6 +58,13 @@ def setup_logger(package: str = __package__, file: str = __file__) -> logging.Lo
     # Configure logging
     with open(config_path, "rt") as f:
         log_config = yaml.safe_load(f.read())
+        # Create log folder if it not exists
+        log_file_handler = (
+            Path(log_config["handlers"]["file_handler"]["filename"]).resolve().parent
+        )
+        if os.path.exists(log_file_handler) == False:
+            os.makedirs(log_file_handler)
+
     logging.config.dictConfig(log_config)
 
     logger = logging.getLogger(_mod_name)
@@ -62,10 +78,11 @@ logger = setup_logger(__package__, __file__)
 
 
 def get_yml_config():
-
-    # # Resolve the path to the configuration file
-    parent_dir = Path(__file__).resolve().parent.parent.parent
-    config_path = parent_dir / "config" / "params.yml"
+    if args.params:
+        config_path = args.params
+    else:
+        # # Resolve the path to the configuration file
+        config_path = Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
 
     # # Configure logging
     with open(config_path, "rt") as f:
@@ -100,6 +117,9 @@ def get_ovh_key():
     return os.getenv("OVHCLOUD_API_KEY")
 
 
+def get_huggingface_key():
+    return os.getenv("HF_TOKEN")
+
 def get_llm_from_config(scenario: str) -> BaseChatModel:
 
     model_type = config[scenario]["seq2seq_llm"]["type"]
@@ -117,7 +137,6 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             openai_api_key=get_openai_key(),
             model_kwargs=model_kwargs,
         )
-        logger.info(f"LLM initialized: OpenAI")
 
     elif model_type == "ollama":
         llm = ChatOllama(
@@ -127,7 +146,6 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             verbose=True,
             model_kwargs=model_kwargs,
         )
-        logger.info(f"LLM initialized: Ollama")
 
     elif model_type == "ovh":
         base_url = config[scenario]["seq2seq_llm"]["base_url"]
@@ -141,8 +159,19 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             api_key=get_ovh_key(),
             model_kwargs=model_kwargs,
         )
-        logger.info(f"LLM initialized: OVH")
 
+    elif model_type == "hugface":
+        hfe = HuggingFaceEndpoint(
+                repo_id=model_id,
+                task="text-generation",
+                max_new_tokens=512,
+                do_sample=False,
+                repetition_penalty=1.03,
+            )
+
+        llm = ChatHuggingFace(llm=hfe, verbose=True)
+
+    logger.info(f"LLM initialized : {model_type} - {model_id} ")
     globals()["current_llm"] = llm
     globals()["current_scenario"] = scenario
     return llm
@@ -240,12 +269,6 @@ def main(graph: CompiledStateGraph):
     """
     Process a predefined or custom question, invokes a graph with the question, and logs the messages returned by the graph.
     """
-
-    parser = argparse.ArgumentParser(
-        description="Process the scenario with the predifined or custom question."
-    )
-    parser.add_argument("-c", "--custom", type=str, help="Provide a custom question.")
-    args = parser.parse_args()
 
     if args.custom:
         question = args.custom

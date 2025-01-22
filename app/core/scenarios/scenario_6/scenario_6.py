@@ -14,9 +14,18 @@ from app.core.scenarios.scenario_6.utils.prompt import (
     system_prompt,
     retry_prompt,
 )
-from app.core.utils.graph_nodes import interpret_csv_query_results, preprocess_question, select_similar_classes
+from app.core.utils.graph_nodes import (
+    interpret_csv_query_results,
+    preprocess_question,
+    select_similar_classes,
+)
 from app.core.utils.graph_state import InputState, OverAllState
-from app.core.utils.utils import get_llm_from_config, get_class_vector_db_from_config, get_query_vector_db_from_config, main, setup_logger
+from app.core.utils.utils import (
+    get_llm_from_config,
+    get_query_vector_db_from_config,
+    main,
+    setup_logger,
+)
 from app.core.utils.sparql_toolkit import run_sparql_query
 from app.core.utils.construct_util import (
     add_known_prefixes_to_query,
@@ -35,7 +44,8 @@ llm = get_llm_from_config(SCENARIO)
 
 # Router
 
-def run_query_router(state: OverAllState) -> Literal["interpret_results",END]:
+
+def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
         logger.info(f"query run succesfully and it yielded")
         return "interpret_results"
@@ -44,7 +54,9 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results",END]:
         return END
 
 
-def verify_query_router(state: OverAllState) -> Literal["run_query","create_retry_prompt",END]:
+def verify_query_router(
+    state: OverAllState,
+) -> Literal["run_query", "create_retry_prompt", END]:
     if state["last_generated_query"] != None:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
@@ -79,6 +91,7 @@ def get_context_class_router(
 
     return next_nodes
 
+
 # Node
 
 
@@ -93,7 +106,7 @@ def get_context_class_from_kg(cls: str) -> OverAllState:
 
 
 def select_similar_query_examples(state: OverAllState) -> OverAllState:
-    
+
     db = get_query_vector_db_from_config(scenario=SCENARIO)
 
     query = state["messages"][-1].content
@@ -209,9 +222,12 @@ def run_query(state: OverAllState):
         return {"messages": AIMessage("Error when running the query")}
 
 
-
-s6_builder = StateGraph(state_schema=OverAllState,input=InputState,output=OverAllState)
-s6_preprocessing_builder = StateGraph(state_schema=OverAllState,input=OverAllState,output=OverAllState)
+s6_builder = StateGraph(
+    state_schema=OverAllState, input=InputState, output=OverAllState
+)
+s6_preprocessing_builder = StateGraph(
+    state_schema=OverAllState, input=OverAllState, output=OverAllState
+)
 
 s6_preprocessing_builder.add_node("preprocess_question", preprocess_question)
 s6_preprocessing_builder.add_node("select_similar_classes", select_similar_classes)

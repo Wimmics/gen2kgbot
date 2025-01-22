@@ -8,6 +8,7 @@ When providing a SPARQL query:
 - Place the query inside a markdown codeblock with the ```sparql ``` language tag.
 - Always base the query on the details provided in the prompt—do not create a query from scratch or offer a generic one.
 - Limit your response to one query, and avoid adding extra codeblocks unless necessary.
+- Return only the query, do not add any other comment
 """
 )
 
