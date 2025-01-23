@@ -1,4 +1,4 @@
-# KGBot - RAG - BackEnd
+# Gen²KGBot - Generic Generative Knowledge Graph Robot
 
 ## General information
 
@@ -21,8 +21,9 @@ conda env remove --name kgbot-rag-backend
 ```
 
 3) At the root of the repository, create the follwing directories:
-    - `logs`: will store the log files produces while running the application (see configuration in `app/config/logging.yml`)
-    - `data`: will store the descriptions extracted from the knowledge graph, as well as the embeddings thereof.
+    - `logs`: log files produces while running the application (see configuration in `app/config/logging.yml`)
+    - `data`: descriptions extracted from the knowledge graph, as well as the embeddings thereof.
+    - `tmp`: files containing the descripton of the knowledge graph
 
 4) Install the [Ollama](https://github.com/ollama/ollama) application for your platform and, as a startup config, insttall the models `ollama3.2:1b`, `nomic-embed-text`
 ```sh
@@ -60,8 +61,7 @@ python -m app.core.scenarios.scenario_1.scenario_1
 Custom questions are allowed and can be asked with the following command:
 
 ````bash
-python -m app.core.scenarios.scenario_1.scenario_1
- -c "What is the name of protene X"
+python -m app.core.scenarios.scenario_1.scenario_1 -c "What is the name of protene X"
 ````
 
 ## Project Structure
@@ -118,9 +118,6 @@ python -m app.core.scenarios.scenario_1.scenario_1
 │   │       ├── printing.py
 │   │       ├── sparql_toolkit.py
 │   │       └── utils.py
-│   ├── data
-│   ├── __init__.py
-│   ├── logs
 │   ├── notebooks
 │   │   ├── Construct_Schema_IDSM_1.ipynb
 │   │   ├── Construct_Schema_IDSM_2.ipynb
@@ -128,7 +125,10 @@ python -m app.core.scenarios.scenario_1.scenario_1
 │   │   └── utils
 │   │       ├── construct_util.py
 │   ├── tests
-│   └── tmp
+├── data
+├── __init__.py
+├── logs
+└── tmp
 ├── environment_mac.yml
 ├── environment_ubuntu.yml
 ├── environment_windows.yml
