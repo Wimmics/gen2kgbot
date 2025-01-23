@@ -131,6 +131,8 @@ def get_huggingface_key():
 def get_google_key():
     return os.getenv("GOOGLE_API_KEY")
 
+def get_deepseek_key():
+    return os.getenv("DEEPSEEK_API_KEY")
 
 def get_llm_from_config(scenario: str) -> BaseChatModel:
 
@@ -190,6 +192,18 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             max_retries=max_retries,
             api_key=get_google_key(),
             verbose=True,
+            model_kwargs=model_kwargs,
+        )
+    
+    elif model_type == "deepseek":
+        base_url = config[scenario]["seq2seq_llm"]["base_url"]
+        llm = ChatOpenAI(
+            temperature=temperature,
+            model=model_id,
+            max_retries=max_retries,
+            verbose=True,
+            openai_api_base=base_url,
+            openai_api_key=get_deepseek_key(),
             model_kwargs=model_kwargs,
         )
 
