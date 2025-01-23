@@ -9,5 +9,8 @@ When providing a SPARQL query:
 - Always base the query on the details provided in the prompt — do not create a query from scratch or offer a generic one.
 - Limit your response to one query, and only the query. Do not add any other comment nor information.
 - Return only the query, do not add any other comment
+
+Question:
+{question}
 """
 )

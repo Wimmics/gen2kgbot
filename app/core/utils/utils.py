@@ -4,6 +4,7 @@ import logging
 import logging.config
 import os
 from pathlib import Path
+import re
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -14,6 +15,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_chroma import Chroma
 import yaml
 from langgraph.graph.state import CompiledStateGraph
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.core.utils.printing import new_log
 
@@ -23,10 +25,14 @@ def setup_cli():
         description="Process the scenario with the predifined or custom question and configuration."
     )
     parser.add_argument("-c", "--custom", type=str, help="Provide a custom question.")
-    parser.add_argument("-p", "--params", type=str, help="Provide a custom configuration path.")
-    return parser.parse_args()
+    parser.add_argument(
+        "-p", "--params", type=str, help="Provide a custom configuration path."
+    )
+    globals()["args"] = parser.parse_args()
 
-args = setup_cli()
+
+args = None
+
 
 def setup_logger(package: str = __package__, file: str = __file__) -> logging.Logger:
     """
@@ -78,11 +84,13 @@ logger = setup_logger(__package__, __file__)
 
 
 def get_yml_config():
-    if args.params:
-        config_path = args.params
-    else:
-        # # Resolve the path to the configuration file
-        config_path = Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+    # if args.params:
+    #     config_path = args.params
+    # else:
+    # # Resolve the path to the configuration file
+    config_path = (
+        Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+    )
 
     # # Configure logging
     with open(config_path, "rt") as f:
@@ -119,6 +127,10 @@ def get_ovh_key():
 
 def get_huggingface_key():
     return os.getenv("HF_TOKEN")
+
+def get_google_key():
+    return os.getenv("GOOGLE_API_KEY")
+
 
 def get_llm_from_config(scenario: str) -> BaseChatModel:
 
@@ -162,14 +174,24 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
 
     elif model_type == "hugface":
         hfe = HuggingFaceEndpoint(
-                repo_id=model_id,
-                task="text-generation",
-                max_new_tokens=512,
-                do_sample=False,
-                repetition_penalty=1.03,
-            )
+            repo_id=model_id,
+            task="text-generation",
+            max_new_tokens=512,
+            do_sample=False,
+            repetition_penalty=1.03,
+        )
 
         llm = ChatHuggingFace(llm=hfe, verbose=True)
+
+    elif model_type == "google":
+        llm = ChatGoogleGenerativeAI(
+            model=model_id,
+            temperature=temperature,
+            max_retries=max_retries,
+            api_key=get_google_key(),
+            verbose=True,
+            model_kwargs=model_kwargs,
+        )
 
     logger.info(f"LLM initialized : {model_type} - {model_id} ")
     globals()["current_llm"] = llm
@@ -270,7 +292,8 @@ def main(graph: CompiledStateGraph):
     Process a predefined or custom question, invokes a graph with the question, and logs the messages returned by the graph.
     """
 
-    if args.custom:
+    if args != None and args.custom:
+
         question = args.custom
     else:
         question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"
@@ -304,3 +327,7 @@ def langsmith_setup():
 
     # #Check if the client was initialized
     print(f"Langchain client was initialized: {client}")
+
+
+def find_sparql_queries(message: str):
+    return re.findall("```sparql(.*)```", message, re.DOTALL)

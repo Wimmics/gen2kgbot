@@ -22,7 +22,7 @@ from app.core.utils.construct_util import (
 from app.core.utils.graph_nodes import interpret_csv_query_results, preprocess_question, select_similar_classes
 from app.core.utils.graph_state import InputState, OverAllState
 from app.core.utils.preprocessing import extract_relevant_entities_spacy
-from app.core.utils.utils import get_llm_from_config, get_class_vector_db_from_config, main, setup_logger
+from app.core.utils.utils import find_sparql_queries, get_llm_from_config, get_class_vector_db_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 from langgraph.constants import Send
@@ -55,7 +55,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results",END]:
 
 
 def verify_query_router(state: OverAllState) -> Literal["run_query","create_retry_prompt",END]:
-    if state["last_generated_query"] != None:
+    if "last_generated_query" in state:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
     else:
@@ -142,16 +142,14 @@ def generate_query(state: OverAllState):
 
 
 def verify_query(state: OverAllState) -> OverAllState:
-    queries = re.findall(
-        "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
-    )
+    queries = find_sparql_queries(state["messages"][-1].content)
+    
     if len(queries) == 0:
         return {
             "number_of_tries": state["number_of_tries"] + 1,
             "messages": [
                 HumanMessage("No properly formatted SPARQL query was generated.")
             ],
-            "last_generated_query": None,
         }
 
     try:
@@ -229,7 +227,7 @@ graph = s5_builder.compile()
 
 
 def run_scenario(question: str):
-    return graph.invoke({"messages": HumanMessage(question)})
+    return graph.invoke(input={"initial_question": question})
 
 
 if __name__ == "__main__":

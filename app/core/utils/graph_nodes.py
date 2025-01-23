@@ -43,7 +43,7 @@ def interpret_csv_query_results(state: OverAllState):
     llm = get_current_llm()
     result = llm.invoke(
         interpret_csv_query_results_prompt.format(
-            question=state["initial_question"], results=csv_results_message
+            question=state["initial_question"], results=csv_results_message.content
         )
     )
     return {"messages": result, "results_interpretation": result}

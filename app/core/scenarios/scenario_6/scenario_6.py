@@ -21,6 +21,7 @@ from app.core.utils.graph_nodes import (
 )
 from app.core.utils.graph_state import InputState, OverAllState
 from app.core.utils.utils import (
+    find_sparql_queries,
     get_llm_from_config,
     get_query_vector_db_from_config,
     main,
@@ -57,7 +58,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
 def verify_query_router(
     state: OverAllState,
 ) -> Literal["run_query", "create_retry_prompt", END]:
-    if state["last_generated_query"] != None:
+    if "last_generated_query" in state:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
     else:
@@ -165,16 +166,14 @@ def generate_query(state: OverAllState):
 
 
 def verify_query(state: OverAllState) -> OverAllState:
-    queries = re.findall(
-        "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
-    )
+    queries = find_sparql_queries(state["messages"][-1].content)
+    
     if len(queries) == 0:
         return {
             "number_of_tries": state["number_of_tries"] + 1,
             "messages": [
                 HumanMessage("No properly formatted SPARQL query was generated.")
             ],
-            "last_generated_query": None,
         }
 
     try:
@@ -183,7 +182,6 @@ def verify_query(state: OverAllState) -> OverAllState:
         return {
             "number_of_tries": state["number_of_tries"] + 1,
             "messages": [AIMessage(f"{e}")],
-            "last_generated_query": None,
         }
 
     return {"last_generated_query": queries[0]}
@@ -275,7 +273,7 @@ graph = s6_builder.compile()
 
 
 def run_scenario(question: str):
-    return graph.invoke({"messages": HumanMessage(question)})
+    return graph.invoke(input={"initial_question": question})
 
 
 if __name__ == "__main__":

@@ -2,12 +2,15 @@ import re
 from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-from app.core.scenarios.scenario_3.utils.prompt import system_prompt, interpreter_prompt
-from app.core.utils.graph_nodes import interpret_csv_query_results, select_similar_classes
+from app.core.scenarios.scenario_3.utils.prompt import system_prompt_template
+from app.core.utils.graph_nodes import (
+    interpret_csv_query_results,
+    select_similar_classes,
+)
 from app.core.utils.graph_state import InputState, OverAllState
 from app.core.utils.utils import (
+    find_sparql_queries,
     get_llm_from_config,
-    get_class_vector_db_from_config,
     main,
     setup_logger,
 )
@@ -40,7 +43,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
 
 
 def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
-    if state["messages"][-1].content.find("```sparql") != -1:
+    if len(find_sparql_queries(state["messages"][-1].content)) > 0:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
     else:
@@ -51,37 +54,27 @@ def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
         return END
 
 
-# Node
-def create_prompt(state: OverAllState):
-    result = [system_prompt] + state["messages"]
-    state["messages"].clear()
-    logger.info(f"prompt created successfuly.")
-    return {"messages": result}
-
-
 def generate_query(state: OverAllState):
-    result = llm.invoke(state["messages"])
+    result = [
+        HumanMessage(state["initial_question"]),
+        llm.invoke(system_prompt_template.format(question=state["initial_question"])),
+    ]
     return {"messages": result}
 
 
 def run_query(state: OverAllState):
 
-    query = re.findall(
-        "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
-    )[0]
+    query = find_sparql_queries(state["messages"][-1].content)[0]
 
     try:
         csv_result = run_sparql_query(query=query)
-        return {"messages": csv_result}
+        return {"messages": csv_result, "last_generated_query": query}
     except ParserError as e:
         logger.warning(f"A parsing error occurred when running the query: {e}")
         return {"messages": AIMessage("Error when running the query")}
     except Exception as e:
         logger.warning(f"An error occurred when running the query: {e}")
-        return {
-            "messages": AIMessage("Error when running the query"),
-            "last_generated_query": query,
-        }
+        return {"messages": AIMessage("Error when running the query")}
 
 
 s3_builder = StateGraph(
@@ -90,14 +83,12 @@ s3_builder = StateGraph(
 
 
 s3_builder.add_node("select_similar_classes", select_similar_classes)
-s3_builder.add_node("create_prompt", create_prompt)
 s3_builder.add_node("generate_query", generate_query)
 s3_builder.add_node("run_query", run_query)
 s3_builder.add_node("interpret_results", interpret_csv_query_results)
 
 s3_builder.add_edge(START, "select_similar_classes")
-s3_builder.add_edge("select_similar_classes", "create_prompt")
-s3_builder.add_edge("create_prompt", "generate_query")
+s3_builder.add_edge("select_similar_classes", "generate_query")
 s3_builder.add_conditional_edges("generate_query", generate_query_router)
 s3_builder.add_conditional_edges("run_query", run_query_router)
 s3_builder.add_edge("interpret_results", END)
@@ -106,7 +97,7 @@ graph = s3_builder.compile()
 
 
 def run_scenario(question: str):
-    return graph.invoke({"messages": HumanMessage(question)})
+    return graph.invoke(input={"initial_question": question})
 
 
 if __name__ == "__main__":

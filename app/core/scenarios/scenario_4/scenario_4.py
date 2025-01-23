@@ -10,7 +10,7 @@ from app.core.scenarios.scenario_4.utils.prompt import system_prompt
 from app.core.utils.construct_util import format_class_graph_file, get_context_class, get_empty_graph_with_prefixes, tmp_directory
 from app.core.utils.graph_nodes import interpret_csv_query_results, preprocess_question, select_similar_classes
 from app.core.utils.graph_state import InputState, OverAllState
-from app.core.utils.utils import get_class_vector_db_from_config, get_llm_from_config, main, setup_logger
+from app.core.utils.utils import find_sparql_queries, get_class_vector_db_from_config, get_llm_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 from langgraph.constants import Send
@@ -37,7 +37,9 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results",END]:
 
 
 def generate_query_router(state: OverAllState) -> Literal["run_query",END]:
-    if state["messages"][-1].content.find("```sparql") != -1:
+    generated_queries = find_sparql_queries(state["messages"][-1].content)
+
+    if len(generated_queries) > 0:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
     else:
@@ -122,9 +124,7 @@ def generate_query(state: OverAllState):
 
 def run_query(state: OverAllState):
 
-    query = re.findall(
-        "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
-    )[0]
+    query = find_sparql_queries(state["messages"][-1].content)[0]
 
     try:
         csv_result = run_sparql_query(query=query)
@@ -162,7 +162,7 @@ s4_builder.add_edge("interpret_results", END)
 graph = s4_builder.compile()
 
 def run_scenario(question: str):
-    return graph.invoke({"messages": HumanMessage(question)})
+    return graph.invoke(input={"initial_question": question})
 
 if __name__ == "__main__":
     main(graph)

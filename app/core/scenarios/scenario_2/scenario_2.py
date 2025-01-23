@@ -5,7 +5,7 @@ from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_2.utils.prompt import system_prompt_template
 from app.core.utils.graph_nodes import interpret_csv_query_results
 from app.core.utils.graph_state import InputState, OverAllState
-from app.core.utils.utils import get_llm_from_config, main, setup_logger
+from app.core.utils.utils import find_sparql_queries, get_llm_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 
@@ -28,7 +28,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
 
 
 def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
-    if state["messages"][-1].content.find("```sparql") != -1:
+    if len(find_sparql_queries(state["messages"][-1].content)) > 0 :
         logger.info(f"query generation task completed successfully")
         return "run_query"
     else:
@@ -50,9 +50,7 @@ def generate_query(state: OverAllState):
 
 
 def run_query(state: OverAllState):
-    query = re.findall(
-        "```sparql\n(.*)\n```", state["messages"][-1].content, re.DOTALL
-    )[0]
+    query = find_sparql_queries(state["messages"][-1].content)[0]
     logger.info(f"Executing SPARQL query extracted from llm's response: \n{query}")
 
     try:
@@ -83,7 +81,7 @@ graph = s2_builder.compile()
 
 
 def run_scenario(question: str):
-    return graph.invoke({"messages": HumanMessage(question)})
+    return graph.invoke({"initial_question": question})
 
 
 if __name__ == "__main__":

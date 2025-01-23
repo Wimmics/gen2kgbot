@@ -24,7 +24,7 @@ s1_builder.add_edge("Interpret_results", END)
 graph = s1_builder.compile()
 
 def run_scenario(question: str):
-    return graph.invoke({"messages": HumanMessage(question)})
+    return graph.invoke(input={"initial_question": question})
 
 if __name__ == "__main__":
     main(graph)
