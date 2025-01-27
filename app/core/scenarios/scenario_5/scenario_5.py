@@ -45,7 +45,7 @@ MAX_NUMBER_OF_TRIES: int = 3
 # Router
 
 
-def run_query_router(state: OverAllState) -> Literal["interpret_results",END]:
+def run_query_router(state: OverAllState) -> Literal["interpret_results","__end__"]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
         logger.info(f"query run succesfully and it yielded")
         return "interpret_results"
@@ -54,7 +54,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results",END]:
         return END
 
 
-def verify_query_router(state: OverAllState) -> Literal["run_query","create_retry_prompt",END]:
+def verify_query_router(state: OverAllState) -> Literal["run_query","create_retry_prompt","__end__"]:
     if "last_generated_query" in state:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"

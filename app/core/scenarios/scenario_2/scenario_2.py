@@ -23,7 +23,7 @@ llm = get_llm_from_config(SCENARIO)
 
 
 # Router
-def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
+def run_query_router(state: OverAllState) -> Literal["interpret_results", "__end__"]:
     if state["messages"][-1].content.find(SPARQL_QUERY_EXEC_ERROR) == -1:
         logger.info(f"query executed successfully")
         return "interpret_results"
@@ -32,7 +32,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
         return END
 
 
-def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
+def generate_query_router(state: OverAllState) -> Literal["run_query", "__end__"]:
     if len(find_sparql_queries(state["messages"][-1].content)) > 0:
         logger.info(f"query generation task completed successfully")
         return "run_query"
