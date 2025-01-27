@@ -38,10 +38,10 @@ def select_similar_classes(state: OverAllState) -> OverAllState:
 
     return {"messages": AIMessage(result), "selected_classes": retrieved_documents}
 
-def interpret_csv_query_results(state: OverAllState):
+async def interpret_csv_query_results(state: OverAllState):
     csv_results_message = state["messages"][-1]
     llm = get_current_llm()
-    result = llm.invoke(
+    result = await llm.ainvoke(
         interpret_csv_query_results_prompt.format(
             question=state["initial_question"], results=csv_results_message.content
         )

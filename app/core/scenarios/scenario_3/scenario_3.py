@@ -54,12 +54,11 @@ def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
         return END
 
 
-def generate_query(state: OverAllState):
-    result = [
-        HumanMessage(state["initial_question"]),
-        llm.invoke(system_prompt_template.format(question=state["initial_question"])),
-    ]
-    return {"messages": result}
+async def generate_query(state: OverAllState):
+    result = await llm.ainvoke(
+        system_prompt_template.format(question=state["initial_question"])
+    )
+    return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
 def run_query(state: OverAllState):

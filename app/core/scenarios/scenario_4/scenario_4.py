@@ -117,8 +117,8 @@ def create_prompt(state: OverAllState) -> OverAllState:
     }
 
 
-def generate_query(state: OverAllState):
-    result = llm.invoke(state["query_generation_prompt"])
+async def generate_query(state: OverAllState):
+    result = await llm.ainvoke(state["query_generation_prompt"])
     return {"messages": result}
 
 

@@ -5,7 +5,12 @@ from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_2.utils.prompt import system_prompt_template
 from app.core.utils.graph_nodes import interpret_csv_query_results
 from app.core.utils.graph_state import InputState, OverAllState
-from app.core.utils.utils import find_sparql_queries, get_llm_from_config, main, setup_logger
+from app.core.utils.utils import (
+    find_sparql_queries,
+    get_llm_from_config,
+    main,
+    setup_logger,
+)
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 
@@ -28,7 +33,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", END]:
 
 
 def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
-    if len(find_sparql_queries(state["messages"][-1].content)) > 0 :
+    if len(find_sparql_queries(state["messages"][-1].content)) > 0:
         logger.info(f"query generation task completed successfully")
         return "run_query"
     else:
@@ -40,13 +45,12 @@ def generate_query_router(state: OverAllState) -> Literal["run_query", END]:
 
 
 # Node
-def generate_query(state: OverAllState):
+async def generate_query(state: OverAllState):
     logger.info(f"Question: {state["initial_question"]}")
-    result = [
-        HumanMessage(state["initial_question"]),
-        llm.invoke(system_prompt_template.format(question=state["initial_question"])),
-    ]
-    return {"messages": result}
+    result = await llm.ainvoke(
+        system_prompt_template.format(question=state["initial_question"])
+    )
+    return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
 def run_query(state: OverAllState):

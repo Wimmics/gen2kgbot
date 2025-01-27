@@ -11,20 +11,28 @@ SCENARIO = "scenario_1"
 
 llm = get_llm_from_config(SCENARIO)
 
-def interpret_results(state: OverAllState):
-    logger.info(f"Question: {state["initial_question"]}")
-    result = [HumanMessage(state["initial_question"]), llm.invoke(system_prompt_template.format(question =  state["initial_question"]))]
-    return {"messages": result}
 
-s1_builder = StateGraph(state_schema=OverAllState, input=InputState, output=OverAllState)
+async def interpret_results(state: OverAllState):
+    logger.info(f"Question: {state["initial_question"]}")
+    result = await llm.ainvoke(
+        system_prompt_template.format(question=state["initial_question"])
+    )
+    return {"messages": [HumanMessage(state["initial_question"]), result]}
+
+
+s1_builder = StateGraph(
+    state_schema=OverAllState, input=InputState, output=OverAllState
+)
 s1_builder.add_node("Interpret_results", interpret_results)
 s1_builder.add_edge(START, "Interpret_results")
 s1_builder.add_edge("Interpret_results", END)
 
 graph = s1_builder.compile()
 
+
 def run_scenario(question: str):
     return graph.invoke(input={"initial_question": question})
+
 
 if __name__ == "__main__":
     main(graph)

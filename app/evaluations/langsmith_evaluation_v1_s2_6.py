@@ -28,11 +28,11 @@ def start_evaluation(client: Client, dataset_name: str):
     experiment_results = client.evaluate(
         run_example,
         data=dataset_name,
-        evaluators=[evaluate_provide_query,evaluate_provide_answer],
-        experiment_prefix=f"genkgbot-scenario_{scenario}-llama3.2:1b",
+        evaluators=[evaluate_provide_query],
+        experiment_prefix=f"genkgbot-scenario_{scenario}-deepseek-reasoner",
         num_repetitions=1,
         max_concurrency=4,
-        metadata= {"scenario": f"{scenario}", "llm_model":"llama3.2:1b"}
+        metadata= {"scenario": f"{scenario}", "llm_model":"deepseek-reasoner"}
     )
     # pandas_results: DataFrame = experiment_results.to_pandas()
     # print(pandas_results.to_string())
@@ -42,10 +42,10 @@ import importlib
 scenario = -1
 
 def main():
-    for scenario in range(2,3):
+    for scenario in range(6,7):
         globals()["scenario"] = scenario
         client = Client()
-        dataset_name = "GenKGBot Evaluation v1"
+        dataset_name = "GenKGBot Evaluation v1_1"
         start_evaluation(client=client, dataset_name=dataset_name)
 
 
