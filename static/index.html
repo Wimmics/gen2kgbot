@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gen²KGBot</title>
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+</head>
+
+<body class="blue-grey lighten-5">
+    <div class="container">
+        <h1 class="center-align">Gen²KGBot - Scenario 6</h1>
+        <div class="row">
+            <div class="input-field col s9">
+                <input type="text" id="message-input" class="validate" placeholder="Type your message here" value="What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?">
+            </div>
+            <div class="col s3">
+                <button class="btn waves-effect waves-light" onclick="sendMessage()">Ask Question</button>
+            </div>
+        </div>
+        <div id="data-container" class="section">
+            <!-- Data will be appended here -->
+        </div>
+    </div>
+
+    <script>
+        let evtSource;
+
+        function sendMessage() {
+            const message = document.getElementById("message-input").value;
+            if (evtSource) {
+                evtSource.close();
+            }
+            evtSource = new EventSource(`http://localhost:8000/chat_stream/${encodeURIComponent(message)}`);
+
+            evtSource.onmessage = function (event) {
+                const dataContainer = document.getElementById("data-container");
+                dataContainer.innerHTML += event.data;  // Appending token by token
+            };
+
+            evtSource.onerror = function (err) {
+                console.error("EventSource failed. ReadyState:", evtSource.readyState, "Error:", err);
+                evtSource.close();
+            };
+        }
+    </script>
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+
+</html>
