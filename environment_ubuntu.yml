@@ -1,4 +1,4 @@
-name: genkgbot
+name: gen2kgbot
 channels:
   - defaults
   - conda-forge
@@ -59,7 +59,6 @@ dependencies:
   - tornado=6.4.2=py312h5eee18b_0
   - traitlets=5.14.3=pyhd8ed1ab_1
   - typing_extensions=4.12.2=pyha770c72_1
-  - tzdata=2024b=h04d1e81_0
   - wcwidth=0.2.13=pyhd8ed1ab_1
   - wheel=0.44.0=py312h06a4308_0
   - xz=5.4.6=h5eee18b_1
@@ -96,25 +95,35 @@ dependencies:
       - deprecated==1.2.15
       - distro==1.9.0
       - durationpy==0.9
-      - https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0.tar.gz
-      - https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0.tar.gz
       - faiss-gpu-cu11==1.9.0.post1
       - fastapi==0.115.6
       - filelock==3.16.1
+      - filetype==1.2.0
       - flatbuffers==24.12.23
       - frozenlist==1.5.0
       - fsspec==2024.12.0
+      - google-ai-generativelanguage==0.6.15
+      - google-api-core==2.24.0
+      - google-api-python-client==2.159.0
       - google-auth==2.37.0
+      - google-auth-httplib2==0.2.0
+      - google-generativeai==0.8.4
       - googleapis-common-protos==1.66.0
       - greenlet==3.1.1
       - grpcio==1.69.0
+      - grpcio-status==1.69.0
+      - grpcio-tools==1.69.0
       - h11==0.14.0
+      - h2==4.1.0
+      - hpack==4.0.0
       - httpcore==1.0.7
+      - httplib2==0.22.0
       - httptools==0.6.4
       - httpx==0.27.2
       - httpx-sse==0.4.0
       - huggingface-hub==0.27.1
       - humanfriendly==10.0
+      - hyperframe==6.0.1
       - idna==3.10
       - importlib-resources==6.5.2
       - jinja2==3.1.5
@@ -128,8 +137,11 @@ dependencies:
       - langchain-chroma==0.1.4
       - langchain-community==0.3.13
       - langchain-core==0.3.28
+      - langchain-google-genai==2.0.9
+      - langchain-huggingface==0.1.2
       - langchain-ollama==0.2.2
       - langchain-openai==0.2.14
+      - langchain-qdrant==0.2.0
       - langchain-text-splitters==0.3.4
       - langcodes==3.5.0
       - langgraph==0.2.60
@@ -151,10 +163,23 @@ dependencies:
       - multidict==6.1.0
       - murmurhash==1.0.11
       - mypy-extensions==1.0.0
+      - networkx==3.4.2
       - nmslib-metabrainz==2.1.3
       - numpy==1.26.4
       - nvidia-cublas-cu11==11.11.3.6
+      - nvidia-cublas-cu12==12.4.5.8
+      - nvidia-cuda-cupti-cu12==12.4.127
+      - nvidia-cuda-nvrtc-cu12==12.4.127
       - nvidia-cuda-runtime-cu11==11.8.89
+      - nvidia-cuda-runtime-cu12==12.4.127
+      - nvidia-cudnn-cu12==9.1.0.70
+      - nvidia-cufft-cu12==11.2.1.3
+      - nvidia-curand-cu12==10.3.5.147
+      - nvidia-cusolver-cu12==11.6.1.9
+      - nvidia-cusparse-cu12==12.3.1.170
+      - nvidia-nccl-cu12==2.21.5
+      - nvidia-nvjitlink-cu12==12.4.127
+      - nvidia-nvtx-cu12==12.4.127
       - oauthlib==3.2.2
       - ollama==0.4.5
       - onnxruntime==1.20.1
@@ -171,9 +196,13 @@ dependencies:
       - opentelemetry-util-http==0.50b0
       - orjson==3.10.13
       - overrides==7.7.0
+      - pandas==2.2.3
+      - pillow==11.1.0
+      - portalocker==2.10.1
       - posthog==3.7.5
       - preshed==3.0.9
       - propcache==0.2.1
+      - proto-plus==1.25.0
       - protobuf==5.29.2
       - psutil==6.1.1
       - pyasn1==0.6.1
@@ -189,7 +218,9 @@ dependencies:
       - pyproject-hooks==1.2.0
       - pysbd==0.3.4
       - python-dotenv==1.0.1
+      - pytz==2024.2
       - pyyaml==6.0.2
+      - qdrant-client==1.12.2
       - rdflib==7.1.1
       - regex==2024.11.6
       - requests==2.32.3
@@ -197,9 +228,11 @@ dependencies:
       - requests-toolbelt==1.0.0
       - rich==13.9.4
       - rsa==4.9
+      - safetensors==0.5.2
       - scikit-learn==1.6.0
       - scipy==1.14.1
       - scispacy==0.5.5
+      - sentence-transformers==3.3.1
       - shellingham==1.5.4
       - smart-open==7.1.0
       - sniffio==1.3.1
@@ -212,15 +245,18 @@ dependencies:
       - sse-starlette==2.1.3
       - starlette==0.41.3
       - structlog==24.4.0
-      - sympy==1.13.3
+      - sympy==1.13.1
       - tenacity==8.5.0
       - thinc==8.2.5
       - threadpoolctl==3.5.0
       - tiktoken==0.8.0
-      - tokenizers==0.20.3
+      - torch==2.5.1
       - tqdm==4.67.1
+      - triton==3.1.0
       - typer==0.15.1
       - typing-inspect==0.9.0
+      - tzdata==2025.1
+      - uritemplate==4.1.1
       - urllib3==2.3.0
       - uvicorn==0.34.0
       - uvloop==0.21.0
@@ -234,3 +270,5 @@ dependencies:
       - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_lg-0.5.4.tar.gz
       - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_bionlp13cg_md-0.5.4.tar.gz
       - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_craft_md-0.5.4.tar.gz
+      - https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0.tar.gz
+      - https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0.tar.gz

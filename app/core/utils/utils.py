@@ -160,6 +160,19 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             verbose=True,
             model_kwargs=model_kwargs,
         )
+    
+    elif model_type == "ollama-server":
+        base_url = config[scenario]["seq2seq_llm"]["base_url"]
+
+        # TODO Hundle Ollama Servers with Auth
+        llm = ChatOllama(
+            temperature=temperature,
+            model=model_id,
+            max_retries=max_retries,
+            verbose=True,
+            model_kwargs=model_kwargs,
+            auth=("username","password")
+        )
 
     elif model_type == "ovh":
         base_url = config[scenario]["seq2seq_llm"]["base_url"]
