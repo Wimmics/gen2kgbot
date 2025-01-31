@@ -20,7 +20,7 @@ from app.core.utils.construct_util import (
     tmp_directory,
 )
 from app.core.utils.graph_nodes import interpret_csv_query_results, preprocess_question, select_similar_classes
-from app.core.utils.graph_state import InputState, OverAllState
+from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.preprocessing import extract_relevant_entities_spacy
 from app.core.utils.utils import find_sparql_queries, get_llm_from_config, get_class_vector_db_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
@@ -45,7 +45,7 @@ MAX_NUMBER_OF_TRIES: int = 3
 # Router
 
 
-def run_query_router(state: OverAllState) -> Literal["interpret_results","__end__"]:
+def run_query_router(state: OverallState) -> Literal["interpret_results","__end__"]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
         logger.info(f"query run succesfully and it yielded")
         return "interpret_results"
@@ -54,7 +54,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results","__end_
         return END
 
 
-def verify_query_router(state: OverAllState) -> Literal["run_query","create_retry_prompt","__end__"]:
+def verify_query_router(state: OverallState) -> Literal["run_query","create_retry_prompt","__end__"]:
     if "last_generated_query" in state:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
@@ -71,7 +71,7 @@ def verify_query_router(state: OverAllState) -> Literal["run_query","create_retr
 
 
 def get_context_class_router(
-    state: OverAllState,
+    state: OverallState,
 ) -> Literal["get_context_class_from_cache", "get_context_class_from_kg"]:
 
     next_nodes = []
@@ -93,17 +93,17 @@ def get_context_class_router(
 # Node
 
 
-def get_context_class_from_cache(cls_path: str) -> OverAllState:
+def get_context_class_from_cache(cls_path: str) -> OverallState:
     with open(cls_path) as f:
         return {"selected_classes_context": ["\n".join(f.readlines())]}
 
 
-def get_context_class_from_kg(cls: str) -> OverAllState:
+def get_context_class_from_kg(cls: str) -> OverallState:
     graph_ttl = get_context_class(cls)
     return {"selected_classes_context": [graph_ttl]}
 
 
-def create_prompt(state: OverAllState) -> OverAllState:
+def create_prompt(state: OverallState) -> OverallState:
 
     merged_graph = get_empty_graph_with_prefixes()
 
@@ -136,12 +136,12 @@ def create_prompt(state: OverAllState) -> OverAllState:
     }
 
 
-async def generate_query(state: OverAllState):
+async def generate_query(state: OverallState):
     result = await llm.ainvoke(state["query_generation_prompt"])
     return {"messages": result}
 
 
-def verify_query(state: OverAllState) -> OverAllState:
+def verify_query(state: OverallState) -> OverallState:
     queries = find_sparql_queries(state["messages"][-1].content)
     
     if len(queries) == 0:
@@ -163,7 +163,7 @@ def verify_query(state: OverAllState) -> OverAllState:
     return {"last_generated_query": queries[0]}
 
 
-def create_retry_prompt(state: OverAllState) -> OverAllState:
+def create_retry_prompt(state: OverallState) -> OverallState:
     logger.info(f"retry_prompt created successfuly.")
 
     query_regeneration_prompt = (
@@ -180,7 +180,7 @@ def create_retry_prompt(state: OverAllState) -> OverAllState:
     }
 
 
-def run_query(state: OverAllState):
+def run_query(state: OverallState):
 
     query = state["last_generated_query"]
 
@@ -195,7 +195,7 @@ def run_query(state: OverAllState):
         return {"messages": AIMessage("Error when running the query")}
 
 
-s5_builder = StateGraph(state_schema=OverAllState, input=InputState, output=OverAllState)
+s5_builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 s5_builder.add_node("preprocess_question", preprocess_question)
 s5_builder.add_node("select_similar_classes", select_similar_classes)

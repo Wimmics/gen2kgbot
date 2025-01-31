@@ -1,4 +1,4 @@
-from app.core.utils.graph_state import InputState, OverAllState
+from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.preprocessing import extract_relevant_entities_spacy
 from app.core.utils.utils import get_class_vector_db_from_config, get_current_llm, setup_logger
 from langchain_core.messages import AIMessage
@@ -7,7 +7,7 @@ from app.core.utils.prompts import interpret_csv_query_results_prompt
 logger = setup_logger(__package__, __file__)
 
 
-def preprocess_question(input: InputState) -> OverAllState:
+def preprocess_question(input: InputState) -> OverallState:
     result = AIMessage(
         f"{",".join(extract_relevant_entities_spacy(input["initial_question"]))}"
     )
@@ -18,7 +18,7 @@ def preprocess_question(input: InputState) -> OverAllState:
         "number_of_tries": 0,
     }
 
-def select_similar_classes(state: OverAllState) -> OverAllState:
+def select_similar_classes(state: OverallState) -> OverallState:
 
     db = get_class_vector_db_from_config()
 
@@ -38,7 +38,7 @@ def select_similar_classes(state: OverAllState) -> OverAllState:
 
     return {"messages": AIMessage(result), "selected_classes": retrieved_documents}
 
-async def interpret_csv_query_results(state: OverAllState):
+async def interpret_csv_query_results(state: OverallState):
     csv_results_message = state["messages"][-1]
     llm = get_current_llm()
     result = await llm.ainvoke(

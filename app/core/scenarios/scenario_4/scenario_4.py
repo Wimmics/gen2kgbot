@@ -18,7 +18,7 @@ from app.core.utils.graph_nodes import (
     preprocess_question,
     select_similar_classes,
 )
-from app.core.utils.graph_state import InputState, OverAllState
+from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
     find_sparql_queries,
     get_class_vector_db_from_config,
@@ -42,7 +42,7 @@ llm = get_llm_from_config(SCENARIO)
 # Router
 
 
-def run_query_router(state: OverAllState) -> Literal["interpret_results", "__end__"]:
+def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
         logger.info(f"query run succesfully and it yielded")
         return "interpret_results"
@@ -51,7 +51,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", "__end
         return END
 
 
-def generate_query_router(state: OverAllState) -> Literal["run_query", "__end__"]:
+def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
     generated_queries = find_sparql_queries(state["messages"][-1].content)
 
     if len(generated_queries) > 0:
@@ -66,7 +66,7 @@ def generate_query_router(state: OverAllState) -> Literal["run_query", "__end__"
 
 
 def get_context_class_router(
-    state: OverAllState,
+    state: OverallState,
 ) -> Literal["get_context_class_from_cache", "get_context_class_from_kg"]:
 
     next_nodes = []
@@ -88,17 +88,17 @@ def get_context_class_router(
 # Node
 
 
-def get_context_class_from_cache(cls_path: str) -> OverAllState:
+def get_context_class_from_cache(cls_path: str) -> OverallState:
     with open(cls_path) as f:
         return {"selected_classes_context": ["\n".join(f.readlines())]}
 
 
-def get_context_class_from_kg(cls: str) -> OverAllState:
+def get_context_class_from_kg(cls: str) -> OverallState:
     graph_ttl = get_context_class(cls)
     return {"selected_classes_context": [graph_ttl]}
 
 
-def create_prompt(state: OverAllState) -> OverAllState:
+def create_prompt(state: OverallState) -> OverallState:
 
     merged_graph = get_empty_graph_with_prefixes()
 
@@ -131,12 +131,12 @@ def create_prompt(state: OverAllState) -> OverAllState:
     }
 
 
-async def generate_query(state: OverAllState):
+async def generate_query(state: OverallState):
     result = await llm.ainvoke(state["query_generation_prompt"])
     return {"messages": result}
 
 
-def run_query(state: OverAllState):
+def run_query(state: OverallState):
 
     query = find_sparql_queries(state["messages"][-1].content)[0]
 
@@ -152,7 +152,7 @@ def run_query(state: OverAllState):
 
 
 s4_builder = StateGraph(
-    state_schema=OverAllState, input=InputState, output=OverAllState
+    state_schema=OverallState, input=InputState, output=OverallState
 )
 
 s4_builder.add_node("preprocess_question", preprocess_question)

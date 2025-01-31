@@ -7,7 +7,7 @@ from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     select_similar_classes,
 )
-from app.core.utils.graph_state import InputState, OverAllState
+from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
     find_sparql_queries,
     get_llm_from_config,
@@ -24,7 +24,7 @@ SCENARIO = "scenario_3"
 llm = get_llm_from_config(SCENARIO)
 
 
-def run_query_router(state: OverAllState) -> Literal["interpret_results", "__end__"]:
+def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
     """
     Check if the query was run successfully and routes to the next step accordingly.
 
@@ -42,7 +42,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", "__end
         return END
 
 
-def generate_query_router(state: OverAllState) -> Literal["run_query", "__end__"]:
+def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
     if len(find_sparql_queries(state["messages"][-1].content)) > 0:
         logger.info(f"query generated task completed with a generated SPARQL query")
         return "run_query"
@@ -54,14 +54,14 @@ def generate_query_router(state: OverAllState) -> Literal["run_query", "__end__"
         return END
 
 
-async def generate_query(state: OverAllState):
+async def generate_query(state: OverallState):
     result = await llm.ainvoke(
         system_prompt_template.format(question=state["initial_question"])
     )
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
-def run_query(state: OverAllState):
+def run_query(state: OverallState):
 
     query = find_sparql_queries(state["messages"][-1].content)[0]
 
@@ -77,7 +77,7 @@ def run_query(state: OverAllState):
 
 
 s3_builder = StateGraph(
-    state_schema=OverAllState, input=InputState, output=OverAllState
+    state_schema=OverallState, input=InputState, output=OverallState
 )
 
 

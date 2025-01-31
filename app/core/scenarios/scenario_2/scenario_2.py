@@ -4,7 +4,7 @@ from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_2.utils.prompt import system_prompt_template
 from app.core.utils.graph_nodes import interpret_csv_query_results
-from app.core.utils.graph_state import InputState, OverAllState
+from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
     find_sparql_queries,
     get_llm_from_config,
@@ -23,7 +23,7 @@ llm = get_llm_from_config(SCENARIO)
 
 
 # Router
-def run_query_router(state: OverAllState) -> Literal["interpret_results", "__end__"]:
+def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
     if state["messages"][-1].content.find(SPARQL_QUERY_EXEC_ERROR) == -1:
         logger.info(f"query executed successfully")
         return "interpret_results"
@@ -32,7 +32,7 @@ def run_query_router(state: OverAllState) -> Literal["interpret_results", "__end
         return END
 
 
-def generate_query_router(state: OverAllState) -> Literal["run_query", "__end__"]:
+def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
     if len(find_sparql_queries(state["messages"][-1].content)) > 0:
         logger.info(f"query generation task completed successfully")
         return "run_query"
@@ -45,7 +45,7 @@ def generate_query_router(state: OverAllState) -> Literal["run_query", "__end__"
 
 
 # Node
-async def generate_query(state: OverAllState):
+async def generate_query(state: OverallState):
     logger.info(f"Question: {state["initial_question"]}")
     result = await llm.ainvoke(
         system_prompt_template.format(question=state["initial_question"])
@@ -53,7 +53,7 @@ async def generate_query(state: OverAllState):
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
-def run_query(state: OverAllState):
+def run_query(state: OverallState):
     query = find_sparql_queries(state["messages"][-1].content)[0]
     logger.info(f"Executing SPARQL query extracted from llm's response: \n{query}")
 
@@ -69,7 +69,7 @@ def run_query(state: OverAllState):
 
 
 s2_builder = StateGraph(
-    state_schema=OverAllState, input=InputState, output=OverAllState
+    state_schema=OverallState, input=InputState, output=OverallState
 )
 
 s2_builder.add_node("generate_query", generate_query)

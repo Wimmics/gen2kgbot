@@ -3,7 +3,7 @@ from typing import Annotated, TypedDict
 from langgraph.graph import MessagesState
 from langchain_core.documents import Document
 
-class OverAllState(MessagesState):
+class OverallState(MessagesState):
     initial_question: str
     question_relevant_entities: list[str]
     selected_queries: str
