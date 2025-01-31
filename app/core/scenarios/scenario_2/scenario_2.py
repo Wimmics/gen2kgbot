@@ -85,7 +85,7 @@ graph = s2_builder.compile()
 
 
 def run_scenario(question: str):
-    return graph.invoke({"initial_question": question})
+    return graph.ainvoke({"initial_question": question})
 
 
 if __name__ == "__main__":

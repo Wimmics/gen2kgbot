@@ -320,12 +320,11 @@ def main(graph: CompiledStateGraph):
     """
 
     if args != None and args.custom:
-
         question = args.custom
     else:
         question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"
 
-    state = graph.invoke({"initial_question": question})
+    state = graph.ainvoke({"initial_question": question})
 
     new_log()
     for m in state["messages"]:

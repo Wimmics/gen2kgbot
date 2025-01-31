@@ -140,6 +140,7 @@ dependencies:
       - langchain-google-genai==2.0.9
       - langchain-huggingface==0.1.2
       - langchain-ollama==0.2.2
+      - langchain-deepseek-official==0.1.0
       - langchain-openai==0.2.14
       - langchain-qdrant==0.2.0
       - langchain-text-splitters==0.3.4
