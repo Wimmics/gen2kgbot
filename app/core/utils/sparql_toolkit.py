@@ -1,13 +1,12 @@
-
 import csv
-from io import StringIO
 from typing import List
 from rdflib import Graph
 from rdflib.exceptions import ParserError
 from rdflib.plugins.stores import sparqlstore
 
-endpoint_url_idsm = 'https://idsm.elixir-czech.cz/sparql/endpoint/idsm'
- 
+endpoint_url_idsm = "https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
+
+
 def run_sparql_query(query: str) -> List[csv.DictReader]:
     """
     queries a graph using a SPARQL statement and returns the results as a list of
@@ -19,7 +18,6 @@ def run_sparql_query(query: str) -> List[csv.DictReader]:
     Returns:
         List[csv.DictReader]: a list of dictionaries containing the results of the query.
     """
-
 
     try:
         _store = sparqlstore.SPARQLStore()

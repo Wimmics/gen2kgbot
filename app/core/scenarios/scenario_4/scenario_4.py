@@ -1,13 +1,12 @@
 import ast
 import asyncio
-import operator
 import os
-import re
 from typing import Literal
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph, START, END
 from rdflib import Graph
 from app.core.scenarios.scenario_4.utils.prompt import system_prompt
+from app.core.utils.cli_manager import find_sparql_queries
 from app.core.utils.construct_util import (
     format_class_graph_file,
     get_context_class,
@@ -21,8 +20,6 @@ from app.core.utils.graph_nodes import (
 )
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
-    find_sparql_queries,
-    get_class_vector_db_from_config,
     get_llm_from_config,
     main,
     setup_logger,
@@ -30,7 +27,6 @@ from app.core.utils.utils import (
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 from langgraph.constants import Send
-from langchain_core.documents import Document
 import time
 
 
@@ -45,10 +41,10 @@ llm = get_llm_from_config(SCENARIO)
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info(f"query run succesfully and it yielded")
+        logger.info("query run succesfully and it yielded")
         return "interpret_results"
     else:
-        logger.info(f"Ending the process")
+        logger.info("Ending the process")
         return END
 
 
@@ -56,13 +52,13 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
     generated_queries = find_sparql_queries(state["messages"][-1].content)
 
     if len(generated_queries) > 0:
-        logger.info(f"query generated task completed with a generated SPARQL query")
+        logger.info("query generated task completed with a generated SPARQL query")
         return "run_query"
     else:
         logger.warning(
-            f"query generated task completed without generating a proper SPARQL query"
+            "query generated task completed without generating a proper SPARQL query"
         )
-        logger.info(f"Ending the process")
+        logger.info("Ending the process")
         return END
 
 
@@ -117,7 +113,7 @@ def create_prompt(state: OverallState) -> OverallState:
     merged_graph_ttl = merged_graph.serialize(format="turtle")
 
     logger.info(f"Context graph saved locally in {tmp_directory}/context-{timestr}.ttl")
-    logger.info(f"prompt created successfuly.")
+    logger.info("prompt created successfuly.")
 
     query_generation_prompt = (
         f"{system_prompt.content}\n"

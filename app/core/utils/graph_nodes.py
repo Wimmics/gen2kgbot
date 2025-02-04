@@ -11,12 +11,13 @@ def preprocess_question(input: InputState) -> OverallState:
     result = AIMessage(
         f"{",".join(extract_relevant_entities_spacy(input["initial_question"]))}"
     )
-    logger.info(f"Preprocessing the question was done succesfully")
+    logger.info("Preprocessing the question was done succesfully")
     return {
         "messages": result,
         "initial_question": input["initial_question"],
         "number_of_tries": 0,
     }
+
 
 def select_similar_classes(state: OverallState) -> OverallState:
 
@@ -34,9 +35,10 @@ def select_similar_classes(state: OverallState) -> OverallState:
     for doc in retrieved_documents:
         result = f"{result}\n{doc.page_content}\n"
 
-    logger.info(f"Done with selecting some similar classes to help query generation")
+    logger.info("Done with selecting some similar classes to help query generation")
 
     return {"messages": AIMessage(result), "selected_classes": retrieved_documents}
+
 
 async def interpret_csv_query_results(state: OverallState):
     csv_results_message = state["messages"][-1]

@@ -1,33 +1,31 @@
 import ast
 import asyncio
-import operator
 import os
-import re
-from typing import Annotated, List, Literal
-from langgraph.graph import MessagesState
+from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-from langgraph.graph import MessagesState
 from rdflib import Graph
 from app.core.scenarios.scenario_5.utils.prompt import (
     system_prompt,
-    interpreter_prompt,
     retry_prompt,
 )
+from app.core.utils.cli_manager import find_sparql_queries
 from app.core.utils.construct_util import (
     format_class_graph_file,
     get_context_class,
     get_empty_graph_with_prefixes,
     tmp_directory,
 )
-from app.core.utils.graph_nodes import interpret_csv_query_results, preprocess_question, select_similar_classes
+from app.core.utils.graph_nodes import (
+    interpret_csv_query_results,
+    preprocess_question,
+    select_similar_classes,
+)
 from app.core.utils.graph_state import InputState, OverallState
-from app.core.utils.preprocessing import extract_relevant_entities_spacy
-from app.core.utils.utils import find_sparql_queries, get_llm_from_config, get_class_vector_db_from_config, main, setup_logger
+from app.core.utils.utils import get_llm_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 from langgraph.constants import Send
-from langchain_core.documents import Document
 import time
 
 from rdflib.plugins.sparql.algebra import translateQuery
@@ -46,28 +44,30 @@ MAX_NUMBER_OF_TRIES: int = 3
 # Router
 
 
-def run_query_router(state: OverallState) -> Literal["interpret_results","__end__"]:
+def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info(f"query run succesfully and it yielded")
+        logger.info("query run succesfully and it yielded")
         return "interpret_results"
     else:
-        logger.info(f"Ending the process")
+        logger.info("Ending the process")
         return END
 
 
-def verify_query_router(state: OverallState) -> Literal["run_query","create_retry_prompt","__end__"]:
+def verify_query_router(
+    state: OverallState,
+) -> Literal["run_query", "create_retry_prompt", "__end__"]:
     if "last_generated_query" in state:
-        logger.info(f"query generated task completed with a generated SPARQL query")
+        logger.info("query generated task completed with a generated SPARQL query")
         return "run_query"
     else:
         logger.warning(
-            f"query generated task completed without generating a proper SPARQL query"
+            "query generated task completed without generating a proper SPARQL query"
         )
         if state["number_of_tries"] < MAX_NUMBER_OF_TRIES:
             logger.info(f"Tries left {MAX_NUMBER_OF_TRIES - state['number_of_tries']}")
             return "create_retry_prompt"
         else:
-            logger.info(f"Max retries ... Ending the process")
+            logger.info("Max retries ... Ending the process")
         return END
 
 
@@ -122,7 +122,7 @@ def create_prompt(state: OverallState) -> OverallState:
     merged_graph_ttl = merged_graph.serialize(format="turtle")
 
     logger.info(f"Context graph saved locally in {tmp_directory}/context-{timestr}.ttl")
-    logger.info(f"prompt created successfuly.")
+    logger.info("prompt created successfuly.")
 
     query_generation_prompt = (
         f"{system_prompt.content}\n"
@@ -144,7 +144,7 @@ async def generate_query(state: OverallState):
 
 def verify_query(state: OverallState) -> OverallState:
     queries = find_sparql_queries(state["messages"][-1].content)
-    
+
     if len(queries) == 0:
         return {
             "number_of_tries": state["number_of_tries"] + 1,
@@ -165,13 +165,13 @@ def verify_query(state: OverallState) -> OverallState:
 
 
 def create_retry_prompt(state: OverallState) -> OverallState:
-    logger.info(f"retry_prompt created successfuly.")
+    logger.info("retry_prompt created successfuly.")
 
     query_regeneration_prompt = (
         f"{retry_prompt.content}\n\n"
         + f"The properties and their type when using the classes: \n {state["merged_classes_context"]}\n\n"
         + f"The user question:\n{state['initial_question']}\n\n"
-        + f"The last answer you provided that either don't contain or have a unparsable SPARQL query:\n"
+        + "The last answer you provided that either don't contain or have a unparsable SPARQL query:\n"
         + f"-------------------------------------\n{state['messages'][-2].content}\n--------------------------------------------------\n\n"
         + f"The verification didn't pass because:\n-------------------------\n{state["messages"][-1].content}\n--------------------------------\n"
     )
@@ -196,7 +196,9 @@ def run_query(state: OverallState):
         return {"messages": AIMessage("Error when running the query")}
 
 
-s5_builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
+s5_builder = StateGraph(
+    state_schema=OverallState, input=InputState, output=OverallState
+)
 
 s5_builder.add_node("preprocess_question", preprocess_question)
 s5_builder.add_node("select_similar_classes", select_similar_classes)

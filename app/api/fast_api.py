@@ -1,10 +1,8 @@
 import os
 from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI
+from fastapi.responses import FileResponse, StreamingResponse
 from app.core.scenarios.scenario_6.scenario_6 import graph as scenario_6_app
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse, FileResponse
-from dotenv import load_dotenv
 from langchain_core.messages import AIMessageChunk
 
 
@@ -47,7 +45,7 @@ async def generate_chat_events(message):
         elif event["event"] == "on_chat_model_end":
             print("Chat model has completed its response.")
 
-        print(f"{event['metadata'].get('langgraph_node','')} => {event['data']}" )
+        print(f"{event['metadata'].get('langgraph_node', '')} => {event['data']}")
 
 
 @app.get("/chat_stream/{message}")
@@ -61,5 +59,3 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="localhost", port=8000)
-
-

@@ -1,16 +1,15 @@
 import asyncio
-import re
 from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_3.utils.prompt import system_prompt_template
+from app.core.utils.cli_manager import find_sparql_queries
 from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     select_similar_classes,
 )
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
-    find_sparql_queries,
     get_llm_from_config,
     main,
     setup_logger,
@@ -36,22 +35,22 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
         Literal["interpret_results", END]: The next step in the conversation
     """
     if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info(f"query run succesfully and it yielded")
+        logger.info("query run succesfully and it yielded")
         return "interpret_results"
     else:
-        logger.info(f"Ending the process")
+        logger.info("Ending the process")
         return END
 
 
 def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
     if len(find_sparql_queries(state["messages"][-1].content)) > 0:
-        logger.info(f"query generated task completed with a generated SPARQL query")
+        logger.info("query generated task completed with a generated SPARQL query")
         return "run_query"
     else:
         logger.warning(
-            f"query generated task completed without generating a proper SPARQL query"
+            "query generated task completed without generating a proper SPARQL query"
         )
-        logger.info(f"Ending the process")
+        logger.info("Ending the process")
         return END
 
 

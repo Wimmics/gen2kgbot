@@ -1,4 +1,3 @@
-from ast import main
 from langsmith import Client
 from pandas import DataFrame
 from app.core.scenarios.scenario_1.scenario_1 import run_scenario
@@ -26,11 +25,10 @@ def start_evaluation(client: Client, dataset_name: str):
         experiment_prefix="genkgbot-scenario_1-deepseek-r1:1.5b",
         num_repetitions=1,
         max_concurrency=4,
-        metadata= {"scenario": f"1", "llm_model":"deepseek-r1:1.5b"}
-
+        metadata={"scenario": "1", "llm_model": "deepseek-r1:1.5b"},
     )
-    # pandas_results: DataFrame = experiment_results.to_pandas()
-    # print(pandas_results.to_string())
+    pandas_results: DataFrame = experiment_results.to_pandas()
+    print(pandas_results.to_string())
 
 
 def main():

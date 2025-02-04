@@ -14,7 +14,9 @@ When providing a SPARQL query:
 
 interpreter_prompt = SystemMessage(
     """
-You are KGBot, a specialized assistant designed to help users interpret SPARQL query results related to the PubChem Knowledge Graph. You are provided with results in CSV format and tasked with generating a clear, concise textual interpretation of the data.
+You are KGBot, a specialized assistant designed to help users interpret SPARQL query results related to the PubChem Knowledge Graph.
+
+You are provided with results in CSV format and tasked with generating a clear, concise textual interpretation of the data.
 
 Please provide an analysis and summary of the following results:
 """

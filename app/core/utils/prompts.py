@@ -1,5 +1,6 @@
 from langchain_core.prompts import PromptTemplate
 
+
 interpret_csv_query_results_prompt = PromptTemplate.from_template(
     template="""You are KGBot, a specialized assistant designed to help users interpret SPARQL query results related to the PubChem Knowledge Graph.
 

@@ -1,10 +1,3 @@
-import argparse
-from multiprocessing.connection import Client
-import logging
-import logging.config
-import os
-from pathlib import Path
-import re
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -13,90 +6,21 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStore
 from langchain_community.vectorstores import FAISS
 from langchain_chroma import Chroma
-import yaml
 from langgraph.graph.state import CompiledStateGraph
 from langchain_google_genai import ChatGoogleGenerativeAI
-
+from app.core.utils.config_manager import get_yml_config
+from app.core.utils.envkey_manager import (
+    get_deepseek_key,
+    get_google_key,
+    get_openai_key,
+    get_ovh_key,
+)
+from app.core.utils.logger_manager import setup_logger
 from app.core.utils.printing import new_log
 
 
-def setup_cli():
-    parser = argparse.ArgumentParser(
-        description="Process the scenario with the predifined or custom question and configuration."
-    )
-    parser.add_argument("-c", "--custom", type=str, help="Provide a custom question.")
-    parser.add_argument(
-        "-p", "--params", type=str, help="Provide a custom configuration path."
-    )
-    globals()["args"] = parser.parse_args()
-
-
 args = None
-
-
-def setup_logger(package: str = __package__, file: str = __file__) -> logging.Logger:
-    """
-    Set up logging configuration.
-
-    Args:
-      package (str): specify the package name of the module for which the logger is being set up.
-    If no package name is provided, it defaults to `__package__` which is the package name of the current module.
-      file (str): specify the file path of the module where the logger is being set up.
-    It is used to determine the name of the logger based on the module's file path.
-
-    Returns:
-      returns a configured `logging.Logger` object with module name.
-    """
-
-    # Normalize the file path: in case of Langgraph Studio, it is always '/'
-    file = file.replace("/", os.path.sep)
-
-    if package == "":
-        package = "[no_mod]"
-    _mod_name = package + "." + file.split(os.path.sep)[-1]
-    if _mod_name.endswith(".py"):
-        _mod_name = _mod_name[: -len(".py")]
-
-    # Resolve the path to the configuration file
-    parent_dir = Path(__file__).resolve().parent.parent.parent
-    config_path = parent_dir / "config" / "logging.yml"
-
-    # Configure logging
-    with open(config_path, "rt") as f:
-        log_config = yaml.safe_load(f.read())
-        # Create log folder if it not exists
-        log_file_handler = (
-            Path(log_config["handlers"]["file_handler"]["filename"]).resolve().parent
-        )
-        if os.path.exists(log_file_handler) == False:
-            os.makedirs(log_file_handler)
-
-    logging.config.dictConfig(log_config)
-
-    logger = logging.getLogger(_mod_name)
-    # logger.info(f"Setup Logger Done for {package} - {file}")
-
-    # Get and return the logger
-    return logger
-
-
 logger = setup_logger(__package__, __file__)
-
-
-def get_yml_config():
-    # if args.params:
-    #     config_path = args.params
-    # else:
-    # # Resolve the path to the configuration file
-    config_path = (
-        Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
-    )
-
-    # # Configure logging
-    with open(config_path, "rt") as f:
-        return yaml.safe_load(f.read())
-
-
 config = get_yml_config()
 
 current_llm = None
@@ -116,23 +40,6 @@ def get_current_scenario() -> str:
     else:
         logger.error("No Current scenario is currently running!")
 
-
-def get_openai_key():
-    return os.getenv("OPENAI_API_KEY")
-
-
-def get_ovh_key():
-    return os.getenv("OVHCLOUD_API_KEY")
-
-
-def get_huggingface_key():
-    return os.getenv("HF_TOKEN")
-
-def get_google_key():
-    return os.getenv("GOOGLE_API_KEY")
-
-def get_deepseek_key():
-    return os.getenv("DEEPSEEK_API_KEY")
 
 def get_llm_from_config(scenario: str) -> BaseChatModel:
 
@@ -160,7 +67,7 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             verbose=True,
             model_kwargs=model_kwargs,
         )
-    
+
     elif model_type == "ollama-server":
         base_url = config[scenario]["seq2seq_llm"]["base_url"]
 
@@ -171,7 +78,7 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             max_retries=max_retries,
             verbose=True,
             model_kwargs=model_kwargs,
-            auth=("username","password")
+            auth=("username", "password"),
         )
 
     elif model_type == "ovh":
@@ -207,7 +114,7 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             verbose=True,
             model_kwargs=model_kwargs,
         )
-    
+
     elif model_type == "deepseek":
         base_url = config[scenario]["seq2seq_llm"]["base_url"]
         llm = ChatOpenAI(
@@ -233,12 +140,12 @@ def get_embedding_type_from_config(scenario: str) -> Embeddings:
 
     if embedding_type == "ollama-embeddings":
         embeddings = OllamaEmbeddings(model=model_id)
-        logger.info(f"Embedding initialized: OllamaEmbeddings")
+        logger.info("Embedding initialized: OllamaEmbeddings")
 
     elif embedding_type == "openai-embeddings":
         embeddings = OpenAIEmbeddings(model=model_id)
 
-        logger.info(f"Embedding initialized: OpenAiEmbeddings")
+        logger.info("Embedding initialized: OpenAiEmbeddings")
 
     return embeddings
 
@@ -319,7 +226,7 @@ async def main(graph: CompiledStateGraph):
     Process a predefined or custom question, invokes a graph with the question, and logs the messages returned by the graph.
     """
 
-    if args != None and args.custom:
+    if args is None and args.custom:
         question = args.custom
     else:
         question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"
@@ -335,25 +242,3 @@ async def main(graph: CompiledStateGraph):
         new_log()
         print(state["last_generated_query"])
         new_log()
-
-
-def langsmith_setup():
-    # Setting up the LangSmith
-    # For now, all runs will be stored in the "KGBot Testing - GPT4"
-    # If you want to separate the traces to have a better control of specific traces.
-    # Metadata as llm version and temperature can be obtained from traces.
-
-    os.environ["LANGCHAIN_TRACING_V2"] = "true"
-    os.environ["LANGCHAIN_PROJECT"] = (
-        f"Gen KGBot Refactoring"  # Please update the name here if you want to create a new project for separating the traces.
-    )
-    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
-
-    client = Client()
-
-    # #Check if the client was initialized
-    print(f"Langchain client was initialized: {client}")
-
-
-def find_sparql_queries(message: str):
-    return re.findall("```sparql(.*)```", message, re.DOTALL)
