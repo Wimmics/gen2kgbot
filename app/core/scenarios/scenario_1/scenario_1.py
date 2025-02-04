@@ -1,3 +1,4 @@
+import asyncio
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.utils.graph_state import InputState, OverallState
@@ -35,4 +36,4 @@ def run_scenario(question: str):
 
 
 if __name__ == "__main__":
-    main(graph)
+    asyncio.run(main(graph))

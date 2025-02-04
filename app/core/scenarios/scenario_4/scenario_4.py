@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import operator
 import os
 import re
@@ -183,4 +184,4 @@ def run_scenario(question: str):
 
 
 if __name__ == "__main__":
-    main(graph)
+    asyncio.run(main(graph))

@@ -1,3 +1,4 @@
+import asyncio
 import re
 from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
@@ -89,4 +90,4 @@ def run_scenario(question: str):
 
 
 if __name__ == "__main__":
-    main(graph)
+    asyncio.run(main(graph))

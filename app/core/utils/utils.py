@@ -314,7 +314,7 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
     return db
 
 
-def main(graph: CompiledStateGraph):
+async def main(graph: CompiledStateGraph):
     """
     Process a predefined or custom question, invokes a graph with the question, and logs the messages returned by the graph.
     """
@@ -324,7 +324,7 @@ def main(graph: CompiledStateGraph):
     else:
         question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"
 
-    state = graph.ainvoke({"initial_question": question})
+    state = await graph.ainvoke({"initial_question": question})
 
     new_log()
     for m in state["messages"]:
