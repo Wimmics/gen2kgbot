@@ -3,6 +3,7 @@ from typing import List
 from rdflib import Graph
 from rdflib.exceptions import ParserError
 from rdflib.plugins.stores import sparqlstore
+import re
 
 endpoint_url_idsm = "https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
 
@@ -34,3 +35,7 @@ def run_sparql_query(query: str) -> List[csv.DictReader]:
 
     csv_str = res.serialize(format="csv").decode("utf-8")
     return csv_str
+
+
+def find_sparql_queries(message: str):
+    return re.findall("```sparql(.*)```", message, re.DOTALL)

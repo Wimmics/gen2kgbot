@@ -14,7 +14,7 @@ from app.core.scenarios.scenario_6.utils.prompt import (
     system_prompt,
     retry_prompt,
 )
-from app.core.utils.cli_manager import find_sparql_queries
+from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     preprocess_question,

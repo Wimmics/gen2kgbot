@@ -32,6 +32,7 @@ def get_current_llm() -> BaseChatModel:
         return current_llm
     else:
         logger.error("No LLM is currently initialised")
+        raise Exception("No LLM is currently initialised")
 
 
 def get_current_scenario() -> str:
@@ -39,9 +40,13 @@ def get_current_scenario() -> str:
         return current_scenario
     else:
         logger.error("No Current scenario is currently running!")
+        raise Exception("No Current scenario is currently running!")
 
 
 def get_llm_from_config(scenario: str) -> BaseChatModel:
+    """
+    Create a seq2seq LLM based on the scenario configuration
+    """
 
     model_type = config[scenario]["seq2seq_llm"]["type"]
     model_id = config[scenario]["seq2seq_llm"]["id"]
@@ -221,11 +226,14 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
     return db
 
 
+def separate_log():
+    logger.info("-----------------------------------------------------------")
+
+
 async def main(graph: CompiledStateGraph):
     """
     Process a predefined or custom question, invokes a graph with the question, and logs the messages returned by the graph.
     """
-
     if args is not None and args.custom:
         question = args.custom
     else:
@@ -233,12 +241,12 @@ async def main(graph: CompiledStateGraph):
 
     state = await graph.ainvoke({"initial_question": question})
 
-    new_log()
+    separate_log()
     for m in state["messages"]:
-        m.pretty_print()
-    new_log()
+        logger.info(m.pretty_repr())
+    separate_log()
 
     if "last_generated_query" in state:
-        new_log()
-        print(state["last_generated_query"])
-        new_log()
+        separate_log()
+        logger.info("last_generated_query: " + state["last_generated_query"])
+        separate_log()

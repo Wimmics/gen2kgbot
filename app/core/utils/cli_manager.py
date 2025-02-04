@@ -1,5 +1,4 @@
 import argparse
-import re
 
 
 def setup_cli():
@@ -11,7 +10,3 @@ def setup_cli():
         "-p", "--params", type=str, help="Provide a custom configuration path."
     )
     globals()["args"] = parser.parse_args()
-
-
-def find_sparql_queries(message: str):
-    return re.findall("```sparql(.*)```", message, re.DOTALL)

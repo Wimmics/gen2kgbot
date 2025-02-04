@@ -9,7 +9,7 @@ from app.core.scenarios.scenario_5.utils.prompt import (
     system_prompt,
     retry_prompt,
 )
-from app.core.utils.cli_manager import find_sparql_queries
+from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.construct_util import (
     format_class_graph_file,
     get_context_class,
