@@ -226,7 +226,7 @@ async def main(graph: CompiledStateGraph):
     Process a predefined or custom question, invokes a graph with the question, and logs the messages returned by the graph.
     """
 
-    if args is None and args.custom:
+    if args is not None and args.custom:
         question = args.custom
     else:
         question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"

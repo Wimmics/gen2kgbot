@@ -14,6 +14,7 @@ from app.core.scenarios.scenario_6.utils.prompt import (
     system_prompt,
     retry_prompt,
 )
+from app.core.utils.cli_manager import find_sparql_queries
 from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     preprocess_question,
@@ -21,7 +22,6 @@ from app.core.utils.graph_nodes import (
 )
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
-    find_sparql_queries,
     get_llm_from_config,
     get_query_vector_db_from_config,
     main,
