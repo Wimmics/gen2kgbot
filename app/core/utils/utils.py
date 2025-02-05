@@ -16,7 +16,6 @@ from app.core.utils.envkey_manager import (
     get_ovh_key,
 )
 from app.core.utils.logger_manager import setup_logger
-from app.core.utils.printing import new_log
 
 
 args = None
