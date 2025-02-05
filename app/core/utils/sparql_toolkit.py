@@ -11,22 +11,24 @@ from app.core.utils.utils import get_kg_sparql_endpoint_url
 logger = setup_logger(__package__, __file__)
 
 
-def run_sparql_query(query: str) -> List[csv.DictReader]:
+def run_sparql_query(query: str) -> str:
     """
-    queries a graph using a SPARQL statement and returns the results as a list of
-    dictionaries.
+    Submit a SPARQL query to the endpoint and return the result in CSV SPARQL Results format.
 
     Args:
-        query (str): a string that represents a SPARQL query to be executed on the graph data.
+        query (str): SPARQL query to be executed
 
     Returns:
-        List[csv.DictReader]: a list of dictionaries containing the results of the query.
+        str: CSV SPARQL Results (https://www.w3.org/2009/sparql/docs/csv-tsv-results/results-csv-tsv.html)
+
+    Raises:
+        ValueError: non parsable SPARQL query or any other error
     """
 
     try:
         endpoint_url = get_kg_sparql_endpoint_url()
 
-        logger.debug(f"trying to running the query: {query} in the endpoint: {endpoint_url}")
+        logger.debug(f"Submiting query: \n{query}\n to the endpoint: {endpoint_url}")
 
         _store = sparqlstore.SPARQLStore()
         _store.open(endpoint_url)
@@ -35,17 +37,17 @@ def run_sparql_query(query: str) -> List[csv.DictReader]:
         res = graph.query(query_object=query, initNs={}, initBindings={})
 
     except ParserError as e:
-        raise ValueError("Generated SPARQL statement is invalid\n" f"{e}")
+        raise ValueError("SPARQL query is invalid\n" f"{e}")
 
     except Exception as e:
-        raise ValueError(f"An error occurred while querying the graph: {e}")
+        raise ValueError(f"An error occurred while executing the SPARQL query: {e}")
 
     csv_str = res.serialize(format="csv").decode("utf-8")
-
-    logger.debug(f"running the query yelded the following CSV:\n {csv_str}")
-
     return csv_str
 
 
 def find_sparql_queries(message: str):
+    """
+    Extract, from the LLM's response, a SPARQL query embedded in a sparql MD block.
+    """
     return re.findall("```sparql(.*)```", message, re.DOTALL)

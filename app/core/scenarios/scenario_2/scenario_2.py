@@ -55,8 +55,7 @@ async def generate_query(state: OverallState) -> OverallState:
 
 def run_query(state: OverallState) -> OverallState:
     query = find_sparql_queries(state["messages"][-1].content)[0]
-    logger.info("Executing SPARQL query extracted from llm's response:")
-    logger.info(f"{query}")
+    logger.info(f"Executing SPARQL query extracted from llm's response:\n{query}")
 
     try:
         csv_result = run_sparql_query(query=query)
