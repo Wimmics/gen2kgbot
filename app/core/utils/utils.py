@@ -131,7 +131,7 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
             model_kwargs=model_kwargs,
         )
 
-    logger.info(f"LLM initialized : {model_type} - {model_id} ")
+    logger.info(f"Seq2seq LLM initialized: {model_type} - {model_id} ")
     globals()["current_llm"] = llm
     globals()["current_scenario"] = scenario
     return llm
@@ -231,7 +231,8 @@ def separate_log():
 
 async def main(graph: CompiledStateGraph):
     """
-    Process a predefined or custom question, invokes a graph with the question, and logs the messages returned by the graph.
+    Process a predefined or custom question: invoke a Langgraph graph with the NL question,
+    and log the messages returned by the graph.
     """
     if args is not None and args.custom:
         question = args.custom
