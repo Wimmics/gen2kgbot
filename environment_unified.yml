@@ -1,0 +1,44 @@
+name: gen2kgbot
+channels:
+  - conda-forge
+  #- defaults
+  #- https://repo.anaconda.com/pkgs/main
+  #- https://repo.anaconda.com/pkgs/r
+dependencies:
+  - python=3.12.*
+  - chromadb
+  - faiss-cpu
+  - langchain
+  - langchain-chroma
+  - langchain-community
+  - langchain-core
+  - langchain-google-genai
+  - langchain-huggingface
+  - langchain-openai
+  - langchain-qdrant
+  - langchain-text-splitters
+  - langcodes
+  - langgraph
+  - langgraph-checkpoint
+  - langgraph-sdk
+  - langsmith
+  - pip
+  - setuptools
+  - rdflib
+  - requests
+  - SPARQLWrapper
+
+  - pip:
+    - https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0.tar.gz
+    - https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0.tar.gz
+    - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_lg-0.5.4.tar.gz
+    - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_bionlp13cg_md-0.5.4.tar.gz
+    - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_craft_md-0.5.4.tar.gz
+    - langchain-deepseek-official
+    - langchain-ollama
+    - langgraph-api
+    - langgraph-cli
+    - scispacy
+    - spacy
+    - spacy-legacy
+    - spacy-loggers
