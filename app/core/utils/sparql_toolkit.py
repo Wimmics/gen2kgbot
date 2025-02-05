@@ -46,8 +46,8 @@ def run_sparql_query(query: str) -> str:
     return csv_str
 
 
-def find_sparql_queries(message: str):
+def find_sparql_queries(message: str) -> List[str] :
     """
-    Extract, from the LLM's response, a SPARQL query embedded in a sparql MD block.
+    Extract, from the LLM's response, SPARQL queries embedded in a sparql markdown block.
     """
     return re.findall("```sparql(.*)```", message, re.DOTALL)

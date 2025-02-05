@@ -39,8 +39,8 @@ def get_current_scenario() -> str:
     if current_scenario:
         return current_scenario
     else:
-        logger.error("No Current scenario is currently running!")
-        raise Exception("No Current scenario is currently running!")
+        logger.error("No scenario id has been set up")
+        raise Exception("No scenario id has been set up")
 
 
 def get_kg_sparql_endpoint_url() -> str:
@@ -149,28 +149,43 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
 
 
 def get_embedding_type_from_config(scenario: str) -> Embeddings:
+    """
+    Instantiate a text embedding model based on the scenario configuration
+
+    Args:
+        scenario (str): scenario identifier
+
+    Returns:
+        Embeddings: text embedding model
+    """
 
     embedding_type = config[scenario]["text_embedding_llm"]["type"]
     model_id = config[scenario]["text_embedding_llm"]["id"]
 
     if embedding_type == "ollama-embeddings":
         embeddings = OllamaEmbeddings(model=model_id)
-        logger.info("Embedding initialized: OllamaEmbeddings")
+        logger.info("Text embedding model initialized: OllamaEmbeddings")
 
     elif embedding_type == "openai-embeddings":
         embeddings = OpenAIEmbeddings(model=model_id)
-
-        logger.info("Embedding initialized: OpenAiEmbeddings")
+        logger.info("Text embedding model initialized: OpenAiEmbeddings")
 
     return embeddings
 
 
 def get_class_vector_db_from_config() -> VectorStore:
+    """
+    Instantiate a vector db based on the configuration, to store the
+    pre-computed embeddings of the RDFS/OWL classes
+
+    Returns:
+        VectorStore: vector db
+    """
 
     scenario = get_current_scenario()
     embeddings = get_embedding_type_from_config(scenario=scenario)
-    model_id = config[scenario]["text_embedding_llm"]["id"]
 
+    model_id = config[scenario]["text_embedding_llm"]["id"]
     vector_db = config[scenario]["text_embedding_llm"]["vector_db"]
 
     embedding_map = {
@@ -202,10 +217,18 @@ def get_class_vector_db_from_config() -> VectorStore:
 
 
 def get_query_vector_db_from_config(scenario: str) -> VectorStore:
+    """
+    Instantiate a vector db based on the configuration, to store the
+    pre-computed embeddings of the SPARQL queries
+    Args:
+        scenario (str): scenario identifier
+
+    Returns:
+        VectorStore: vector db
+    """
 
     embeddings = get_embedding_type_from_config(scenario=scenario)
     model_id = config[scenario]["text_embedding_llm"]["id"]
-
     vector_db = config[scenario]["text_embedding_llm"]["vector_db"]
 
     embedding_map = {
