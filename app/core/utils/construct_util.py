@@ -3,7 +3,11 @@ from pathlib import Path
 from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper
 from rdflib import Graph, URIRef, BNode, RDFS, term
-from app.core.utils.utils import setup_logger
+from app.core.utils.utils import (
+    get_classes_context_folder,
+    get_kg_sparql_endpoint_url,
+    setup_logger,
+)
 
 
 logger = setup_logger(__package__, __file__)
@@ -26,23 +30,18 @@ SELECT ?property (SAMPLE(COALESCE(?type, STR(DATATYPE(?value)), "Untyped")) AS ?
     LIMIT 300
 """
 
-classes_directory = (
-    Path(__file__).resolve().parent.parent.parent.parent
-    / "data"
-    / "classes_context"
-    / "idsm"
-)
 tmp_directory = Path(__file__).resolve().parent.parent.parent.parent / "tmp"
-endpoint_url_corese = "http://localhost:8080/sparql"
-endpoint_url_idsm = "https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
 
 
 def get_context_class(class_label_comment: tuple) -> str:
     graph = get_empty_graph_with_prefixes()
 
     class_ref = URIRef(class_label_comment[0])
+
+    endpoint_url = get_kg_sparql_endpoint_url()
+
     properties_and_values = get_prop_and_val_types(
-        class_label_comment[0],
+        class_label_comment[0], endpoint_url=endpoint_url
     )
 
     if class_label_comment[1]:
@@ -65,9 +64,7 @@ def get_context_class(class_label_comment: tuple) -> str:
     return graph.serialize(format="turtle")
 
 
-def get_prop_and_val_types(
-    cls: str, endpoint_url: str = endpoint_url_idsm
-) -> List[Tuple[str, str]]:
+def get_prop_and_val_types(cls: str, endpoint_url: str) -> List[Tuple[str, str]]:
 
     query = query_cls_rel.replace("{class_uri}", cls)
 
@@ -82,8 +79,8 @@ def get_prop_and_val_types(
     return [] if values == [(None, None)] else values
 
 
-def run_sparql(query, url=endpoint_url_idsm):
-    sparql = SPARQLWrapper(url)
+def run_sparql(query, endpoint_url):
+    sparql = SPARQLWrapper(endpoint_url)
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
     sparql.setTimeout(600)
@@ -92,8 +89,8 @@ def run_sparql(query, url=endpoint_url_idsm):
     return results
 
 
-def run_sparql_construct(query, filename, url=endpoint_url_idsm):
-    sparql = SPARQLWrapper(url)
+def run_sparql_construct(query, filename, endpoint_url):
+    sparql = SPARQLWrapper(endpoint_url)
     sparql.setQuery(query)
     sparql.setReturnFormat(TURTLE)
     sparql.setTimeout(600)
@@ -105,8 +102,15 @@ def run_sparql_construct(query, filename, url=endpoint_url_idsm):
 
 
 def format_class_graph_file(class_uri: str) -> str:
+
     class_name = class_uri.split("/")[-1]
-    return f"{classes_directory}/{class_name}.ttl"
+
+    context_directory = Path(get_classes_context_folder())
+
+    if not os.path.exists(context_directory):
+        os.makedirs(context_directory)
+
+    return f"{context_directory}/{class_name}.ttl"
 
 
 def get_known_prefixes() -> dict:

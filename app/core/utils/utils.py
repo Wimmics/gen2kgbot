@@ -15,8 +15,8 @@ from app.core.utils.envkey_manager import (
     get_openai_key,
     get_ovh_key,
 )
+from app.core.utils.graph_state import InputState
 from app.core.utils.logger_manager import setup_logger
-from app.core.utils.printing import new_log
 
 
 args = None
@@ -41,6 +41,16 @@ def get_current_scenario() -> str:
     else:
         logger.error("No Current scenario is currently running!")
         raise Exception("No Current scenario is currently running!")
+
+
+def get_kg_sparql_endpoint_url() -> str:
+    endpoint_url = config["kg_sparql_endpoint_url"]
+    return endpoint_url
+
+
+def get_classes_context_folder() -> str:
+    class_context_directory = config["class_context_directory"]
+    return class_context_directory
 
 
 def get_llm_from_config(scenario: str) -> BaseChatModel:
@@ -239,7 +249,7 @@ async def main(graph: CompiledStateGraph):
     else:
         question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"
 
-    state = await graph.ainvoke({"initial_question": question})
+    state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
     separate_log()
     for m in state["messages"]:

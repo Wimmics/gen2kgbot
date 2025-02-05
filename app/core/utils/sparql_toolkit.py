@@ -4,8 +4,11 @@ from rdflib import Graph
 from rdflib.exceptions import ParserError
 from rdflib.plugins.stores import sparqlstore
 import re
+from app.core.utils.logger_manager import setup_logger
+from app.core.utils.utils import get_kg_sparql_endpoint_url
 
-endpoint_url_idsm = "https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
+
+logger = setup_logger(__package__, __file__)
 
 
 def run_sparql_query(query: str) -> List[csv.DictReader]:
@@ -21,8 +24,12 @@ def run_sparql_query(query: str) -> List[csv.DictReader]:
     """
 
     try:
+        endpoint_url = get_kg_sparql_endpoint_url()
+
+        logger.debug(f"trying to running the query: {query} in the endpoint: {endpoint_url}")
+
         _store = sparqlstore.SPARQLStore()
-        _store.open(endpoint_url_idsm)
+        _store.open(endpoint_url)
         graph = Graph(store=_store)
 
         res = graph.query(query_object=query, initNs={}, initBindings={})
@@ -34,6 +41,9 @@ def run_sparql_query(query: str) -> List[csv.DictReader]:
         raise ValueError(f"An error occurred while querying the graph: {e}")
 
     csv_str = res.serialize(format="csv").decode("utf-8")
+
+    logger.debug(f"running the query yelded the following CSV:\n {csv_str}")
+
     return csv_str
 
 

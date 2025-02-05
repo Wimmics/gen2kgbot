@@ -45,28 +45,28 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
 
 
 # Node
-async def generate_query(state: OverallState):
+async def generate_query(state: OverallState) -> OverallState:
     logger.info(f"Question: {state["initial_question"]}")
     result = await llm.ainvoke(
         system_prompt_template.format(question=state["initial_question"])
     )
-    return {"messages": [HumanMessage(state["initial_question"]), result]}
+    return OverallState({"messages": [HumanMessage(state["initial_question"]), result]})
 
 
-def run_query(state: OverallState):
+def run_query(state: OverallState) -> OverallState:
     query = find_sparql_queries(state["messages"][-1].content)[0]
     logger.info("Executing SPARQL query extracted from llm's response:")
     logger.info(f"{query}")
 
     try:
         csv_result = run_sparql_query(query=query)
-        return {"messages": csv_result, "last_generated_query": query}
+        return OverallState({"messages": csv_result, "last_generated_query": query})
     except ParserError as e:
         logger.warning(f"A parsing error occurred when running the query: {e}")
-        return {"messages": BaseMessage(SPARQL_QUERY_EXEC_ERROR)}
+        return OverallState({"messages": BaseMessage(SPARQL_QUERY_EXEC_ERROR)})
     except Exception as e:
         logger.warning(f"An error occurred when running the query: {e}")
-        return {"messages": AIMessage(SPARQL_QUERY_EXEC_ERROR)}
+        return OverallState({"messages": AIMessage(SPARQL_QUERY_EXEC_ERROR)})
 
 
 s2_builder = StateGraph(
@@ -86,7 +86,7 @@ graph = s2_builder.compile()
 
 
 def run_scenario(question: str):
-    return graph.ainvoke({"initial_question": question})
+    return graph.ainvoke(input=InputState({"initial_question": question}))
 
 
 if __name__ == "__main__":

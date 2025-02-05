@@ -4,7 +4,11 @@
 # tmp_directory: "tmp"
 
 # Endpoint serving the KG to be queried 
-# kg_sparql_endpoint_url: "" 
+kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
+# kg_sparql_endpoint_url: "https://enpkg.commons-lab.org/graphdb/repositories/ENPKG" 
+
+# Classes context 
+class_context_directory: "./data/classes_context/idsm" 
 
 # embedding_generation:
   # Utilitary endpoint to store the ontologies (if not present in the endpoint to be queried) 
@@ -76,7 +80,6 @@ nomic-embed-text_chroma@local:
 # Scenarios
       
 scenario_1:
-  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm:
     type: ollama
     id: llama3.2:1b
@@ -91,10 +94,9 @@ scenario_1:
 
     
 scenario_2:
-  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm: 
     type: ollama
-    id: deepseek-r1:1.5b
+    id: llama3.2:1b
 
     # type: ovh
     # id: Meta-Llama-3_1-70B-Instruct
@@ -105,7 +107,6 @@ scenario_2:
     model_kwargs: {"top_p": 0.95 }
 
 scenario_3:
-  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm:
     type: ollama
     id: deepseek-r1:1.5b
@@ -124,7 +125,6 @@ scenario_3:
     # vector_db: chroma
 
 scenario_4:
-  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm: 
     type: ollama
     id: deepseek-r1:1.5b
@@ -144,7 +144,6 @@ scenario_4:
     # vector_db: chroma
 
 scenario_5:
-  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm:
     type: ollama
     id: deepseek-r1:1.5b
@@ -164,7 +163,6 @@ scenario_5:
     # vector_db: chroma
 
 scenario_6:
-  endpoint_url: https://idsm.elixir-czech.cz/sparql/endpoint/idsm
   seq2seq_llm:
     # type: ovh
     # id: Meta-Llama-3_1-70B-Instruct

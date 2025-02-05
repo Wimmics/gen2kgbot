@@ -32,7 +32,7 @@ graph = s1_builder.compile()
 
 
 def run_scenario(question: str):
-    return graph.ainvoke(input={"initial_question": question})
+    return graph.ainvoke(input=InputState({"initial_question": question}))
 
 
 if __name__ == "__main__":
