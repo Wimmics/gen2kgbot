@@ -28,18 +28,17 @@ def select_similar_classes(state: OverallState) -> OverallState:
     db = get_class_vector_db_from_config()
 
     query = state["initial_question"]
-
-    logger.info(f"query: {query}")
+    logger.debug(f"query: {query}")
 
     # Retrieve the most similar text
     retrieved_documents = db.similarity_search(query, k=10)
 
-    result = "These are some relevant classes for the query generation:\n"
-    # show the retrieved document's content
+    result = "These are some relevant classes for the query generation:"
     for doc in retrieved_documents:
-        result = f"{result}\n{doc.page_content}\n"
+        result = f"{result}\n{doc.page_content}"
+    result = f"{result}\n\n"
 
-    logger.info("Done with selecting some similar classes to help query generation")
+    logger.debug("Done with selecting similar classes to help query generation")
 
     return {"messages": AIMessage(result), "selected_classes": retrieved_documents}
 
