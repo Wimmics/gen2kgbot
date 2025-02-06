@@ -43,13 +43,24 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
 
 
 def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
-    if len(find_sparql_queries(state["messages"][-1].content)) > 0:
-        logger.info("query generated task completed with a generated SPARQL query")
+    """
+    Check if the query generation task produced 0, 1 or more SPARQL query,
+    and routes to the next step accordingly.
+    If more than one query was produced, just send a warning and process the first one.
+    """
+
+    nb_queries = len(find_sparql_queries(state["messages"][-1].content))
+
+    if nb_queries > 1:
+        logger.warning(
+            f"Query generation task produced {nb_queries} SPARQL queries. Will process the first one."
+        )
+        return "run_query"
+    elif nb_queries == 1:
+        logger.info("Query generation task produced one SPARQL query")
         return "run_query"
     else:
-        logger.warning(
-            "query generated task completed without generating a proper SPARQL query"
-        )
+        logger.warning("Query generation task did not produce a proper SPARQL query")
         logger.info("Ending the process")
         return END
 
