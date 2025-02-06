@@ -8,6 +8,7 @@ from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     select_similar_classes,
     run_query,
+    SPARQL_QUERY_EXEC_ERROR,
 )
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
@@ -35,7 +36,7 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
     Returns:
         Literal["interpret_results", END]: next step in the conversation
     """
-    if state["last_query_results"].find("Error when running the SPARQL query") == -1:
+    if state["last_query_results"].find(SPARQL_QUERY_EXEC_ERROR) == -1:
         logger.info("Query execution yielded some results")
         return "interpret_results"
     else:

@@ -15,6 +15,8 @@ from app.core.utils.prompts import interpret_csv_query_results_prompt
 
 logger = setup_logger(__package__, __file__)
 
+SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
+
 
 def preprocess_question(input: OverallState) -> OverallState:
     result = AIMessage(
@@ -96,5 +98,5 @@ def run_query(state: OverallState) -> OverallState:
         logger.warning(f"An error occurred when running the query: {e}")
         return {
             "last_generated_query": query,
-            "last_query_results": "Error when running the SPARQL query",
+            "last_query_results": SPARQL_QUERY_EXEC_ERROR,
         }

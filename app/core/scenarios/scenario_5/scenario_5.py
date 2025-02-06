@@ -21,6 +21,7 @@ from app.core.utils.graph_nodes import (
     preprocess_question,
     select_similar_classes,
     run_query,
+    SPARQL_QUERY_EXEC_ERROR,
 )
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import get_llm_from_config, main, setup_logger
@@ -45,7 +46,7 @@ MAX_NUMBER_OF_TRIES: int = 3
 
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
-    if state["last_query_results"].find("Error when running the SPARQL query") == -1:
+    if state["last_query_results"].find(SPARQL_QUERY_EXEC_ERROR) == -1:
         logger.info("Query execution yielded some results")
         return "interpret_results"
     else:
