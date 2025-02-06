@@ -28,7 +28,7 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
         logger.info("query executed successfully")
         return "interpret_results"
     else:
-        logger.info("Ending the process")
+        logger.info("Processing completed.")
         return END
 
 
@@ -40,7 +40,7 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
         logger.warning(
             "query generation task completed without generating a proper SPARQL query"
         )
-        logger.info("Ending the process")
+        logger.info("Processing completed.")
         return END
 
 

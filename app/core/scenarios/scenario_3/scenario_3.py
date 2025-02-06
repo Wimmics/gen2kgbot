@@ -26,19 +26,19 @@ llm = get_llm_from_config(SCENARIO)
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
     """
-    Check if the query was run successfully and routes to the next step accordingly.
+    Check if the query was successful and route to the next step accordingly.
 
     Args:
-        state (MessagesState): The current state of the conversation
+        state (MessagesState): current state of the conversation
 
     Returns:
-        Literal["interpret_results", END]: The next step in the conversation
+        Literal["interpret_results", END]: next step in the conversation
     """
     if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info("query run succesfully and it yielded")
+        logger.info("Query execution yielded results")
         return "interpret_results"
     else:
-        logger.info("Ending the process")
+        logger.info("Processing completed.")
         return END
 
 
@@ -49,19 +49,19 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
     If more than one query was produced, just send a warning and process the first one.
     """
 
-    nb_queries = len(find_sparql_queries(state["messages"][-1].content))
+    no_queries = len(find_sparql_queries(state["messages"][-1].content))
 
-    if nb_queries > 1:
+    if no_queries > 1:
         logger.warning(
-            f"Query generation task produced {nb_queries} SPARQL queries. Will process the first one."
+            f"Query generation task produced {no_queries} SPARQL queries. Will process the first one."
         )
         return "run_query"
-    elif nb_queries == 1:
+    elif no_queries == 1:
         logger.info("Query generation task produced one SPARQL query")
         return "run_query"
     else:
         logger.warning("Query generation task did not produce a proper SPARQL query")
-        logger.info("Ending the process")
+        logger.info("Processing completed.")
         return END
 
 
@@ -88,10 +88,10 @@ def run_query(state: OverallState):
         return {"messages": csv_result, "last_generated_query": query}
     except ParserError as e:
         logger.warning(f"A parsing error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the query")}
+        return {"messages": AIMessage("Error when running the SPARQL query")}
     except Exception as e:
         logger.warning(f"An error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the query")}
+        return {"messages": AIMessage("Error when running the SPARQL query")}
 
 
 s3_builder = StateGraph(

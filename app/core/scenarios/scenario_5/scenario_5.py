@@ -46,10 +46,10 @@ MAX_NUMBER_OF_TRIES: int = 3
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info("query run succesfully and it yielded")
+        logger.info("Query execution yielded results")
         return "interpret_results"
     else:
-        logger.info("Ending the process")
+        logger.info("Processing completed.")
         return END
 
 
@@ -57,17 +57,17 @@ def verify_query_router(
     state: OverallState,
 ) -> Literal["run_query", "create_retry_prompt", "__end__"]:
     if "last_generated_query" in state:
-        logger.info("query generated task completed with a generated SPARQL query")
+        logger.info("Query generation task produced one SPARQL query")
         return "run_query"
     else:
         logger.warning(
-            "query generated task completed without generating a proper SPARQL query"
+            "Query generation task did not produce a proper SPARQL query"
         )
         if state["number_of_tries"] < MAX_NUMBER_OF_TRIES:
             logger.info(f"Tries left {MAX_NUMBER_OF_TRIES - state['number_of_tries']}")
             return "create_retry_prompt"
         else:
-            logger.info("Max retries ... Ending the process")
+            logger.info("Max retries reached. Processing stopped.")
         return END
 
 

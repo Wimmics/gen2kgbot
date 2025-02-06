@@ -41,10 +41,10 @@ llm = get_llm_from_config(SCENARIO)
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
     if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info("query run succesfully and it yielded")
+        logger.info("Query execution yielded results")
         return "interpret_results"
     else:
-        logger.info("Ending the process")
+        logger.info("Processing completed.")
         return END
 
 
@@ -52,13 +52,13 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
     generated_queries = find_sparql_queries(state["messages"][-1].content)
 
     if len(generated_queries) > 0:
-        logger.info("query generated task completed with a generated SPARQL query")
+        logger.info("Query generation task produced one SPARQL query")
         return "run_query"
     else:
         logger.warning(
-            "query generated task completed without generating a proper SPARQL query"
+            "Query generation task did not produce a proper SPARQL query"
         )
-        logger.info("Ending the process")
+        logger.info("Processing completed.")
         return END
 
 
