@@ -30,13 +30,13 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
     Check if the query was successful and route to the next step accordingly.
 
     Args:
-        state (MessagesState): current state of the conversation
+        state (OverallState): current state of the conversation
 
     Returns:
         Literal["interpret_results", END]: next step in the conversation
     """
-    if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info("Query execution yielded results")
+    if state["last_query_results"].find("Error when running the SPARQL query") == -1:
+        logger.info("Query execution yielded some results")
         return "interpret_results"
     else:
         logger.info("Processing completed.")

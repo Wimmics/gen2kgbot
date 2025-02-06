@@ -19,6 +19,7 @@ from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     preprocess_question,
     select_similar_classes,
+    run_query,
 )
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
@@ -47,8 +48,8 @@ llm = get_llm_from_config(SCENARIO)
 
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
-    if state["messages"][-1].content.find("Error when running the query") == -1:
-        logger.info("Query execution yielded results")
+    if state["last_query_results"].find("Error when running the SPARQL query") == -1:
+        logger.info("Query execution yielded some results")
         return "interpret_results"
     else:
         logger.info("Processing completed.")
@@ -201,21 +202,6 @@ def create_retry_prompt(state: OverallState) -> OverallState:
     return {
         "query_generation_prompt": query_regeneration_prompt,
     }
-
-
-def run_query(state: OverallState):
-
-    query = state["last_generated_query"]
-
-    try:
-        csv_result = run_sparql_query(query=query)
-        return {"messages": csv_result}
-    except ParserError as e:
-        logger.warning(f"A parsing error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the query")}
-    except Exception as e:
-        logger.warning(f"An error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the query")}
 
 
 s6_builder = StateGraph(

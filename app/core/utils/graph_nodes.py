@@ -59,13 +59,15 @@ def select_similar_classes(state: OverallState) -> OverallState:
 
 
 async def interpret_csv_query_results(state: OverallState) -> OverallState:
-    csv_results_message = state["messages"][-1]
+    csv_results_message = state["last_query_results"]
     llm = get_current_llm()
     result = await llm.ainvoke(
         interpret_csv_query_results_prompt.format(
-            question=state["initial_question"], results=csv_results_message.content
+            question=state["initial_question"], results=csv_results_message
         )
     )
+
+    logger.debug(f"Interpretation of the query results:\n{result.content}")
     return OverallState({"messages": result, "results_interpretation": result})
 
 
@@ -88,6 +90,7 @@ def run_query(state: OverallState) -> OverallState:
 
     try:
         csv_result = run_sparql_query(query=query)
+        logger.debug(f"Query execution results:\n{csv_result}")
         return {"last_generated_query": query, "last_query_results": csv_result}
     except Exception as e:
         logger.warning(f"An error occurred when running the query: {e}")

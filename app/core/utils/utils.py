@@ -260,8 +260,7 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
 
 
 def separate_log():
-    logger.info("-----------------------------------------------------------")
-
+    logger.info("=================================================================================")
 
 async def main(graph: CompiledStateGraph):
     """
