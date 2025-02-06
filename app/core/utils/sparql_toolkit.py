@@ -11,7 +11,9 @@ from app.core.utils.utils import get_kg_sparql_endpoint_url
 logger = setup_logger(__package__, __file__)
 
 
-def run_sparql_query(query: str) -> str:
+def run_sparql_query(
+    query: str, endpoint_url: str = get_kg_sparql_endpoint_url()
+) -> str:
     """
     Submit a SPARQL query to the endpoint and return the result in CSV SPARQL Results format.
 
@@ -26,10 +28,8 @@ def run_sparql_query(query: str) -> str:
     """
 
     try:
-        endpoint_url = get_kg_sparql_endpoint_url()
-
-        logger.debug(f"Submiting SPARQL query to: {endpoint_url}")
         logger.debug(f"SPARQL query:\n{query}")
+        logger.info(f"Submiting SPARQL query to: {endpoint_url}")
 
         _store = sparqlstore.SPARQLStore()
         _store.open(endpoint_url)
@@ -47,7 +47,7 @@ def run_sparql_query(query: str) -> str:
     return csv_str
 
 
-def find_sparql_queries(message: str) -> List[str] :
+def find_sparql_queries(message: str) -> List[str]:
     """
     Extract, from the LLM's response, SPARQL queries embedded in a sparql markdown block.
     """

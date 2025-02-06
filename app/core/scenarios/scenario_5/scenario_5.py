@@ -60,9 +60,7 @@ def verify_query_router(
         logger.info("Query generation task produced one SPARQL query")
         return "run_query"
     else:
-        logger.warning(
-            "Query generation task did not produce a proper SPARQL query"
-        )
+        logger.warning("Query generation task did not produce a proper SPARQL query")
         if state["number_of_tries"] < MAX_NUMBER_OF_TRIES:
             logger.info(f"Tries left {MAX_NUMBER_OF_TRIES - state['number_of_tries']}")
             return "create_retry_prompt"

@@ -1,5 +1,10 @@
+"""
+This module implements the Langgraph nodes that are common to all scenarios
+"""
+
 from app.core.utils.graph_state import OverallState
 from app.core.utils.preprocessing import extract_relevant_entities_spacy
+from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
 from app.core.utils.utils import (
     get_class_vector_db_from_config,
     get_current_llm,
@@ -32,7 +37,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
         state (dict): current state of the conversation
 
     Returns:
-        dict: state of the conversation with added key selected_classes
+        dict: state updated with selected_classes
     """
 
     db = get_class_vector_db_from_config()
@@ -44,8 +49,8 @@ def select_similar_classes(state: OverallState) -> OverallState:
     retrieved_documents = db.similarity_search(query, k=10)
 
     result = "These are some relevant classes for the query generation:"
-    for doc in retrieved_documents:
-        result = f"{result}\n{doc.page_content}"
+    for item in retrieved_documents:
+        result = f"{result}\n{item.page_content}"
     result = f"{result}\n\n"
 
     logger.debug("Done with selecting similar classes to help query generation")
@@ -62,3 +67,31 @@ async def interpret_csv_query_results(state: OverallState) -> OverallState:
         )
     )
     return OverallState({"messages": result, "results_interpretation": result})
+
+
+def run_query(state: OverallState) -> OverallState:
+    """
+    Submit the generated SPARQL query to the endpoint and return the results
+
+    Args:
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state updated with last query (last_generated_query) and query results (last_query_results)
+    """
+
+    # Depending on the scenario, the last generated query may already be in the state or not
+    if "last_generated_query" in state:
+        query = state["last_generated_query"]
+    else:
+        query = find_sparql_queries(state["messages"][-1].content)[0]
+
+    try:
+        csv_result = run_sparql_query(query=query)
+        return {"last_generated_query": query, "last_query_results": csv_result}
+    except Exception as e:
+        logger.warning(f"An error occurred when running the query: {e}")
+        return {
+            "last_generated_query": query,
+            "last_query_results": "Error when running the SPARQL query",
+        }

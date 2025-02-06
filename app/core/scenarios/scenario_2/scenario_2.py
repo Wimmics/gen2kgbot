@@ -4,7 +4,7 @@ from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_2.utils.prompt import system_prompt_template
 from app.core.utils.sparql_toolkit import find_sparql_queries
-from app.core.utils.graph_nodes import interpret_csv_query_results
+from app.core.utils.graph_nodes import interpret_csv_query_results, run_query
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
     get_llm_from_config,
@@ -34,12 +34,10 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
 
 def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
     if len(find_sparql_queries(state["messages"][-1].content)) > 0:
-        logger.info("query generation task completed successfully")
+        logger.info("Query generation task produced a SPARQL query")
         return "run_query"
     else:
-        logger.warning(
-            "query generation task completed without generating a proper SPARQL query"
-        )
+        logger.warning("Query generation task did not produce a proper SPARQL query")
         logger.info("Processing completed.")
         return END
 
@@ -51,21 +49,6 @@ async def generate_query(state: OverallState) -> OverallState:
         system_prompt_template.format(question=state["initial_question"])
     )
     return OverallState({"messages": [HumanMessage(state["initial_question"]), result]})
-
-
-def run_query(state: OverallState) -> OverallState:
-    query = find_sparql_queries(state["messages"][-1].content)[0]
-    logger.info(f"Executing SPARQL query extracted from llm's response:\n{query}")
-
-    try:
-        csv_result = run_sparql_query(query=query)
-        return OverallState({"messages": csv_result, "last_generated_query": query})
-    except ParserError as e:
-        logger.warning(f"A parsing error occurred when running the query: {e}")
-        return OverallState({"messages": BaseMessage(SPARQL_QUERY_EXEC_ERROR)})
-    except Exception as e:
-        logger.warning(f"An error occurred when running the query: {e}")
-        return OverallState({"messages": AIMessage(SPARQL_QUERY_EXEC_ERROR)})
 
 
 s2_builder = StateGraph(

@@ -7,6 +7,7 @@ from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     select_similar_classes,
+    run_query,
 )
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
@@ -69,7 +70,7 @@ async def generate_query(state: OverallState):
 
     selected_classes = ""
     for item in state["selected_classes"]:
-        selected_classes = f"{selected_classes}\n{item}"
+        selected_classes = f"{selected_classes}\n{item.page_content}"
 
     prompt = system_prompt_template.format(
         question=state["initial_question"], context=selected_classes
@@ -77,21 +78,6 @@ async def generate_query(state: OverallState):
     logger.debug(f"Prompt: {prompt}")
     result = await llm.ainvoke(prompt)
     return {"messages": [HumanMessage(state["initial_question"]), result]}
-
-
-def run_query(state: OverallState):
-
-    query = find_sparql_queries(state["messages"][-1].content)[0]
-
-    try:
-        csv_result = run_sparql_query(query=query)
-        return {"messages": csv_result, "last_generated_query": query}
-    except ParserError as e:
-        logger.warning(f"A parsing error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the SPARQL query")}
-    except Exception as e:
-        logger.warning(f"An error occurred when running the query: {e}")
-        return {"messages": AIMessage("Error when running the SPARQL query")}
 
 
 s3_builder = StateGraph(

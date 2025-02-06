@@ -55,9 +55,7 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
         logger.info("Query generation task produced one SPARQL query")
         return "run_query"
     else:
-        logger.warning(
-            "Query generation task did not produce a proper SPARQL query"
-        )
+        logger.warning("Query generation task did not produce a proper SPARQL query")
         logger.info("Processing completed.")
         return END
 
