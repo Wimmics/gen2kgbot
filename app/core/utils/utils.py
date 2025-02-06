@@ -278,9 +278,8 @@ async def main(graph: CompiledStateGraph):
     separate_log()
     for m in state["messages"]:
         logger.info(m.pretty_repr())
-    separate_log()
 
     if "last_generated_query" in state:
         separate_log()
         logger.info("last_generated_query: " + state["last_generated_query"])
-        separate_log()
+    separate_log()

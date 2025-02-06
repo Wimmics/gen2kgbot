@@ -24,6 +24,16 @@ def preprocess_question(input: OverallState) -> OverallState:
 
 
 def select_similar_classes(state: OverallState) -> OverallState:
+    """
+    Retrieve, from the vector db, the descritption of ontology classes
+    related to the question
+
+    Args:
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state of the conversation with added key selected_classes
+    """
 
     db = get_class_vector_db_from_config()
 

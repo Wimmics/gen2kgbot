@@ -55,9 +55,16 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
 
 
 async def generate_query(state: OverallState):
-    result = await llm.ainvoke(
-        system_prompt_template.format(question=state["initial_question"])
+
+    selected_classes = ""
+    for item in state["selected_classes"]:
+        selected_classes = f"{selected_classes}\n{item}"
+
+    prompt = system_prompt_template.format(
+        question=state["initial_question"], context=selected_classes
     )
+    logger.debug(f"Prompt: {prompt}")
+    result = await llm.ainvoke(prompt)
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
