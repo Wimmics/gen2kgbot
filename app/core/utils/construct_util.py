@@ -58,7 +58,7 @@ def get_context_class(class_label_comment: tuple) -> str:
         graph.add((class_ref, URIRef(property_uri), value_ref))
 
     # save the graph
-    class_file_path = format_class_graph_file(class_label_comment[0])
+    class_file_path = generate_class_description_filename(class_label_comment[0])
 
     graph.serialize(destination=class_file_path)
     return graph.serialize(format="turtle")
@@ -101,12 +101,14 @@ def run_sparql_construct(query, filename, endpoint_url):
     return results
 
 
-def format_class_graph_file(class_uri: str) -> str:
+def generate_class_description_filename(class_uri: str) -> str:
+    """
+    Generate a file name for the description of a class
+    """
 
     class_name = class_uri.split("/")[-1]
 
     context_directory = Path(get_classes_context_folder())
-
     if not os.path.exists(context_directory):
         os.makedirs(context_directory)
 

@@ -11,7 +11,7 @@ from app.core.scenarios.scenario_5.utils.prompt import (
 )
 from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.construct_util import (
-    format_class_graph_file,
+    generate_class_description_filename,
     get_context_class,
     get_empty_graph_with_prefixes,
     tmp_directory,
@@ -23,6 +23,7 @@ from app.core.utils.graph_nodes import (
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
 )
+from app.core.utils.graph_routers import get_context_class_router
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import get_llm_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
@@ -68,26 +69,6 @@ def verify_query_router(
         else:
             logger.info("Max retries reached. Processing stopped.")
         return END
-
-
-def get_context_class_router(
-    state: OverallState,
-) -> Literal["get_context_class_from_cache", "get_context_class_from_kg"]:
-
-    next_nodes = []
-
-    for doc in state["selected_classes"]:
-        cls = ast.literal_eval(doc.page_content)
-        cls_path = format_class_graph_file(cls[0])
-
-        if os.path.exists(cls_path):
-            logger.info(f"Classe context file path at {cls_path} found.")
-            next_nodes.append(Send("get_context_class_from_cache", cls_path))
-        else:
-            logger.info(f"Classe context file path at {cls_path} not found.")
-            next_nodes.append(Send("get_context_class_from_kg", cls))
-
-    return next_nodes
 
 
 # Node

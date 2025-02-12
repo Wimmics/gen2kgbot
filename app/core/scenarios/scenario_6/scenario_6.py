@@ -32,7 +32,7 @@ from app.core.utils.utils import (
 from app.core.utils.sparql_toolkit import run_sparql_query
 from app.core.utils.construct_util import (
     add_known_prefixes_to_query,
-    format_class_graph_file,
+    generate_class_description_filename,
     get_context_class,
     get_empty_graph_with_prefixes,
     tmp_directory,
@@ -79,9 +79,9 @@ def get_context_class_router(
 
     next_nodes = []
 
-    for doc in state["selected_classes"]:
-        cls = ast.literal_eval(doc.page_content)
-        cls_path = format_class_graph_file(cls[0])
+    for item in state["selected_classes"]:
+        cls = ast.literal_eval(item)
+        cls_path = generate_class_description_filename(cls[0])
 
         if os.path.exists(cls_path):
             logger.info(f"Classe context file path at {cls_path} found.")
@@ -117,8 +117,8 @@ def select_similar_query_examples(state: OverallState) -> OverallState:
 
     result = "These are some relevant queries for the query generation:\n"
     # show the retrieved document's content
-    for doc in retrieved_documents:
-        result = f"{result}\n```sparql\n{doc.page_content}\n```\n"
+    for item in retrieved_documents:
+        result = f"{result}\n```sparql\n{item}\n```\n"
 
     logger.info("Done with selecting some similar queries to help query generation")
 

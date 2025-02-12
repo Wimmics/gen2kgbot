@@ -3,7 +3,7 @@ This module implements the Langgraph nodes that are common to all scenarios
 """
 
 from app.core.utils.graph_state import OverallState
-from app.core.utils.preprocessing import extract_relevant_entities_spacy
+from app.core.utils.question_preprocessing import extract_relevant_entities_spacy
 from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
 from app.core.utils.utils import (
     get_class_vector_db_from_config,
@@ -19,12 +19,14 @@ SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
 
 
 def preprocess_question(input: OverallState) -> OverallState:
-    result = AIMessage(
-        f"{",".join(extract_relevant_entities_spacy(input["initial_question"]))}"
-    )
-    logger.info("Preprocessing the question was done succesfully")
+    logger.debug("Preprocessing the question...")
+
+    extracted_classes = extract_relevant_entities_spacy(input["initial_question"])
+    relevant_entities = AIMessage(f"{",".join(extracted_classes)}")
+    logger.debug(f"Extracted following entities: {extracted_classes}")
+
     return {
-        "messages": result,
+        "messages": relevant_entities,
         "initial_question": input["initial_question"],
         "number_of_tries": 0,
     }
@@ -42,22 +44,24 @@ def select_similar_classes(state: OverallState) -> OverallState:
         dict: state updated with selected_classes
     """
 
+    logger.debug("Selecting classes similar to question...")
+
     db = get_class_vector_db_from_config()
 
     query = state["initial_question"]
-    logger.debug(f"query: {query}")
+    logger.debug(f"Question: {query}")
 
     # Retrieve the most similar text
     retrieved_documents = db.similarity_search(query, k=10)
+    retrieved_classes = [item.page_content for item in retrieved_documents]
 
     result = "These are some relevant classes for the query generation:"
     for item in retrieved_documents:
         result = f"{result}\n{item.page_content}"
     result = f"{result}\n\n"
 
-    logger.debug("Done with selecting similar classes to help query generation")
-
-    return {"messages": AIMessage(result), "selected_classes": retrieved_documents}
+    logger.debug(f"Found {len(retrieved_documents)} classes similar to the question.")
+    return {"messages": AIMessage(result), "selected_classes": retrieved_classes}
 
 
 async def interpret_csv_query_results(state: OverallState) -> OverallState:

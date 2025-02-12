@@ -71,7 +71,7 @@ async def generate_query(state: OverallState):
 
     selected_classes = ""
     for item in state["selected_classes"]:
-        selected_classes = f"{selected_classes}\n{item.page_content}"
+        selected_classes = f"{selected_classes}\n{item}"
 
     prompt = system_prompt_template.format(
         question=state["initial_question"], context=selected_classes

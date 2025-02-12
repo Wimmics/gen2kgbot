@@ -1,3 +1,4 @@
+import argparse
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -260,13 +261,29 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
 
 
 def separate_log():
-    logger.info("=================================================================================")
+    logger.info(
+        "================================================================================="
+    )
+
+
+def setup_cli():
+    parser = argparse.ArgumentParser(
+        description="Process the scenario with the predifined or custom question and configuration."
+    )
+    parser.add_argument("-c", "--custom", type=str, help="Provide a custom question.")
+    parser.add_argument(
+        "-p", "--params", type=str, help="Provide a custom configuration path."
+    )
+    globals()["args"] = parser.parse_args()
+
 
 async def main(graph: CompiledStateGraph):
     """
     Process a predefined or custom question: invoke a Langgraph graph with the NL question,
     and log the messages returned by the graph.
     """
+
+    setup_cli()
     if args is not None and args.custom:
         question = args.custom
     else:

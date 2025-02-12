@@ -8,7 +8,6 @@ from rdflib import Graph
 from app.core.scenarios.scenario_4.utils.prompt import system_prompt
 from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.construct_util import (
-    format_class_graph_file,
     get_context_class,
     get_empty_graph_with_prefixes,
     tmp_directory,
@@ -20,6 +19,7 @@ from app.core.utils.graph_nodes import (
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
 )
+from app.core.utils.graph_routers import get_context_class_router
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
     get_llm_from_config,
@@ -38,7 +38,7 @@ SCENARIO = "scenario_4"
 
 llm = get_llm_from_config(SCENARIO)
 
-# Router
+# Routers
 
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
@@ -62,27 +62,7 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
         return END
 
 
-def get_context_class_router(
-    state: OverallState,
-) -> Literal["get_context_class_from_cache", "get_context_class_from_kg"]:
-
-    next_nodes = []
-
-    for doc in state["selected_classes"]:
-        cls = ast.literal_eval(doc.page_content)
-        cls_path = format_class_graph_file(cls[0])
-
-        if os.path.exists(cls_path):
-            logger.info(f"Classe context file path at {cls_path} found.")
-            next_nodes.append(Send("get_context_class_from_cache", cls_path))
-        else:
-            logger.info(f"Classe context file path at {cls_path} not found.")
-            next_nodes.append(Send("get_context_class_from_kg", cls))
-
-    return next_nodes
-
-
-# Node
+# Nodes
 
 
 def get_context_class_from_cache(cls_path: str) -> OverallState:

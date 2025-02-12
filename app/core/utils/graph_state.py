@@ -1,7 +1,6 @@
 import operator
 from typing import Annotated, TypedDict
 from langgraph.graph import MessagesState
-from langchain_core.documents import Document
 
 
 class InputState(TypedDict):
@@ -17,7 +16,7 @@ class OverallState(MessagesState, InputState):
 
     question_relevant_entities: list[str]
     selected_queries: str
-    selected_classes: list[Document]
+    selected_classes: list[str]
     selected_classes_context: Annotated[list[str], operator.add]
     merged_classes_context: str
     query_generation_prompt: str
