@@ -11,19 +11,19 @@ from app.core.scenarios.scenario_5.utils.prompt import (
 )
 from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.construct_util import (
-    generate_class_description_filename,
-    get_context_class,
     get_empty_graph_with_prefixes,
     tmp_directory,
 )
 from app.core.utils.graph_nodes import (
-    interpret_csv_query_results,
     preprocess_question,
     select_similar_classes,
+    get_class_context_from_cache,
+    get_class_context_from_kg,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
+    interpret_csv_query_results,
 )
-from app.core.utils.graph_routers import get_context_class_router
+from app.core.utils.graph_routers import get_class_context_router
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import get_llm_from_config, main, setup_logger
 from rdflib.exceptions import ParserError
@@ -72,17 +72,6 @@ def verify_query_router(
 
 
 # Node
-
-
-def get_context_class_from_cache(cls_path: str) -> OverallState:
-    with open(cls_path) as f:
-        return {"selected_classes_context": ["\n".join(f.readlines())]}
-
-
-def get_context_class_from_kg(cls: str) -> OverallState:
-    graph_ttl = get_context_class(cls)
-    return {"selected_classes_context": [graph_ttl]}
-
 
 def create_prompt(state: OverallState) -> OverallState:
 
@@ -161,37 +150,37 @@ def create_retry_prompt(state: OverallState) -> OverallState:
     }
 
 
-s5_builder = StateGraph(
+builder = StateGraph(
     state_schema=OverallState, input=InputState, output=OverallState
 )
 
-s5_builder.add_node("preprocess_question", preprocess_question)
-s5_builder.add_node("select_similar_classes", select_similar_classes)
-s5_builder.add_node("get_context_class_from_cache", get_context_class_from_cache)
-s5_builder.add_node("get_context_class_from_kg", get_context_class_from_kg)
+builder.add_node("preprocess_question", preprocess_question)
+builder.add_node("select_similar_classes", select_similar_classes)
+builder.add_node("get_context_class_from_cache", get_class_context_from_cache)
+builder.add_node("get_context_class_from_kg", get_class_context_from_kg)
 
-s5_builder.add_node("create_prompt", create_prompt)
-s5_builder.add_node("generate_query", generate_query)
-s5_builder.add_node("run_query", run_query)
+builder.add_node("create_prompt", create_prompt)
+builder.add_node("generate_query", generate_query)
+builder.add_node("run_query", run_query)
 
-s5_builder.add_node("verify_query", verify_query)
-s5_builder.add_node("create_retry_prompt", create_retry_prompt)
+builder.add_node("verify_query", verify_query)
+builder.add_node("create_retry_prompt", create_retry_prompt)
 
-s5_builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("interpret_results", interpret_csv_query_results)
 
-s5_builder.add_edge(START, "preprocess_question")
-s5_builder.add_edge("preprocess_question", "select_similar_classes")
-s5_builder.add_conditional_edges("select_similar_classes", get_context_class_router)
-s5_builder.add_edge("get_context_class_from_cache", "create_prompt")
-s5_builder.add_edge("get_context_class_from_kg", "create_prompt")
-s5_builder.add_edge("create_prompt", "generate_query")
-s5_builder.add_edge("generate_query", "verify_query")
-s5_builder.add_conditional_edges("verify_query", verify_query_router)
-s5_builder.add_edge("create_retry_prompt", "generate_query")
-s5_builder.add_conditional_edges("run_query", run_query_router)
-s5_builder.add_edge("interpret_results", END)
+builder.add_edge(START, "preprocess_question")
+builder.add_edge("preprocess_question", "select_similar_classes")
+builder.add_conditional_edges("select_similar_classes", get_class_context_router)
+builder.add_edge("get_context_class_from_cache", "create_prompt")
+builder.add_edge("get_context_class_from_kg", "create_prompt")
+builder.add_edge("create_prompt", "generate_query")
+builder.add_edge("generate_query", "verify_query")
+builder.add_conditional_edges("verify_query", verify_query_router)
+builder.add_edge("create_retry_prompt", "generate_query")
+builder.add_conditional_edges("run_query", run_query_router)
+builder.add_edge("interpret_results", END)
 
-graph = s5_builder.compile()
+graph = builder.compile()
 
 
 def run_scenario(question: str):

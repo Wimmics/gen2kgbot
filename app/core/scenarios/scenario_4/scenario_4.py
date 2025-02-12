@@ -8,18 +8,19 @@ from rdflib import Graph
 from app.core.scenarios.scenario_4.utils.prompt import system_prompt
 from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.construct_util import (
-    get_context_class,
     get_empty_graph_with_prefixes,
     tmp_directory,
 )
 from app.core.utils.graph_nodes import (
-    interpret_csv_query_results,
     preprocess_question,
     select_similar_classes,
+    get_class_context_from_cache,
+    get_class_context_from_kg,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
+    interpret_csv_query_results,
 )
-from app.core.utils.graph_routers import get_context_class_router
+from app.core.utils.graph_routers import get_class_context_router
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
     get_llm_from_config,
@@ -65,16 +66,6 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
 # Nodes
 
 
-def get_context_class_from_cache(cls_path: str) -> OverallState:
-    with open(cls_path) as f:
-        return {"selected_classes_context": ["\n".join(f.readlines())]}
-
-
-def get_context_class_from_kg(cls: str) -> OverallState:
-    graph_ttl = get_context_class(cls)
-    return {"selected_classes_context": [graph_ttl]}
-
-
 def create_prompt(state: OverallState) -> OverallState:
 
     merged_graph = get_empty_graph_with_prefixes()
@@ -113,31 +104,31 @@ async def generate_query(state: OverallState):
     return {"messages": result}
 
 
-s4_builder = StateGraph(
+builder = StateGraph(
     state_schema=OverallState, input=InputState, output=OverallState
 )
 
-s4_builder.add_node("preprocess_question", preprocess_question)
-s4_builder.add_node("select_similar_classes", select_similar_classes)
-s4_builder.add_node("get_context_class_from_cache", get_context_class_from_cache)
-s4_builder.add_node("get_context_class_from_kg", get_context_class_from_kg)
+builder.add_node("preprocess_question", preprocess_question)
+builder.add_node("select_similar_classes", select_similar_classes)
+builder.add_node("get_context_class_from_cache", get_class_context_from_cache)
+builder.add_node("get_context_class_from_kg", get_class_context_from_kg)
 
-s4_builder.add_node("create_prompt", create_prompt)
-s4_builder.add_node("generate_query", generate_query)
-s4_builder.add_node("run_query", run_query)
-s4_builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("create_prompt", create_prompt)
+builder.add_node("generate_query", generate_query)
+builder.add_node("run_query", run_query)
+builder.add_node("interpret_results", interpret_csv_query_results)
 
-s4_builder.add_edge(START, "preprocess_question")
-s4_builder.add_edge("preprocess_question", "select_similar_classes")
-s4_builder.add_conditional_edges("select_similar_classes", get_context_class_router)
-s4_builder.add_edge("get_context_class_from_cache", "create_prompt")
-s4_builder.add_edge("get_context_class_from_kg", "create_prompt")
-s4_builder.add_edge("create_prompt", "generate_query")
-s4_builder.add_conditional_edges("generate_query", generate_query_router)
-s4_builder.add_conditional_edges("run_query", run_query_router)
-s4_builder.add_edge("interpret_results", END)
+builder.add_edge(START, "preprocess_question")
+builder.add_edge("preprocess_question", "select_similar_classes")
+builder.add_conditional_edges("select_similar_classes", get_class_context_router)
+builder.add_edge("get_context_class_from_cache", "create_prompt")
+builder.add_edge("get_context_class_from_kg", "create_prompt")
+builder.add_edge("create_prompt", "generate_query")
+builder.add_conditional_edges("generate_query", generate_query_router)
+builder.add_conditional_edges("run_query", run_query_router)
+builder.add_edge("interpret_results", END)
 
-graph = s4_builder.compile()
+graph = builder.compile()
 
 
 def run_scenario(question: str):

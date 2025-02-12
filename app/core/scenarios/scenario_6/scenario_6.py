@@ -16,11 +16,13 @@ from app.core.scenarios.scenario_6.utils.prompt import (
 )
 from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.graph_nodes import (
-    interpret_csv_query_results,
     preprocess_question,
     select_similar_classes,
+    get_class_context_from_cache,
+    get_class_context_from_kg,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
+    interpret_csv_query_results,
 )
 from app.core.utils.graph_state import InputState, OverallState
 from app.core.utils.utils import (
@@ -32,8 +34,7 @@ from app.core.utils.utils import (
 from app.core.utils.sparql_toolkit import run_sparql_query
 from app.core.utils.construct_util import (
     add_known_prefixes_to_query,
-    generate_class_description_filename,
-    get_context_class,
+    generate_class_context_filename,
     get_empty_graph_with_prefixes,
     tmp_directory,
 )
@@ -81,7 +82,7 @@ def get_context_class_router(
 
     for item in state["selected_classes"]:
         cls = ast.literal_eval(item)
-        cls_path = generate_class_description_filename(cls[0])
+        cls_path = generate_class_context_filename(cls[0])
 
         if os.path.exists(cls_path):
             logger.info(f"Classe context file path at {cls_path} found.")
@@ -94,16 +95,6 @@ def get_context_class_router(
 
 
 # Node
-
-
-def get_context_class_from_cache(cls_path: str) -> OverallState:
-    with open(cls_path) as f:
-        return {"selected_classes_context": ["\n".join(f.readlines())]}
-
-
-def get_context_class_from_kg(cls: str) -> OverallState:
-    graph_ttl = get_context_class(cls)
-    return {"selected_classes_context": [graph_ttl]}
 
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
@@ -205,56 +196,52 @@ def create_retry_prompt(state: OverallState) -> OverallState:
     }
 
 
-s6_builder = StateGraph(
-    state_schema=OverallState, input=InputState, output=OverallState
-)
-s6_preprocessing_builder = StateGraph(
+builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
+preprocessing_builder = StateGraph(
     state_schema=OverallState, input=OverallState, output=OverallState
 )
 
-s6_preprocessing_builder.add_node("preprocess_question", preprocess_question)
-s6_preprocessing_builder.add_node("select_similar_classes", select_similar_classes)
-s6_preprocessing_builder.add_node(
-    "get_context_class_from_cache", get_context_class_from_cache
+preprocessing_builder.add_node("preprocess_question", preprocess_question)
+preprocessing_builder.add_node("select_similar_classes", select_similar_classes)
+preprocessing_builder.add_node(
+    "get_context_class_from_cache", get_class_context_from_cache
 )
-s6_preprocessing_builder.add_node(
-    "get_context_class_from_kg", get_context_class_from_kg
-)
-s6_preprocessing_builder.add_node(
+preprocessing_builder.add_node("get_context_class_from_kg", get_class_context_from_kg)
+preprocessing_builder.add_node(
     "select_similar_query_examples", select_similar_query_examples
 )
 
-s6_preprocessing_builder.add_edge(START, "preprocess_question")
-s6_preprocessing_builder.add_edge(
-    "preprocess_question", "select_similar_query_examples"
-)
-s6_preprocessing_builder.add_edge("preprocess_question", "select_similar_classes")
-s6_preprocessing_builder.add_edge("select_similar_query_examples", END)
-s6_preprocessing_builder.add_conditional_edges(
+preprocessing_builder.add_edge(START, "preprocess_question")
+preprocessing_builder.add_edge("preprocess_question", "select_similar_query_examples")
+preprocessing_builder.add_edge("preprocess_question", "select_similar_classes")
+preprocessing_builder.add_edge("select_similar_query_examples", END)
+preprocessing_builder.add_conditional_edges(
     "select_similar_classes", get_context_class_router
 )
-s6_preprocessing_builder.add_edge("get_context_class_from_cache", END)
-s6_preprocessing_builder.add_edge("get_context_class_from_kg", END)
+preprocessing_builder.add_edge("get_context_class_from_cache", END)
+preprocessing_builder.add_edge("get_context_class_from_kg", END)
 
 
-s6_builder.add_node("preprocessing_subgraph", s6_preprocessing_builder.compile())
-s6_builder.add_node("create_prompt", create_prompt)
-s6_builder.add_node("generate_query", generate_query)
-s6_builder.add_node("run_query", run_query)
-s6_builder.add_node("verify_query", verify_query)
-s6_builder.add_node("create_retry_prompt", create_retry_prompt)
-s6_builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("preprocessing_subgraph", preprocessing_builder.compile())
+builder.add_node("create_prompt", create_prompt)
+builder.add_node("generate_query", generate_query)
 
-s6_builder.add_edge(START, "preprocessing_subgraph")
-s6_builder.add_edge("preprocessing_subgraph", "create_prompt")
-s6_builder.add_edge("create_prompt", "generate_query")
-s6_builder.add_edge("generate_query", "verify_query")
-s6_builder.add_conditional_edges("verify_query", verify_query_router)
-s6_builder.add_edge("create_retry_prompt", "generate_query")
-s6_builder.add_conditional_edges("run_query", run_query_router)
-s6_builder.add_edge("interpret_results", END)
+builder.add_node("run_query", run_query)
+builder.add_node("verify_query", verify_query)
+builder.add_node("create_retry_prompt", create_retry_prompt)
 
-graph = s6_builder.compile()
+builder.add_node("interpret_results", interpret_csv_query_results)
+
+builder.add_edge(START, "preprocessing_subgraph")
+builder.add_edge("preprocessing_subgraph", "create_prompt")
+builder.add_edge("create_prompt", "generate_query")
+builder.add_edge("generate_query", "verify_query")
+builder.add_conditional_edges("verify_query", verify_query_router)
+builder.add_edge("create_retry_prompt", "generate_query")
+builder.add_conditional_edges("run_query", run_query_router)
+builder.add_edge("interpret_results", END)
+
+graph = builder.compile()
 
 
 def run_scenario(question: str):

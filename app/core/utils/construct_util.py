@@ -4,7 +4,7 @@ from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper
 from rdflib import Graph, URIRef, BNode, RDFS, term
 from app.core.utils.utils import (
-    get_classes_context_folder,
+    get_class_context_directory,
     get_kg_sparql_endpoint_url,
     setup_logger,
 )
@@ -33,21 +33,30 @@ SELECT ?property (SAMPLE(COALESCE(?type, STR(DATATYPE(?value)), "Untyped")) AS ?
 tmp_directory = Path(__file__).resolve().parent.parent.parent.parent / "tmp"
 
 
-def get_context_class(class_label_comment: tuple) -> str:
-    graph = get_empty_graph_with_prefixes()
+def get_class_context(class_label_comment: tuple) -> str:
+    """
+    Retrieve a class context from the knowledge graph and save it to the cache
+
+    Args:
+        class_label_comment (tuple): (class URI, label, description)
+
+    Returns:
+        str: Turtle serialization of the class context
+    """
 
     class_ref = URIRef(class_label_comment[0])
+    class_label = class_label_comment[1]
+    class_comment = class_label_comment[2]
 
+    graph = get_empty_graph_with_prefixes()
     endpoint_url = get_kg_sparql_endpoint_url()
 
-    properties_and_values = get_prop_and_val_types(
-        class_label_comment[0], endpoint_url=endpoint_url
-    )
+    properties_and_values = get_prop_and_val_types(class_ref, endpoint_url=endpoint_url)
 
-    if class_label_comment[1]:
-        graph.add((class_ref, RDFS.label, term.Literal(class_label_comment[1])))
-    if class_label_comment[2]:
-        graph.add((class_ref, RDFS.comment, term.Literal(class_label_comment[2])))
+    if class_label:
+        graph.add((class_ref, RDFS.label, term.Literal(class_label)))
+    if class_comment:
+        graph.add((class_ref, RDFS.comment, term.Literal(class_comment)))
 
     for property_uri, prop_type in properties_and_values:
         value_ref = (
@@ -57,10 +66,11 @@ def get_context_class(class_label_comment: tuple) -> str:
         )
         graph.add((class_ref, URIRef(property_uri), value_ref))
 
-    # save the graph
-    class_file_path = generate_class_description_filename(class_label_comment[0])
+    # Save the graph to the cache
+    graph.serialize(
+        format="turtle", destination=generate_class_context_filename(class_ref)
+    )
 
-    graph.serialize(destination=class_file_path)
     return graph.serialize(format="turtle")
 
 
@@ -101,14 +111,14 @@ def run_sparql_construct(query, filename, endpoint_url):
     return results
 
 
-def generate_class_description_filename(class_uri: str) -> str:
+def generate_class_context_filename(class_uri: str) -> str:
     """
     Generate a file name for the description of a class
     """
 
     class_name = class_uri.split("/")[-1]
 
-    context_directory = Path(get_classes_context_folder())
+    context_directory = Path(get_class_context_directory())
     if not os.path.exists(context_directory):
         os.makedirs(context_directory)
 
@@ -149,14 +159,11 @@ def get_empty_graph_with_prefixes() -> Graph:
     """
     Creates an empty RDF graph with predefined prefixes.
     """
-    prefix_map = get_known_prefixes()
-
     g = Graph()
 
-    # Update prefix definitions
+    prefix_map = get_known_prefixes()
     for namespace, prefix in prefix_map.items():
         g.bind(prefix, namespace, override=True)
-
     return g
 
 
@@ -167,7 +174,7 @@ def get_class_context_found(cls, cls_path) -> Graph:
         return g.parse(cls_path, format="turtle")
     else:
         logger.info(f"Classe context file path at {cls_path} not found.")
-        return get_context_class(cls)
+        return get_class_context(cls)
 
 
 def get_class_context_not_found(cls, cls_path) -> Graph:
@@ -177,7 +184,7 @@ def get_class_context_not_found(cls, cls_path) -> Graph:
         return g.parse(cls_path, format="turtle")
     else:
         logger.info(f"Classe context file path at {cls_path} not found.")
-        return get_context_class(cls)
+        return get_class_context(cls)
 
 
 def get_context_if_not_found(cls, cls_path) -> Graph:
@@ -187,7 +194,7 @@ def get_context_if_not_found(cls, cls_path) -> Graph:
         return g.parse(cls_path, format="turtle")
     else:
         logger.info(f"Classe context file path at {cls_path} not found.")
-        return get_context_class(cls)
+        return get_class_context(cls)
 
 
 def nested_value(data: dict, path: list):

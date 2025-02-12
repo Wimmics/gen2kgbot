@@ -1,5 +1,5 @@
 """
-This module implements the Langgraph nodes that are common to all scenarios
+This module implements the Langgraph nodes that are common to multiple scenarios
 """
 
 from app.core.utils.graph_state import OverallState
@@ -9,6 +9,9 @@ from app.core.utils.utils import (
     get_class_vector_db_from_config,
     get_current_llm,
     setup_logger,
+)
+from app.core.utils.construct_util import (
+    get_class_context,
 )
 from langchain_core.messages import AIMessage
 from app.core.utils.prompts import interpret_csv_query_results_prompt
@@ -62,6 +65,30 @@ def select_similar_classes(state: OverallState) -> OverallState:
 
     logger.debug(f"Found {len(retrieved_documents)} classes similar to the question.")
     return {"messages": AIMessage(result), "selected_classes": retrieved_classes}
+
+
+def get_class_context_from_cache(cls_path: str) -> OverallState:
+    """
+    Retrieve a class context from the cache and add it the
+    the current state: OverallState.selected_classes_context
+
+    Args:
+        cls_path (str): path to the class context file
+    """
+    with open(cls_path) as f:
+        return {"selected_classes_context": ["\n".join(f.readlines())]}
+
+
+def get_class_context_from_kg(cls: tuple) -> OverallState:
+    """
+    Retrieve a class context from the knowledge graph and
+    add it the current state: OverallState.selected_classes_context
+
+    Args:
+        cls (tuple): (class URI, label, description)
+    """
+    graph_ttl = get_class_context(cls)
+    return {"selected_classes_context": [graph_ttl]}
 
 
 async def interpret_csv_query_results(state: OverallState) -> OverallState:

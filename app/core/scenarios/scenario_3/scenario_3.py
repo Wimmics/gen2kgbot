@@ -81,23 +81,23 @@ async def generate_query(state: OverallState):
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
-s3_builder = StateGraph(
+builder = StateGraph(
     state_schema=OverallState, input=InputState, output=OverallState
 )
 
 
-s3_builder.add_node("select_similar_classes", select_similar_classes)
-s3_builder.add_node("generate_query", generate_query)
-s3_builder.add_node("run_query", run_query)
-s3_builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("select_similar_classes", select_similar_classes)
+builder.add_node("generate_query", generate_query)
+builder.add_node("run_query", run_query)
+builder.add_node("interpret_results", interpret_csv_query_results)
 
-s3_builder.add_edge(START, "select_similar_classes")
-s3_builder.add_edge("select_similar_classes", "generate_query")
-s3_builder.add_conditional_edges("generate_query", generate_query_router)
-s3_builder.add_conditional_edges("run_query", run_query_router)
-s3_builder.add_edge("interpret_results", END)
+builder.add_edge(START, "select_similar_classes")
+builder.add_edge("select_similar_classes", "generate_query")
+builder.add_conditional_edges("generate_query", generate_query_router)
+builder.add_conditional_edges("run_query", run_query_router)
+builder.add_edge("interpret_results", END)
 
-graph = s3_builder.compile()
+graph = builder.compile()
 
 
 def run_scenario(question: str):

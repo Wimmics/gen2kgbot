@@ -1,5 +1,6 @@
 """
-This module implements the Langgraph contitional edges, aka. routers
+This module implements the Langgraph contitional edges, aka. routers,
+that are common to multiple scenarios
 """
 
 import ast
@@ -10,7 +11,7 @@ from app.core.utils.utils import (
     setup_logger,
 )
 from app.core.utils.construct_util import (
-    generate_class_description_filename,
+    generate_class_context_filename,
 )
 from langgraph.constants import Send
 
@@ -18,12 +19,12 @@ from langgraph.constants import Send
 logger = setup_logger(__package__, __file__)
 
 
-def get_context_class_router(
+def get_class_context_router(
     state: OverallState,
 ) -> List[Send]:
     """
-    Looks in the cache folder whether the description of the selected similar classes are
-    already present. If not, route to the node that will fetch the description from the knowledge graph.
+    Looks in the cache folder whether the context of the selected similar classes are
+    already present. If not, route to the node that will fetch the context from the knowledge graph.
 
     This function must be invoked after classes similar to the user question were set in OverallState.selected_classes.
 
@@ -31,20 +32,22 @@ def get_context_class_router(
         state (dict): current state of the conversation
 
     Returns:
-        List[Send]: node to be executed next with class description file path.
-            Next node should be one of "get_context_class_from_cache" or "get_context_class_from_kg"
+        List[Send]: node to be executed next with class context file path.
+            Next node should be one of "get_context_class_from_cache" or "get_context_class_from_kg".
+            If "get_context_class_from_cache", the additional arg is the file path.
+            If "get_context_class_from_kg", the additional arg is a tuple (uri, label, description).
     """
     next_nodes = []
 
     for item in state["selected_classes"]:
         cls = ast.literal_eval(item)
-        cls_path = generate_class_description_filename(cls[0])
+        cls_path = generate_class_context_filename(cls[0])
 
         if os.path.exists(cls_path):
-            logger.debug(f"Class description found in cache: {cls_path}.")
+            logger.debug(f"Class context found in cache: {cls_path}.")
             next_nodes.append(Send("get_context_class_from_cache", cls_path))
         else:
-            logger.debug(f"Description not found in cache for class {cls}.")
+            logger.debug(f"Class context not found in cache for class {cls}.")
             next_nodes.append(Send("get_context_class_from_kg", cls))
 
     return next_nodes
