@@ -49,6 +49,13 @@ def get_kg_sparql_endpoint_url() -> str:
     return endpoint_url
 
 
+def get_known_prefixes() -> dict:
+    """
+    Get the prefixes and associated namesapces from configuration file
+    """
+    return config["prefixes"]
+
+
 def get_class_context_directory() -> str:
     class_context_directory = config["class_context_directory"]
     return class_context_directory

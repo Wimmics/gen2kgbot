@@ -7,18 +7,31 @@
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
 # kg_sparql_endpoint_url: "https://enpkg.commons-lab.org/graphdb/repositories/ENPKG" 
 
-# Classes context 
+# Prefixes and namespaces to be used in the Turtle and SPARQL queries
+prefixes:
+  bao:            "http://www.bioassayontology.org/bao#"
+  cito:           "http://purl.org/spar/cito/"
+  chebi:          "http://purl.obolibrary.org/obo/CHEBI_"
+  cheminf:        "http://semanticscience.org/resource/CHEMINF_"
+  chembl:         "http://rdf.ebi.ac.uk/terms/chembl#"
+  enpkg:          "https://enpkg.commons-lab.org/kg/"
+  enpkg_module:   "https://enpkg.commons-lab.org/module/"
+  obo:            "http://purl.obolibrary.org/obo/"
+  pav:            "http://purl.org/pav/"
+  pubchem:        "http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#"
+  schema:         "http://schema.org/"
+  sio:            "http://semanticscience.org/resource/"
+
+# Path for the cache of classes context
 class_context_directory: "./data/classes_context/idsm" 
 
 # embedding_generation:
   # Utilitary endpoint to store the ontologies (if not present in the endpoint to be queried) 
   # work_sparql_endpoint_url: ""
-
   # text_embedding_llm:
     # type: ollama-embeddings
     # id: mxbai-embed-large
     # vector_db: faiss
-  
     # output_directory: "data/"
 
 
@@ -108,12 +121,12 @@ scenario_2:
 
 scenario_3:
   seq2seq_llm:
-    type: ollama
-    id: deepseek-r1:1.5b
+    #type: ollama
+    #id: deepseek-r1:1.5b
 
-    # type: ovh
-    # id: Meta-Llama-3_1-70B-Instruct
-    # base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
     temperature: 0
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
@@ -129,9 +142,9 @@ scenario_4:
     type: ollama
     id: deepseek-r1:1.5b
 
-    # type: ovh
-    # id: Meta-Llama-3_1-70B-Instruct
-    # base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
 
     temperature: 0
     max_retries: 3 
@@ -145,12 +158,12 @@ scenario_4:
 
 scenario_5:
   seq2seq_llm:
-    type: ollama
-    id: deepseek-r1:1.5b
+    # type: ollama
+    # id: deepseek-r1:1.5b
 
-    # type: ovh
-    # id: Meta-Llama-3_1-70B-Instruct
-    # base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
 
     temperature: 0
     max_retries: 3 
@@ -164,17 +177,17 @@ scenario_5:
 
 scenario_6:
   seq2seq_llm:
-    # type: ovh
-    # id: Meta-Llama-3_1-70B-Instruct
-    # base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
     
     # type: deepseek
     # base_url: https://api.deepseek.com
     # id: deepseek-chat
     # id: deepseek-reasoner
 
-    type: ollama
-    id: deepseek-r1:1.5b
+    # type: ollama
+    # id: deepseek-r1:1.5b
 
     # type: hugface
     # id: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
@@ -188,4 +201,3 @@ scenario_6:
     id: nomic-embed-text
     vector_db: faiss
     # vector_db: chroma
-

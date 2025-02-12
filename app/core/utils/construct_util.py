@@ -7,27 +7,24 @@ from app.core.utils.utils import (
     get_class_context_directory,
     get_kg_sparql_endpoint_url,
     setup_logger,
+    get_known_prefixes,
 )
 
 
 logger = setup_logger(__package__, __file__)
 
 query_cls_rel = """
-SELECT ?property (SAMPLE(COALESCE(?type, STR(DATATYPE(?value)), "Untyped")) AS ?valueType) WHERE {{
-        {{
-        SELECT ?instance WHERE {{
+SELECT ?property (SAMPLE(COALESCE(?type, STR(DATATYPE(?value)), "Untyped")) AS ?valueType) WHERE {
+    {
+        SELECT ?instance WHERE {
             ?instance a <{class_uri}> .
-        }} LIMIT 100
-        }}
-        {
-          {?instance ?property ?value .}
-        }
-        OPTIONAL {{
-        ?value a ?type .
-        }}
-    }}
-    GROUP BY ?property ?type
-    LIMIT 300
+        } LIMIT 100
+    }
+    { ?instance ?property ?value . }
+    OPTIONAL { ?value a ?type . }
+}
+GROUP BY ?property ?type
+LIMIT 300
 """
 
 tmp_directory = Path(__file__).resolve().parent.parent.parent.parent / "tmp"
@@ -44,20 +41,20 @@ def get_class_context(class_label_comment: tuple) -> str:
         str: Turtle serialization of the class context
     """
 
-    class_ref = URIRef(class_label_comment[0])
+    class_uri = class_label_comment[0]
+    class_ref = URIRef(class_uri)
     class_label = class_label_comment[1]
     class_comment = class_label_comment[2]
 
     graph = get_empty_graph_with_prefixes()
     endpoint_url = get_kg_sparql_endpoint_url()
 
-    properties_and_values = get_prop_and_val_types(class_ref, endpoint_url=endpoint_url)
-
     if class_label:
         graph.add((class_ref, RDFS.label, term.Literal(class_label)))
     if class_comment:
         graph.add((class_ref, RDFS.comment, term.Literal(class_comment)))
 
+    properties_and_values = get_prop_and_val_types(class_uri, endpoint_url=endpoint_url)
     for property_uri, prop_type in properties_and_values:
         value_ref = (
             BNode()
@@ -68,15 +65,27 @@ def get_class_context(class_label_comment: tuple) -> str:
 
     # Save the graph to the cache
     graph.serialize(
-        format="turtle", destination=generate_class_context_filename(class_ref)
+        format="turtle", destination=generate_class_context_filename(class_uri)
     )
 
     return graph.serialize(format="turtle")
 
 
 def get_prop_and_val_types(cls: str, endpoint_url: str) -> List[Tuple[str, str]]:
+    """
+    Retrieve what properties are used with instances of a given class, and the types of their values.
+
+    Args:
+        cls (str): class URI
+        endpoint_url (str): SPARQL endpoint URL
+
+    Returns:
+        List[Tuple[str, str]]: property URIs with associated value types.
+            Types may be a URI, datatype, or "Untyped"
+    """
 
     query = query_cls_rel.replace("{class_uri}", cls)
+    logger.debug(f"SPARQL query to retrieve class properties and types:\n{query}")
 
     values = [
         (
@@ -85,6 +94,7 @@ def get_prop_and_val_types(cls: str, endpoint_url: str) -> List[Tuple[str, str]]
         )
         for x in run_sparql(query, endpoint_url)
     ]
+    logger.debug(f"Retrieved {len(values)} (property,type) couples for class {cls}")
 
     return [] if values == [(None, None)] else values
 
@@ -125,30 +135,12 @@ def generate_class_context_filename(class_uri: str) -> str:
     return f"{context_directory}/{class_name}.ttl"
 
 
-def get_known_prefixes() -> dict:
-    return {
-        "http://schema.org/": "schema",
-        "https://enpkg.commons-lab.org/module/": "enpkg_module",
-        "http://purl.org/pav/": "pav",
-        "http://example.org/": "example",
-        "https://enpkg.commons-lab.org/kg/": "enpkg",
-        "http://purl.obolibrary.org/obo/": "obo",
-        "http://purl.org/spar/cito/": "cito",
-        "http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#": "pubchem",
-        "http://semanticscience.org/resource/": "sio",
-        "http://www.bioassayontology.org/bao#": "bao",
-        "http://purl.obolibrary.org/obo/CHEBI_": "chebi",
-        "http://semanticscience.org/resource/CHEMINF_": "cheminf",
-        "http://rdf.ebi.ac.uk/terms/chembl#": "chembl",
-    }
-
-
 def add_known_prefixes_to_query(query: str) -> str:
-    prefixes = get_known_prefixes()
 
+    prefixes = get_known_prefixes()
     final_query = ""
-    for k, v in prefixes.items():
-        final_query += f"prefix {v}: <{k}>\n"
+    for prefix, namespace in prefixes.items():
+        final_query += f"prefix {prefix}: <{namespace}>\n"
 
     final_query += query
 
@@ -162,39 +154,9 @@ def get_empty_graph_with_prefixes() -> Graph:
     g = Graph()
 
     prefix_map = get_known_prefixes()
-    for namespace, prefix in prefix_map.items():
+    for prefix, namespace in prefix_map.items():
         g.bind(prefix, namespace, override=True)
     return g
-
-
-def get_class_context_found(cls, cls_path) -> Graph:
-    if os.path.exists(cls_path):
-        logger.info(f"Classe context file path at {cls_path} found.")
-        g = Graph()
-        return g.parse(cls_path, format="turtle")
-    else:
-        logger.info(f"Classe context file path at {cls_path} not found.")
-        return get_class_context(cls)
-
-
-def get_class_context_not_found(cls, cls_path) -> Graph:
-    if os.path.exists(cls_path):
-        logger.info(f"Classe context file path at {cls_path} found.")
-        g = Graph()
-        return g.parse(cls_path, format="turtle")
-    else:
-        logger.info(f"Classe context file path at {cls_path} not found.")
-        return get_class_context(cls)
-
-
-def get_context_if_not_found(cls, cls_path) -> Graph:
-    if os.path.exists(cls_path):
-        logger.info(f"Classe context file path at {cls_path} found.")
-        g = Graph()
-        return g.parse(cls_path, format="turtle")
-    else:
-        logger.info(f"Classe context file path at {cls_path} not found.")
-        return get_class_context(cls)
 
 
 def nested_value(data: dict, path: list):
