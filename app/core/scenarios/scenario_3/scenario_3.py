@@ -11,7 +11,7 @@ from app.core.utils.graph_nodes import (
     SPARQL_QUERY_EXEC_ERROR,
 )
 from app.core.utils.graph_state import InputState, OverallState
-from app.core.utils.utils import (
+from app.core.utils.config_manager import (
     get_llm_from_config,
     main,
     setup_logger,

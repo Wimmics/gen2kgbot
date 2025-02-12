@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper
 from rdflib import Graph, URIRef, BNode, RDFS, term
-from app.core.utils.utils import (
+from app.core.utils.config_manager import (
     get_class_context_directory,
     get_kg_sparql_endpoint_url,
     setup_logger,

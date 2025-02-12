@@ -5,7 +5,7 @@ from rdflib.exceptions import ParserError
 from rdflib.plugins.stores import sparqlstore
 import re
 from app.core.utils.logger_manager import setup_logger
-from app.core.utils.utils import get_kg_sparql_endpoint_url
+from app.core.utils.config_manager import get_kg_sparql_endpoint_url
 
 
 logger = setup_logger(__package__, __file__)

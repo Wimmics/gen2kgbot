@@ -7,9 +7,8 @@ import ast
 from typing import List
 import os
 from app.core.utils.graph_state import OverallState
-from app.core.utils.utils import (
-    setup_logger,
-)
+from app.core.utils.config_manager import setup_logger
+
 from app.core.utils.construct_util import (
     generate_class_context_filename,
 )

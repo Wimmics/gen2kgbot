@@ -2,7 +2,7 @@ import asyncio
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.utils.graph_state import InputState, OverallState
-from app.core.utils.utils import main, setup_logger, get_llm_from_config
+from app.core.utils.config_manager import main, setup_logger, get_llm_from_config
 from app.core.scenarios.scenario_1.utils.prompt import system_prompt_template
 
 

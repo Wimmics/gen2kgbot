@@ -25,7 +25,7 @@ from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
 )
 from app.core.utils.graph_state import InputState, OverallState
-from app.core.utils.utils import (
+from app.core.utils.config_manager import (
     get_llm_from_config,
     get_query_vector_db_from_config,
     main,

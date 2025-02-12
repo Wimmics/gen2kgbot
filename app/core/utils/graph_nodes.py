@@ -5,7 +5,7 @@ This module implements the Langgraph nodes that are common to multiple scenarios
 from app.core.utils.graph_state import OverallState
 from app.core.utils.question_preprocessing import extract_relevant_entities_spacy
 from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
-from app.core.utils.utils import (
+from app.core.utils.config_manager import (
     get_class_vector_db_from_config,
     get_current_llm,
     setup_logger,
