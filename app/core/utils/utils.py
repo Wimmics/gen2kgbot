@@ -1,4 +1,6 @@
-import argparse
+from pathlib import Path
+import yaml
+from argparse import ArgumentParser
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -9,7 +11,6 @@ from langchain_community.vectorstores import FAISS
 from langchain_chroma import Chroma
 from langgraph.graph.state import CompiledStateGraph
 from langchain_google_genai import ChatGoogleGenerativeAI
-from app.core.utils.config_manager import get_yml_config
 from app.core.utils.envkey_manager import (
     get_deepseek_key,
     get_google_key,
@@ -19,10 +20,54 @@ from app.core.utils.envkey_manager import (
 from app.core.utils.graph_state import InputState
 from app.core.utils.logger_manager import setup_logger
 
-
-args = None
 logger = setup_logger(__package__, __file__)
-config = get_yml_config()
+
+
+def setup_cli():
+    parser = ArgumentParser(
+        description="Process the scenario with the predifined or custom question and configuration."
+    )
+    parser.add_argument("-q", "--question", type=str, help="Provide a custom question.")
+    parser.add_argument(
+        "-p", "--params", type=str, help="Provide a custom configuration file."
+    )
+    parser.add_argument(
+        "dev",
+        nargs="*",
+        default="",
+        type=str,
+        help="Ignored. Fake argument to allow Langgraph Studio start with option dev",
+    )
+    globals()["args"] = parser.parse_args()
+
+
+# Initialize the CLI
+args = None
+setup_cli()
+
+
+def get_configuration() -> dict:
+    """
+    Load the configuration file
+    """
+    if args.params:
+        config_path = args.params
+    else:
+        # Resolve the path to the configuration file
+        config_path = (
+            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+        )
+
+    logger.info(f"Using configuration file: {config_path}")
+
+    # Configure logging
+    with open(config_path, "rt") as f:
+        return yaml.safe_load(f.read())
+
+
+# Load the configuration
+config = get_configuration()
+
 
 current_llm = None
 current_scenario = None
@@ -57,8 +102,7 @@ def get_known_prefixes() -> dict:
 
 
 def get_class_context_directory() -> str:
-    class_context_directory = config["class_context_directory"]
-    return class_context_directory
+    return config["class_context_directory"]
 
 
 def get_llm_from_config(scenario: str) -> BaseChatModel:
@@ -267,42 +311,24 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
     return db
 
 
-def separate_log():
-    logger.info(
-        "================================================================================="
-    )
-
-
-def setup_cli():
-    parser = argparse.ArgumentParser(
-        description="Process the scenario with the predifined or custom question and configuration."
-    )
-    parser.add_argument("-c", "--custom", type=str, help="Provide a custom question.")
-    parser.add_argument(
-        "-p", "--params", type=str, help="Provide a custom configuration path."
-    )
-    globals()["args"] = parser.parse_args()
-
-
 async def main(graph: CompiledStateGraph):
     """
     Process a predefined or custom question: invoke a Langgraph graph with the NL question,
     and log the messages returned by the graph.
     """
 
-    setup_cli()
-    if args is not None and args.custom:
-        question = args.custom
+    if args is not None and args.question:
+        question = args.question
     else:
         question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"
 
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    separate_log()
+    logger.info("==============================================================")
     for m in state["messages"]:
         logger.info(m.pretty_repr())
 
     if "last_generated_query" in state:
-        separate_log()
+        logger.info("==============================================================")
         logger.info("last_generated_query: " + state["last_generated_query"])
-    separate_log()
+    logger.info("==============================================================")
