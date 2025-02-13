@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import yaml
 from argparse import ArgumentParser
@@ -31,7 +32,7 @@ def setup_cli():
         "-q",
         "--question",
         type=str,
-        help="User's question. Defaults to \"What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?\"",
+        help='User\'s question. Defaults to "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"',
         default="What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?",
     )
     parser.add_argument("-p", "--params", type=str, help="Custom configuration file")
@@ -105,8 +106,28 @@ def get_known_prefixes() -> dict:
     return config["prefixes"]
 
 
-def get_class_context_directory() -> str:
-    return config["class_context_directory"]
+def get_class_context_directory() -> Path:
+    str_path = config["class_context_directory"]
+    if os.path.isabs(str_path):
+        path = Path(str_path)
+    else:
+        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
+def get_temp_directory() -> Path:
+    str_path = config["temp_directory"]
+    if os.path.isabs(str_path):
+        path = Path(str_path)
+    else:
+        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
 
 
 def get_llm_from_config(scenario: str) -> BaseChatModel:

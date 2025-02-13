@@ -47,15 +47,14 @@ def select_similar_classes(state: OverallState) -> OverallState:
         dict: state updated with selected_classes
     """
 
-    logger.debug("Selecting classes similar to question...")
-
     db = get_class_vector_db_from_config()
 
-    query = state["initial_question"]
-    logger.debug(f"Question: {query}")
+    question = state["initial_question"]
+    logger.info(f"Users' question: {question}")
+    logger.info("Looking for ontology classes related to the question...")
 
     # Retrieve the most similar text
-    retrieved_documents = db.similarity_search(query, k=10)
+    retrieved_documents = db.similarity_search(question, k=10)
     retrieved_classes = [item.page_content for item in retrieved_documents]
 
     result = "These are some relevant classes for the query generation:"
@@ -63,17 +62,20 @@ def select_similar_classes(state: OverallState) -> OverallState:
         result = f"{result}\n{item.page_content}"
     result = f"{result}\n\n"
 
-    logger.debug(f"Found {len(retrieved_documents)} classes similar to the question.")
+    logger.info(f"Found {len(retrieved_documents)} classes related to the question.")
     return {"messages": AIMessage(result), "selected_classes": retrieved_classes}
 
 
 def get_class_context_from_cache(cls_path: str) -> OverallState:
     """
-    Retrieve a class context from the cache and add it the
-    the current state: OverallState.selected_classes_context
+    Retrieve a class context from the cache
 
     Args:
         cls_path (str): path to the class context file
+
+    Returns:
+        dict: state where selected_classes_context.
+            This will be added to selected_classes_context in the current context
     """
     with open(cls_path) as f:
         return {"selected_classes_context": ["\n".join(f.readlines())]}
@@ -81,11 +83,14 @@ def get_class_context_from_cache(cls_path: str) -> OverallState:
 
 def get_class_context_from_kg(cls: tuple) -> OverallState:
     """
-    Retrieve a class context from the knowledge graph and
-    add it the current state: OverallState.selected_classes_context
+    Retrieve a class context from the knowledge graph
 
     Args:
         cls (tuple): (class URI, label, description)
+
+    Returns:
+        dict: state where selected_classes_context.
+            This will be added to selected_classes_context in the current context
     """
     graph_ttl = get_class_context(cls)
     return {"selected_classes_context": [graph_ttl]}

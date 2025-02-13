@@ -1,12 +1,11 @@
 import ast
 import asyncio
+from datetime import datetime, timezone
 import os
-import time
 from typing import Literal
 from rdflib import Graph
 from rdflib.plugins.sparql.algebra import translateQuery
 from rdflib.plugins.sparql.parser import parseQuery
-from rdflib.exceptions import ParserError
 from langgraph.constants import Send
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import AIMessage, HumanMessage
@@ -30,20 +29,21 @@ from app.core.utils.config_manager import (
     get_query_vector_db_from_config,
     main,
     setup_logger,
+    get_temp_directory,
 )
-from app.core.utils.sparql_toolkit import run_sparql_query
 from app.core.utils.construct_util import (
     add_known_prefixes_to_query,
     generate_class_context_filename,
     get_empty_graph_with_prefixes,
-    tmp_directory,
 )
 
-SCENARIO = "scenario_6"
-MAX_NUMBER_OF_TRIES: int = 3
-
 logger = setup_logger(__package__, __file__)
+
+SCENARIO = "scenario_6"
+
 llm = get_llm_from_config(SCENARIO)
+
+MAX_NUMBER_OF_TRIES: int = 3
 
 
 # Router
@@ -118,7 +118,6 @@ def select_similar_query_examples(state: OverallState) -> OverallState:
 
 def create_prompt(state: OverallState) -> OverallState:
 
-    # if "selected_queries" in state and "selected_classes" in state:
     merged_graph = get_empty_graph_with_prefixes()
 
     for cls_context in state["selected_classes_context"]:
@@ -126,15 +125,17 @@ def create_prompt(state: OverallState) -> OverallState:
         merged_graph = merged_graph + g.parse(data=cls_context)
 
     # Save the graph
-    timestr = time.strftime("%Y%m%d-%H%M%S")
+    timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
     merged_graph.serialize(
-        destination=f"{tmp_directory}/context-{timestr}.ttl",
+        destination=f"{get_temp_directory()}/context-{timestr}.ttl",
         format="turtle",
     )
 
     merged_graph_ttl = merged_graph.serialize(format="turtle")
 
-    logger.info(f"Context graph saved locally in {tmp_directory}/context-{timestr}.ttl")
+    logger.info(
+        f"Context graph saved locally in {get_temp_directory()}/context-{timestr}.ttl"
+    )
     logger.info("prompt created successfuly.")
 
     query_generation_prompt = (

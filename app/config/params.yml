@@ -1,8 +1,5 @@
 # Global parameters
 
-# absolute or relative path from the root of the repository
-# tmp_directory: "tmp"
-
 # Endpoint serving the KG to be queried 
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
 # kg_sparql_endpoint_url: "https://enpkg.commons-lab.org/graphdb/repositories/ENPKG" 
@@ -24,6 +21,10 @@ prefixes:
 
 # Path for the cache of classes context
 class_context_directory: "./data/classes_context/idsm" 
+
+# Path to a usable temporary directory
+temp_directory: "tmp"
+
 
 # embedding_generation:
   # Utilitary endpoint to store the ontologies (if not present in the endpoint to be queried) 

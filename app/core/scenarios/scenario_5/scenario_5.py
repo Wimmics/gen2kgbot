@@ -1,6 +1,5 @@
-import ast
 import asyncio
-import os
+from datetime import datetime, timezone
 from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
@@ -12,7 +11,6 @@ from app.core.scenarios.scenario_5.utils.prompt import (
 from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.construct_util import (
     get_empty_graph_with_prefixes,
-    tmp_directory,
 )
 from app.core.utils.graph_nodes import (
     preprocess_question,
@@ -25,12 +23,12 @@ from app.core.utils.graph_nodes import (
 )
 from app.core.utils.graph_routers import get_class_context_router
 from app.core.utils.graph_state import InputState, OverallState
-from app.core.utils.config_manager import get_llm_from_config, main, setup_logger
-from rdflib.exceptions import ParserError
-from app.core.utils.sparql_toolkit import run_sparql_query
-from langgraph.constants import Send
-import time
-
+from app.core.utils.config_manager import (
+    get_llm_from_config,
+    main,
+    setup_logger,
+    get_temp_directory,
+)
 from rdflib.plugins.sparql.algebra import translateQuery
 from rdflib.plugins.sparql.parser import parseQuery
 
@@ -73,6 +71,7 @@ def verify_query_router(
 
 # Node
 
+
 def create_prompt(state: OverallState) -> OverallState:
 
     merged_graph = get_empty_graph_with_prefixes()
@@ -82,15 +81,15 @@ def create_prompt(state: OverallState) -> OverallState:
         merged_graph = merged_graph + g.parse(data=cls_context)
 
     # Save the graph
-    timestr = time.strftime("%Y%m%d-%H%M%S")
+    timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
     merged_graph.serialize(
-        destination=f"{tmp_directory}/context-{timestr}.ttl",
+        destination=f"{get_temp_directory()}/context-{timestr}.ttl",
         format="turtle",
     )
 
     merged_graph_ttl = merged_graph.serialize(format="turtle")
 
-    logger.info(f"Context graph saved locally in {tmp_directory}/context-{timestr}.ttl")
+    logger.info(f"Context graph saved locally in {get_temp_directory()}/context-{timestr}.ttl")
     logger.info("prompt created successfuly.")
 
     query_generation_prompt = (
@@ -150,9 +149,7 @@ def create_retry_prompt(state: OverallState) -> OverallState:
     }
 
 
-builder = StateGraph(
-    state_schema=OverallState, input=InputState, output=OverallState
-)
+builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 builder.add_node("preprocess_question", preprocess_question)
 builder.add_node("select_similar_classes", select_similar_classes)

@@ -27,8 +27,6 @@ GROUP BY ?property ?type
 LIMIT 300
 """
 
-tmp_directory = Path(__file__).resolve().parent.parent.parent.parent / "tmp"
-
 
 def get_class_context(class_label_comment: tuple) -> str:
     """
@@ -123,14 +121,10 @@ def run_sparql_construct(query, filename, endpoint_url):
 
 def generate_class_context_filename(class_uri: str) -> str:
     """
-    Generate a file name for the description of a class
+    Generate a file name for the class uri
     """
-
     class_name = class_uri.split("/")[-1]
-
     context_directory = Path(get_class_context_directory())
-    if not os.path.exists(context_directory):
-        os.makedirs(context_directory)
 
     return f"{context_directory}/{class_name}.ttl"
 
