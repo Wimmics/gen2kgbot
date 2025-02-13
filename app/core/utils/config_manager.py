@@ -27,10 +27,14 @@ def setup_cli():
     parser = ArgumentParser(
         description="Process the scenario with the predifined or custom question and configuration."
     )
-    parser.add_argument("-q", "--question", type=str, help="Provide a custom question.")
     parser.add_argument(
-        "-p", "--params", type=str, help="Provide a custom configuration file."
+        "-q",
+        "--question",
+        type=str,
+        help="User's question. Defaults to \"What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?\"",
+        default="What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?",
     )
+    parser.add_argument("-p", "--params", type=str, help="Custom configuration file")
     parser.add_argument(
         "dev",
         nargs="*",
@@ -313,15 +317,13 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
 
 async def main(graph: CompiledStateGraph):
     """
-    Process a predefined or custom question: invoke a Langgraph graph with the NL question,
-    and log the messages returned by the graph.
+    Entry point when invoked from the CLI
+
+    Args:
+        graph (CompiledStateGraph): Langraph cmopiled state graph
     """
 
-    if args is not None and args.question:
-        question = args.question
-    else:
-        question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"
-
+    question = args.question
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
     logger.info("==============================================================")
