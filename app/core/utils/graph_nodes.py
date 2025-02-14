@@ -144,8 +144,9 @@ def create_prompt_from_template(
 
     # Make sure there are no more unset input variables
     if template.input_variables:
-        logger.error(f"Template has unused input variables: {template.input_variables}")
-        return {}
+        raise Exception(
+            f"Template has unused input variables: {template.input_variables}"
+        )
 
     query_generation_prompt = template.format()
     logger.info(f"Prompt created:\n{query_generation_prompt}.")

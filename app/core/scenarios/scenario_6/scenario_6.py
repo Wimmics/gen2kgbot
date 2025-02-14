@@ -96,7 +96,7 @@ def get_context_class_router(
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
 
-    db = get_query_vector_db_from_config(scenario=SCENARIO)
+    db = get_query_vector_db_from_config()
 
     query = state["messages"][-1].content
 

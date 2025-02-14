@@ -23,6 +23,18 @@ from app.core.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
+# Selected seq2seq LLM
+current_llm = None
+
+# Running scenario id
+current_scenario = None
+
+# Vector db that contains the documents describing the classes in the form: "(uri, label, description)"
+classes_vector_db = None
+
+# Vector db that contains the example SPARQL queries and associated questions
+queries_vector_db = None
+
 
 def setup_cli():
     parser = ArgumentParser(
@@ -74,10 +86,6 @@ def get_configuration() -> dict:
 config = get_configuration()
 
 
-current_llm = None
-current_scenario = None
-
-
 def get_current_llm() -> BaseChatModel:
     if current_llm:
         return current_llm
@@ -101,7 +109,7 @@ def get_kg_sparql_endpoint_url() -> str:
 
 def get_known_prefixes() -> dict:
     """
-    Get the prefixes and associated namesapces from configuration file
+    Get the prefixes and associated namespaces from configuration file
     """
     return config["prefixes"]
 
@@ -259,6 +267,10 @@ def get_class_vector_db_from_config() -> VectorStore:
         VectorStore: vector db
     """
 
+    # Already initialized?
+    if globals()["classes_vector_db"] != None:
+        return globals()["classes_vector_db"]
+
     scenario = get_current_scenario()
     embeddings = get_embedding_type_from_config(scenario=scenario)
 
@@ -290,21 +302,30 @@ def get_class_vector_db_from_config() -> VectorStore:
         )
         logger.info(f"Class Vector DB initialized: {embedding_directory}")
 
+    else:
+        logger.error(f"Unsupported type of vector db: {vector_db}")
+        raise Exception(f"Unsupported type of vector db: {vector_db}")
+
+    globals()["classes_vector_db"] = db
     return db
 
 
-def get_query_vector_db_from_config(scenario: str) -> VectorStore:
+def get_query_vector_db_from_config() -> VectorStore:
     """
     Instantiate a vector db based on the configuration, to store the
     pre-computed embeddings of the SPARQL queries
-    Args:
-        scenario (str): scenario identifier
 
     Returns:
         VectorStore: vector db
     """
 
+    # Already initialized?
+    if globals()["queries_vector_db"] != None:
+        return globals()["queries_vector_db"]
+
+    scenario = get_current_scenario()
     embeddings = get_embedding_type_from_config(scenario=scenario)
+
     model_id = config[scenario]["text_embedding_llm"]["id"]
     vector_db = config[scenario]["text_embedding_llm"]["vector_db"]
 
@@ -333,6 +354,11 @@ def get_query_vector_db_from_config(scenario: str) -> VectorStore:
         )
         logger.info(f"Query Vector DB initialized: {embedding_directory}")
 
+    else:
+        logger.error(f"Unsupported type of vector db: {vector_db}")
+        raise Exception(f"Unsupported type of vector db: {vector_db}")
+
+    globals()["queries_vector_db"] = db
     return db
 
 
