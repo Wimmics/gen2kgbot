@@ -2,7 +2,7 @@ import asyncio
 from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-from app.core.scenarios.scenario_3.utils.prompt import system_prompt_template
+from app.core.scenarios.scenario_3.prompt import system_prompt_template
 from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.graph_nodes import (
     interpret_csv_query_results,

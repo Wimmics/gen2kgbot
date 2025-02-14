@@ -7,7 +7,7 @@ from rdflib.plugins.sparql.parser import parseQuery
 from langgraph.constants import Send
 from langgraph.graph import StateGraph, START, END
 from langchain_core.messages import AIMessage, HumanMessage
-from app.core.scenarios.scenario_6.utils.prompt import (
+from app.core.scenarios.scenario_6.prompt import (
     system_prompt_template,
     retry_prompt,
 )
