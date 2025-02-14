@@ -2,6 +2,10 @@
 This module implements the Langgraph nodes that are common to multiple scenarios
 """
 
+from datetime import datetime, timezone
+from rdflib import Graph
+from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.prompts import PromptTemplate
 from app.core.utils.graph_state import OverallState
 from app.core.utils.question_preprocessing import extract_relevant_entities_spacy
 from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
@@ -9,11 +13,12 @@ from app.core.utils.config_manager import (
     get_class_vector_db_from_config,
     get_current_llm,
     setup_logger,
+    get_temp_directory,
 )
 from app.core.utils.construct_util import (
     get_class_context,
+    get_empty_graph_with_prefixes,
 )
-from langchain_core.messages import AIMessage
 from app.core.utils.prompts import interpret_csv_query_results_prompt
 
 logger = setup_logger(__package__, __file__)
@@ -57,13 +62,8 @@ def select_similar_classes(state: OverallState) -> OverallState:
     retrieved_documents = db.similarity_search(question, k=10)
     retrieved_classes = [item.page_content for item in retrieved_documents]
 
-    result = "These are some relevant classes for the query generation:"
-    for item in retrieved_documents:
-        result = f"{result}\n{item.page_content}"
-    result = f"{result}\n\n"
-
-    logger.info(f"Found {len(retrieved_documents)} classes related to the question.")
-    return {"messages": AIMessage(result), "selected_classes": retrieved_classes}
+    logger.info(f"Found {len(retrieved_classes)} classes related to the question.")
+    return {"selected_classes": retrieved_classes}
 
 
 def get_class_context_from_cache(cls_path: str) -> OverallState:
@@ -94,6 +94,67 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
     """
     graph_ttl = get_class_context(cls)
     return {"selected_classes_context": [graph_ttl]}
+
+
+def create_prompt_from_template(
+    template: PromptTemplate, state: OverallState
+) -> OverallState:
+    """
+    Generate a prompt from a template using the inputs available in the current state.
+    Depending on the scenario, the inputs variables may not be the same.
+
+    Args:
+        template (PromptTemplate): template to use
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state updated with the prompt generated and the class contexts all merged in a single graph
+    """
+    logger.debug(f"Template: {template}")
+
+    if "initial_question" in state.keys():
+        template = template.partial(question=state["initial_question"])
+
+    if "selected_classes" in state.keys():
+        selected_classes_str = ""
+        for item in state["selected_classes"]:
+            selected_classes_str = f"{selected_classes_str}\n{item}"
+        template = template.partial(selected_classes=selected_classes_str)
+
+    if "merged_classes_context" in template.input_variables:
+        # Load all the class contexts in a common graph
+        merged_graph = get_empty_graph_with_prefixes()
+        for cls_context in state["selected_classes_context"]:
+            g = Graph()
+            merged_graph = merged_graph + g.parse(data=cls_context)
+
+        # Save the graph
+        timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
+        merged_graph_file = f"{get_temp_directory()}/context-{timestr}.ttl"
+        merged_graph.serialize(
+            destination=merged_graph_file,
+            format="turtle",
+        )
+        logger.info(f"Graph of selected classes context saved to {merged_graph_file}")
+        merged_graph_ttl = merged_graph.serialize(format="turtle")
+        template = template.partial(merged_classes_context=merged_graph_ttl)
+
+    if "selected_queries" in state.keys():
+        template = template.partial(example_sparql_queries=state["selected_queries"])
+
+    # Make sure there are no more unset input variables
+    if template.input_variables:
+        logger.error(f"Template has unused input variables: {template.input_variables}")
+        return {}
+
+    query_generation_prompt = template.format()
+    logger.info(f"Prompt created:\n{query_generation_prompt}.")
+
+    return {
+        "messages": SystemMessage(query_generation_prompt),
+        "merged_classes_context": merged_graph_ttl,
+        "query_generation_prompt": query_generation_prompt,
+    }
 
 
 async def interpret_csv_query_results(state: OverallState) -> OverallState:

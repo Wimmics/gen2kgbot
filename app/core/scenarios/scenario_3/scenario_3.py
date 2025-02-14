@@ -76,7 +76,7 @@ async def generate_query(state: OverallState):
     prompt = system_prompt_template.format(
         question=state["initial_question"], context=selected_classes
     )
-    logger.debug(f"Prompt: {prompt}")
+    logger.info(f"Prompt created: {prompt}")
     result = await llm.ainvoke(prompt)
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 

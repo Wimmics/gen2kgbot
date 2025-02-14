@@ -1,22 +1,18 @@
 import asyncio
-from datetime import datetime, timezone
 from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
-from rdflib import Graph
 from app.core.scenarios.scenario_5.utils.prompt import (
-    system_prompt,
+    system_prompt_template,
     retry_prompt,
 )
 from app.core.utils.sparql_toolkit import find_sparql_queries
-from app.core.utils.construct_util import (
-    get_empty_graph_with_prefixes,
-)
 from app.core.utils.graph_nodes import (
     preprocess_question,
     select_similar_classes,
     get_class_context_from_cache,
     get_class_context_from_kg,
+    create_prompt_from_template,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
     interpret_csv_query_results,
@@ -27,7 +23,6 @@ from app.core.utils.config_manager import (
     get_llm_from_config,
     main,
     setup_logger,
-    get_temp_directory,
 )
 from rdflib.plugins.sparql.algebra import translateQuery
 from rdflib.plugins.sparql.parser import parseQuery
@@ -69,40 +64,11 @@ def verify_query_router(
         return END
 
 
-# Node
+# Nodes
 
 
 def create_prompt(state: OverallState) -> OverallState:
-
-    merged_graph = get_empty_graph_with_prefixes()
-
-    for cls_context in state["selected_classes_context"]:
-        g = Graph()
-        merged_graph = merged_graph + g.parse(data=cls_context)
-
-    # Save the graph
-    timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
-    merged_graph.serialize(
-        destination=f"{get_temp_directory()}/context-{timestr}.ttl",
-        format="turtle",
-    )
-
-    merged_graph_ttl = merged_graph.serialize(format="turtle")
-
-    logger.info(f"Context graph saved locally in {get_temp_directory()}/context-{timestr}.ttl")
-    logger.info("prompt created successfuly.")
-
-    query_generation_prompt = (
-        f"{system_prompt.content}\n"
-        + f"{state['messages'][-1].content}\n"
-        + f"The properties and their type when using the classes: \n {merged_graph_ttl}\n\n"
-        + f"The user question is: \n\n{state['initial_question']}\n"
-    )
-
-    return {
-        "merged_classes_context": merged_graph_ttl,
-        "query_generation_prompt": query_generation_prompt,
-    }
+    return create_prompt_from_template(system_prompt_template, state)
 
 
 async def generate_query(state: OverallState):
