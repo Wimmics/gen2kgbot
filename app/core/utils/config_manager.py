@@ -86,15 +86,15 @@ def get_configuration() -> dict:
 config = get_configuration()
 
 
-def get_current_llm() -> BaseChatModel:
-    if current_llm:
-        return current_llm
-    else:
-        logger.error("No LLM is currently initialised")
-        raise Exception("No LLM is currently initialised")
+def set_scenario(scenario: str):
+    """
+    Set the scenario id and initialize the seq2seq llm
+    """
+    globals()["current_scenario"] = scenario
+    get_llm()
 
 
-def get_current_scenario() -> str:
+def get_scenario() -> str:
     if current_scenario:
         return current_scenario
     else:
@@ -111,11 +111,11 @@ def get_kg_short_name() -> str:
 
 
 def get_vector_db_name() -> str:
-    return config[get_current_scenario()]["text_embedding_llm"]["vector_db"]
+    return config[get_scenario()]["text_embedding_llm"]["vector_db"]
 
 
 def get_embeddings_model_id() -> str:
-    return config[get_current_scenario()]["text_embedding_llm"]["id"]
+    return config[get_scenario()]["text_embedding_llm"]["id"]
 
 
 def get_kg_sparql_endpoint_url() -> str:
@@ -188,10 +188,15 @@ def get_temp_directory() -> Path:
     return path
 
 
-def get_llm(scenario: str) -> BaseChatModel:
+def get_llm() -> BaseChatModel:
     """
     Create a seq2seq LLM based on the scenario configuration
     """
+
+    if globals()["current_llm"] is not None:
+        return globals()["current_llm"]
+
+    scenario = get_scenario()
 
     model_type = config[scenario]["seq2seq_llm"]["type"]
     model_id = config[scenario]["seq2seq_llm"]["id"]
@@ -279,7 +284,6 @@ def get_llm(scenario: str) -> BaseChatModel:
 
     logger.info(f"Seq2seq LLM initialized: {model_type} - {model_id} ")
     globals()["current_llm"] = llm
-    globals()["current_scenario"] = scenario
     return llm
 
 
@@ -291,7 +295,7 @@ def get_embedding_model() -> Embeddings:
         Embeddings: text embedding model
     """
 
-    scenario = get_current_scenario()
+    scenario = get_scenario()
     embedding_type = config[scenario]["text_embedding_llm"]["type"]
     model_id = config[scenario]["text_embedding_llm"]["id"]
 
@@ -395,7 +399,7 @@ async def main(graph: CompiledStateGraph):
     Entry point when invoked from the CLI
 
     Args:
-        graph (CompiledStateGraph): Langraph cmopiled state graph
+        graph (CompiledStateGraph): Langraph compiled state graph
     """
 
     question = args.question

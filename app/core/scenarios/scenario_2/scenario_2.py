@@ -16,8 +16,7 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_2"
-
-llm = config.get_llm(SCENARIO)
+config.set_scenario(SCENARIO)
 
 
 # Router
@@ -43,7 +42,7 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
 # Node
 async def generate_query(state: OverallState) -> OverallState:
     logger.info(f"Question: {state["initial_question"]}")
-    result = await llm.ainvoke(
+    result = await config.get_llm().ainvoke(
         system_prompt_template.format(question=state["initial_question"])
     )
     return OverallState({"messages": [HumanMessage(state["initial_question"]), result]})

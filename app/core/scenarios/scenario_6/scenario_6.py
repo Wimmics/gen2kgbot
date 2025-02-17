@@ -18,6 +18,7 @@ from app.core.utils.graph_nodes import (
     get_class_context_from_cache,
     get_class_context_from_kg,
     create_prompt_from_template,
+    generate_query,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
     interpret_csv_query_results,
@@ -26,16 +27,13 @@ from app.core.utils.graph_routers import get_class_context_router
 from app.core.utils.graph_state import InputState, OverallState
 import app.core.utils.config_manager as config
 from app.core.utils.logger_manager import setup_logger
-from app.core.utils.construct_util import (
-    add_known_prefixes_to_query,
-    generate_class_context_filename,
-)
+from app.core.utils.construct_util import add_known_prefixes_to_query
 
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_6"
+config.set_scenario(SCENARIO)
 
-llm = config.get_llm(SCENARIO)
 
 MAX_NUMBER_OF_TRIES: int = 3
 
@@ -92,11 +90,6 @@ def select_similar_query_examples(state: OverallState) -> OverallState:
 
 def create_prompt(state: OverallState) -> OverallState:
     return create_prompt_from_template(system_prompt_template, state)
-
-
-async def generate_query(state: OverallState):
-    result = await llm.ainvoke(state["query_generation_prompt"])
-    return {"messages": result}
 
 
 def verify_query(state: OverallState) -> OverallState:

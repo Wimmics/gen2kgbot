@@ -166,9 +166,14 @@ def create_prompt_from_template(
         }
 
 
+async def generate_query(state: OverallState):
+    result = await config.get_llm().ainvoke(state["query_generation_prompt"])
+    return {"messages": result}
+
+
 async def interpret_csv_query_results(state: OverallState) -> OverallState:
     csv_results_message = state["last_query_results"]
-    llm = config.get_current_llm()
+    llm = config.get_llm()
     result = await llm.ainvoke(
         interpret_csv_query_results_prompt.format(
             question=state["initial_question"], results=csv_results_message

@@ -9,6 +9,7 @@ from app.core.utils.graph_nodes import (
     get_class_context_from_cache,
     get_class_context_from_kg,
     create_prompt_from_template,
+    generate_query,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
     interpret_csv_query_results,
@@ -21,8 +22,8 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_4"
+config.set_scenario(SCENARIO)
 
-llm = config.get_llm(SCENARIO)
 
 # Routers
 
@@ -53,11 +54,6 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
 
 def create_prompt(state: OverallState) -> OverallState:
     return create_prompt_from_template(system_prompt_template, state)
-
-
-async def generate_query(state: OverallState):
-    result = await llm.ainvoke(state["query_generation_prompt"])
-    return {"messages": result}
 
 
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)

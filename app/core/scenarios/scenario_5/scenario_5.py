@@ -13,6 +13,7 @@ from app.core.utils.graph_nodes import (
     get_class_context_from_cache,
     get_class_context_from_kg,
     create_prompt_from_template,
+    generate_query,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
     interpret_csv_query_results,
@@ -27,8 +28,7 @@ from rdflib.plugins.sparql.parser import parseQuery
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_5"
-
-llm = config.get_llm(SCENARIO)
+config.set_scenario(SCENARIO)
 
 MAX_NUMBER_OF_TRIES: int = 3
 
@@ -66,11 +66,6 @@ def verify_query_router(
 
 def create_prompt(state: OverallState) -> OverallState:
     return create_prompt_from_template(system_prompt_template, state)
-
-
-async def generate_query(state: OverallState):
-    result = await llm.ainvoke(state["query_generation_prompt"])
-    return {"messages": result}
 
 
 def verify_query(state: OverallState) -> OverallState:

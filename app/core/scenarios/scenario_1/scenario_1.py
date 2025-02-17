@@ -10,13 +10,12 @@ from app.core.scenarios.scenario_1.prompt import system_prompt_template
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_1"
-
-llm = config.get_llm(SCENARIO)
+config.set_scenario(SCENARIO)
 
 
 async def interpret_results(state: OverallState):
     logger.info(f"Question: {state["initial_question"]}")
-    result = await llm.ainvoke(
+    result = await config.get_llm().ainvoke(
         system_prompt_template.format(question=state["initial_question"])
     )
     return {"messages": [HumanMessage(state["initial_question"]), result]}

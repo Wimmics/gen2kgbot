@@ -8,6 +8,7 @@ from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     select_similar_classes,
     create_prompt_from_template,
+    generate_query,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
 )
@@ -18,8 +19,7 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_3"
-
-llm = config.get_llm(SCENARIO)
+config.set_scenario(SCENARIO)
 
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
@@ -42,11 +42,6 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
 
 def create_prompt(state: OverallState) -> OverallState:
     return create_prompt_from_template(system_prompt_template, state)
-
-
-async def generate_query(state: OverallState):
-    result = await llm.ainvoke(state["query_generation_prompt"])
-    return {"messages": result}
 
 
 def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
