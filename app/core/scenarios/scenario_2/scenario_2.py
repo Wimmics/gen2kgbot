@@ -42,9 +42,22 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
 # Node
 async def generate_query(state: OverallState) -> OverallState:
     logger.info(f"Question: {state["initial_question"]}")
-    result = await config.get_llm().ainvoke(
-        system_prompt_template.format(question=state["initial_question"])
-    )
+
+    template = system_prompt_template
+
+    if "kg_full_name" in template.input_variables:
+        template = template.partial(kg_full_name=config.get_kg_full_name())
+
+    if "kg_description" in template.input_variables:
+        template = template.partial(kg_description=config.get_kg_description())
+
+    if "initial_question" in state.keys():
+        template = template.partial(initial_question=state["initial_question"])
+
+    prompt = template.format()
+    logger.debug(f"Prompt created:\n{prompt}")
+
+    result = await config.get_llm().ainvoke(template.format())
     return OverallState({"messages": [HumanMessage(state["initial_question"]), result]})
 
 
