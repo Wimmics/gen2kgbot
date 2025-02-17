@@ -23,11 +23,8 @@ prefixes:
   schema:         "http://schema.org/"
   sio:            "http://semanticscience.org/resource/"
 
-# Root path for the cache of classes context. Will be appended with "{kg_short_name}/classes_context"
-class_context_cache_directory: "./data"
-
-# Root path for the pre-computed embeddings of classes context and queries. Will be appended with "{kg_short_name}/{vectordb}_embeddings"
-embeddings_directory: "./data" 
+# Root path for the cache of classes context and pre-computed embeddings
+data_directory: "./data"
 
 # Prefix of the file names for the pre-computed embeddings of classes context. Will be appended with "{model_id}_{vector_db}_index"
 # e.g. "v3_4_full_" will yield something like "v3_4_full_nomic-embed-text_faiss_index"

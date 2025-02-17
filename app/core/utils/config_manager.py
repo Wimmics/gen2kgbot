@@ -138,7 +138,7 @@ def get_class_context_cache_directory() -> Path:
     E.g. "./data/isdm/classes_context"
     """
     str_path = (
-        config["class_context_cache_directory"]
+        config["data_directory"]
         + f"/{get_kg_short_name().lower()}/classes_context"
     )
     if os.path.isabs(str_path):
@@ -160,7 +160,7 @@ def get_embeddings_directory() -> Path:
     E.g. "./data/isdm/faiss_embeddings"
     """
     str_path = (
-        config["embeddings_directory"]
+        config["data_directory"]
         + f"/{get_kg_short_name().lower()}/{get_vector_db_name()}_embeddings"
     )
     if os.path.isabs(str_path):
