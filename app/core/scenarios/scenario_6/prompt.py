@@ -3,7 +3,8 @@ from langchain_core.prompts import PromptTemplate
 
 system_prompt_template = PromptTemplate.from_template(
     """
-You are an expert in Semantic Web technlogies. Your task is to translate a user's question into a SPARQL query that will retrieve information from an RDF Knowledge Graph.
+You are an expert in Semantic Web technlogies. Your task is to translate a user's question into a SPARQL query that will retrieve information from a knowledge graph called: {kg_full_name}.
+{kg_description}
 
 To do so, you are provided with a users's question and some context information about the Knowledge Graph.
 
@@ -14,7 +15,7 @@ In your response:
 - Do not add any other unnecessary codeblock or comment.
 
 The user's question is:
-{question}
+{initial_question}
 
 
 Here is a list of classes that can be relevant to the user's question:

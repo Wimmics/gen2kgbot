@@ -22,6 +22,7 @@ from app.core.utils.graph_nodes import (
     SPARQL_QUERY_EXEC_ERROR,
     interpret_csv_query_results,
 )
+from app.core.utils.graph_routers import get_class_context_router
 from app.core.utils.graph_state import InputState, OverallState
 import app.core.utils.config_manager as config
 from app.core.utils.logger_manager import setup_logger
@@ -65,26 +66,6 @@ def verify_query_router(
         else:
             logger.info("Max retries reached. Processing stopped.")
         return END
-
-
-def get_context_class_router(
-    state: OverallState,
-) -> Literal["get_context_class_from_cache", "get_context_class_from_kg"]:
-
-    next_nodes = []
-
-    for item in state["selected_classes"]:
-        cls = ast.literal_eval(item)
-        cls_path = generate_class_context_filename(cls[0])
-
-        if os.path.exists(cls_path):
-            logger.info(f"Classe context file path at {cls_path} found.")
-            next_nodes.append(Send("get_context_class_from_cache", cls_path))
-        else:
-            logger.info(f"Classe context file path at {cls_path} not found.")
-            next_nodes.append(Send("get_context_class_from_kg", cls))
-
-    return next_nodes
 
 
 # Node
@@ -178,7 +159,7 @@ preprocessing_builder.add_edge("preprocess_question", "select_similar_query_exam
 preprocessing_builder.add_edge("preprocess_question", "select_similar_classes")
 preprocessing_builder.add_edge("select_similar_query_examples", END)
 preprocessing_builder.add_conditional_edges(
-    "select_similar_classes", get_context_class_router
+    "select_similar_classes", get_class_context_router
 )
 preprocessing_builder.add_edge("get_context_class_from_cache", END)
 preprocessing_builder.add_edge("get_context_class_from_kg", END)
