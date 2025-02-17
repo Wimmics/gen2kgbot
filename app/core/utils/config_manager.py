@@ -283,7 +283,7 @@ def get_llm(scenario: str) -> BaseChatModel:
     return llm
 
 
-def get_embedding_type() -> Embeddings:
+def get_embedding_model() -> Embeddings:
     """
     Instantiate a text embedding model based on the current scenario configuration
 
@@ -306,10 +306,42 @@ def get_embedding_type() -> Embeddings:
     return embeddings
 
 
-def get_class_vector_db() -> VectorStore:
+def create_vector_db(embeddings_directory: str) -> VectorStore:
     """
-    Instantiate a vector db based on the configuration, to store the
-    pre-computed embeddings of the RDFS/OWL classes
+    Create a vector db based on the configuration,
+    and load the pre-computed embeddings from the given directory
+
+    Args:
+        embeddings_directory (str): directory containing the pre-computed embeddings
+
+    Returns:
+        VectorStore: vector db
+    """
+
+    embeddings = get_embedding_model()
+    vector_db = get_vector_db_name()
+
+    if vector_db == "faiss":
+        db = FAISS.load_local(
+            embeddings_directory,
+            embeddings=embeddings,
+            allow_dangerous_deserialization=True,
+        )
+    elif vector_db == "chroma":
+        db = Chroma(
+            persist_directory=embeddings_directory, embedding_function=embeddings
+        )
+    else:
+        logger.error(f"Unsupported type of vector DB: {vector_db}")
+        raise Exception(f"Unsupported type of vector DB: {vector_db}")
+
+    return db
+
+
+def get_class_context_vector_db() -> VectorStore:
+    """
+    Create a vector db based on the configuration,
+    and load the pre-computed embeddings of the RDFS/OWL classes
 
     Returns:
         VectorStore: vector db
@@ -319,39 +351,21 @@ def get_class_vector_db() -> VectorStore:
     if globals()["classes_vector_db"] != None:
         return globals()["classes_vector_db"]
 
-    embeddings = get_embedding_type()
     model_id = get_embeddings_model_id()
     vector_db = get_vector_db_name()
-
     embeddings_directory = f"{get_embeddings_directory()}/{config["class_context_embeddings_prefix"]}{model_id}_{vector_db}_index"
     logger.debug(f"Classes context embeddings directory: {embeddings_directory}")
 
-    if vector_db == "faiss":
-        db = FAISS.load_local(
-            embeddings_directory,
-            embeddings=embeddings,
-            allow_dangerous_deserialization=True,
-        )
-        logger.info(f"Classes context vector DB initialized: {embeddings_directory}")
-
-    elif vector_db == "chroma":
-        db = Chroma(
-            persist_directory=embeddings_directory, embedding_function=embeddings
-        )
-        logger.info(f"Classes context vector DB initialized: {embeddings_directory}")
-
-    else:
-        logger.error(f"Unsupported type of vector db: {vector_db}")
-        raise Exception(f"Unsupported type of vector db: {vector_db}")
-
+    db = create_vector_db(embeddings_directory)
+    logger.info(f"Classes context vector DB initialized.")
     globals()["classes_vector_db"] = db
     return db
 
 
 def get_query_vector_db() -> VectorStore:
     """
-    Instantiate a vector db based on the configuration, to store the
-    pre-computed embeddings of the SPARQL queries
+    Create a vector db based on the configuration,
+    and load the pre-computed embeddings of the SPARQL queries
 
     Returns:
         VectorStore: vector db
@@ -361,31 +375,13 @@ def get_query_vector_db() -> VectorStore:
     if globals()["queries_vector_db"] != None:
         return globals()["queries_vector_db"]
 
-    embeddings = get_embedding_type()
     model_id = get_embeddings_model_id()
     vector_db = get_vector_db_name()
-
     embeddings_directory = f"{get_embeddings_directory()}/{config["queries_embeddings_prefix"]}{model_id}_{vector_db}_index"
     logger.debug(f"SPARQL queries embeddings directory: {embeddings_directory}")
 
-    if vector_db == "faiss":
-        db = FAISS.load_local(
-            embeddings_directory,
-            embeddings=embeddings,
-            allow_dangerous_deserialization=True,
-        )
-        logger.info(f"SPARQL queries vector DB initialized: {embeddings_directory}")
-
-    elif vector_db == "chroma":
-        db = Chroma(
-            persist_directory=embeddings_directory, embedding_function=embeddings
-        )
-        logger.info(f"SPARQL queries vector DB initialized: {embeddings_directory}")
-
-    else:
-        logger.error(f"Unsupported type of vector db: {vector_db}")
-        raise Exception(f"Unsupported type of vector db: {vector_db}")
-
+    db = create_vector_db(embeddings_directory)
+    logger.info(f"SPARQL queries vector DB initialized.")
     globals()["queries_vector_db"] = db
     return db
 
