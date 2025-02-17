@@ -9,19 +9,14 @@ from langchain_core.prompts import PromptTemplate
 from app.core.utils.graph_state import OverallState
 from app.core.utils.question_preprocessing import extract_relevant_entities_spacy
 from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
-from app.core.utils.config_manager import (
-    get_class_vector_db_from_config,
-    get_current_llm,
-    setup_logger,
-    get_temp_directory,
-)
+import app.core.utils.config_manager as config
 from app.core.utils.construct_util import (
     get_class_context,
     get_empty_graph_with_prefixes,
 )
 from app.core.utils.prompts import interpret_csv_query_results_prompt
 
-logger = setup_logger(__package__, __file__)
+logger = config.setup_logger(__package__, __file__)
 
 SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
 
@@ -52,7 +47,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
         dict: state updated with selected_classes
     """
 
-    db = get_class_vector_db_from_config()
+    db = config.get_class_vector_db()
 
     question = state["initial_question"]
     logger.info(f"Users' question: {question}")
@@ -130,7 +125,7 @@ def create_prompt_from_template(
 
         # Save the graph
         timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
-        merged_graph_file = f"{get_temp_directory()}/context-{timestr}.ttl"
+        merged_graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
         merged_graph.serialize(
             destination=merged_graph_file,
             format="turtle",
@@ -160,7 +155,7 @@ def create_prompt_from_template(
 
 async def interpret_csv_query_results(state: OverallState) -> OverallState:
     csv_results_message = state["last_query_results"]
-    llm = get_current_llm()
+    llm = config.get_current_llm()
     result = await llm.ainvoke(
         interpret_csv_query_results_prompt.format(
             question=state["initial_question"], results=csv_results_message

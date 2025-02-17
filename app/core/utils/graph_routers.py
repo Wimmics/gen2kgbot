@@ -7,7 +7,7 @@ import ast
 from typing import List
 import os
 from app.core.utils.graph_state import OverallState
-from app.core.utils.config_manager import setup_logger
+import app.core.utils.config_manager as config
 
 from app.core.utils.construct_util import (
     generate_class_context_filename,
@@ -15,7 +15,7 @@ from app.core.utils.construct_util import (
 from langgraph.constants import Send
 
 
-logger = setup_logger(__package__, __file__)
+logger = config.setup_logger(__package__, __file__)
 
 
 def get_class_context_router(

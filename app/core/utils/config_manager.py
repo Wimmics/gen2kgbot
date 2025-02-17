@@ -138,7 +138,7 @@ def get_temp_directory() -> Path:
     return path
 
 
-def get_llm_from_config(scenario: str) -> BaseChatModel:
+def get_llm(scenario: str) -> BaseChatModel:
     """
     Create a seq2seq LLM based on the scenario configuration
     """
@@ -233,7 +233,7 @@ def get_llm_from_config(scenario: str) -> BaseChatModel:
     return llm
 
 
-def get_embedding_type_from_config(scenario: str) -> Embeddings:
+def get_embedding_type(scenario: str) -> Embeddings:
     """
     Instantiate a text embedding model based on the scenario configuration
 
@@ -258,7 +258,7 @@ def get_embedding_type_from_config(scenario: str) -> Embeddings:
     return embeddings
 
 
-def get_class_vector_db_from_config() -> VectorStore:
+def get_class_vector_db() -> VectorStore:
     """
     Instantiate a vector db based on the configuration, to store the
     pre-computed embeddings of the RDFS/OWL classes
@@ -272,7 +272,7 @@ def get_class_vector_db_from_config() -> VectorStore:
         return globals()["classes_vector_db"]
 
     scenario = get_current_scenario()
-    embeddings = get_embedding_type_from_config(scenario=scenario)
+    embeddings = get_embedding_type(scenario=scenario)
 
     model_id = config[scenario]["text_embedding_llm"]["id"]
     vector_db = config[scenario]["text_embedding_llm"]["vector_db"]
@@ -310,7 +310,7 @@ def get_class_vector_db_from_config() -> VectorStore:
     return db
 
 
-def get_query_vector_db_from_config() -> VectorStore:
+def get_query_vector_db() -> VectorStore:
     """
     Instantiate a vector db based on the configuration, to store the
     pre-computed embeddings of the SPARQL queries
@@ -324,7 +324,7 @@ def get_query_vector_db_from_config() -> VectorStore:
         return globals()["queries_vector_db"]
 
     scenario = get_current_scenario()
-    embeddings = get_embedding_type_from_config(scenario=scenario)
+    embeddings = get_embedding_type(scenario=scenario)
 
     model_id = config[scenario]["text_embedding_llm"]["id"]
     vector_db = config[scenario]["text_embedding_llm"]["vector_db"]

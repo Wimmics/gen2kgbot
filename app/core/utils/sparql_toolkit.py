@@ -5,14 +5,14 @@ from rdflib.exceptions import ParserError
 from rdflib.plugins.stores import sparqlstore
 import re
 from app.core.utils.logger_manager import setup_logger
-from app.core.utils.config_manager import get_kg_sparql_endpoint_url
+import app.core.utils.config_manager as config
 
 
 logger = setup_logger(__package__, __file__)
 
 
 def run_sparql_query(
-    query: str, endpoint_url: str = get_kg_sparql_endpoint_url()
+    query: str, endpoint_url: str = config.get_kg_sparql_endpoint_url()
 ) -> str:
     """
     Submit a SPARQL query to the endpoint and return the result in CSV SPARQL Results format.

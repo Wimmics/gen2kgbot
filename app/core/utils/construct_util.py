@@ -3,12 +3,8 @@ from pathlib import Path
 from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper
 from rdflib import Graph, URIRef, BNode, RDFS, term
-from app.core.utils.config_manager import (
-    get_class_context_directory,
-    get_kg_sparql_endpoint_url,
-    setup_logger,
-    get_known_prefixes,
-)
+import app.core.utils.config_manager as config
+from app.core.utils.logger_manager import setup_logger
 
 
 logger = setup_logger(__package__, __file__)
@@ -45,7 +41,7 @@ def get_class_context(class_label_comment: tuple) -> str:
     class_comment = class_label_comment[2]
 
     graph = get_empty_graph_with_prefixes()
-    endpoint_url = get_kg_sparql_endpoint_url()
+    endpoint_url = config.get_kg_sparql_endpoint_url()
 
     if class_label:
         graph.add((class_ref, RDFS.label, term.Literal(class_label)))
@@ -124,14 +120,14 @@ def generate_class_context_filename(class_uri: str) -> str:
     Generate a file name for the class uri
     """
     class_name = class_uri.split("/")[-1]
-    context_directory = Path(get_class_context_directory())
+    context_directory = Path(config.get_class_context_directory())
 
     return f"{context_directory}/{class_name}.ttl"
 
 
 def add_known_prefixes_to_query(query: str) -> str:
 
-    prefixes = get_known_prefixes()
+    prefixes = config.get_known_prefixes()
     final_query = ""
     for prefix, namespace in prefixes.items():
         final_query += f"prefix {prefix}: <{namespace}>\n"
@@ -147,7 +143,7 @@ def get_empty_graph_with_prefixes() -> Graph:
     """
     g = Graph()
 
-    prefix_map = get_known_prefixes()
+    prefix_map = config.get_known_prefixes()
     for prefix, namespace in prefix_map.items():
         g.bind(prefix, namespace, override=True)
     return g

@@ -11,11 +11,8 @@ from app.core.utils.graph_nodes import (
     SPARQL_QUERY_EXEC_ERROR,
 )
 from app.core.utils.graph_state import InputState, OverallState
-from app.core.utils.config_manager import (
-    get_llm_from_config,
-    main,
-    setup_logger,
-)
+import app.core.utils.config_manager as config
+from app.core.utils.logger_manager import setup_logger
 from rdflib.exceptions import ParserError
 from app.core.utils.sparql_toolkit import run_sparql_query
 
@@ -23,7 +20,7 @@ logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_3"
 
-llm = get_llm_from_config(SCENARIO)
+llm = config.get_llm(SCENARIO)
 
 
 def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
@@ -81,9 +78,7 @@ async def generate_query(state: OverallState):
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
-builder = StateGraph(
-    state_schema=OverallState, input=InputState, output=OverallState
-)
+builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 
 builder.add_node("select_similar_classes", select_similar_classes)
@@ -105,4 +100,4 @@ def run_scenario(question: str):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(graph))
+    asyncio.run(config.main(graph))

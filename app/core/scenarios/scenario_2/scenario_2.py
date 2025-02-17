@@ -10,19 +10,14 @@ from app.core.utils.graph_nodes import (
     SPARQL_QUERY_EXEC_ERROR,
 )
 from app.core.utils.graph_state import InputState, OverallState
-from app.core.utils.config_manager import (
-    get_llm_from_config,
-    main,
-    setup_logger,
-)
-from rdflib.exceptions import ParserError
-from app.core.utils.sparql_toolkit import run_sparql_query
+import app.core.utils.config_manager as config
+from app.core.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_2"
 
-llm = get_llm_from_config(SCENARIO)
+llm = config.get_llm(SCENARIO)
 
 
 # Router
@@ -75,4 +70,4 @@ def run_scenario(question: str):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(graph))
+    asyncio.run(config.main(graph))

@@ -1,6 +1,4 @@
-# Global parameters
-
-# Endpoint serving the KG to be queried 
+# SPARQL endpoint serving the KG to be queried
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
 # kg_sparql_endpoint_url: "https://enpkg.commons-lab.org/graphdb/repositories/ENPKG" 
 

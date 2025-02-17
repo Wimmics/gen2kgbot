@@ -2,7 +2,8 @@ import asyncio
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.utils.graph_state import InputState, OverallState
-from app.core.utils.config_manager import main, setup_logger, get_llm_from_config
+import app.core.utils.config_manager as config
+from app.core.utils.logger_manager import setup_logger
 from app.core.scenarios.scenario_1.prompt import system_prompt_template
 
 
@@ -10,7 +11,7 @@ logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_1"
 
-llm = get_llm_from_config(SCENARIO)
+llm = config.get_llm(SCENARIO)
 
 
 async def interpret_results(state: OverallState):
@@ -36,4 +37,4 @@ def run_scenario(question: str):
 
 
 if __name__ == "__main__":
-    asyncio.run(main(graph))
+    asyncio.run(config.main(graph))
