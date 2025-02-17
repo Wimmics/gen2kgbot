@@ -135,7 +135,7 @@ def get_class_context_cache_directory() -> Path:
     create the directory structure if it does not exist.
 
     The path includes the KG short name (e.g. "idsm") and "classes_context" sub-directories.
-    E.g. "./data/isdm/classes_context"
+    E.g. "./data/idsm/classes_context"
     """
     str_path = (
         config["class_context_cache_directory"]
@@ -157,7 +157,7 @@ def get_embeddings_directory() -> Path:
     create the directory structure if it does not exist.
 
     The path includes the KG short name (e.g. "idsm"), vector db name (e.g. "faiss") sub-directories.
-    E.g. "./data/isdm/faiss_embeddings"
+    E.g. "./data/idsm/faiss_embeddings"
     """
     str_path = (
         config["embeddings_directory"]
