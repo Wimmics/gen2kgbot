@@ -129,6 +129,10 @@ def get_known_prefixes() -> dict:
     return config["prefixes"]
 
 
+def get_kg_description() -> str:
+    return config["kg_description"]
+
+
 def get_class_context_cache_directory() -> Path:
     """
     Generate the path for the cache of class context files, and
@@ -138,8 +142,7 @@ def get_class_context_cache_directory() -> Path:
     E.g. "./data/isdm/classes_context"
     """
     str_path = (
-        config["data_directory"]
-        + f"/{get_kg_short_name().lower()}/classes_context"
+        config["data_directory"] + f"/{get_kg_short_name().lower()}/classes_context"
     )
     if os.path.isabs(str_path):
         path = Path(str_path)

@@ -107,8 +107,14 @@ def create_prompt_from_template(
     """
     logger.debug(f"Template: {template}")
 
+    if "kg_full_name" in template.input_variables:
+        template = template.partial(kg_full_name=config.get_kg_full_name())
+
+    if "kg_description" in template.input_variables:
+        template = template.partial(kg_description=config.get_kg_description())
+
     if "initial_question" in state.keys():
-        template = template.partial(question=state["initial_question"])
+        template = template.partial(initial_question=state["initial_question"])
 
     if "selected_classes" in state.keys():
         selected_classes_str = ""

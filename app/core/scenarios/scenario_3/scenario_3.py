@@ -13,8 +13,6 @@ from app.core.utils.graph_nodes import (
 from app.core.utils.graph_state import InputState, OverallState
 import app.core.utils.config_manager as config
 from app.core.utils.logger_manager import setup_logger
-from rdflib.exceptions import ParserError
-from app.core.utils.sparql_toolkit import run_sparql_query
 
 logger = setup_logger(__package__, __file__)
 
@@ -66,15 +64,22 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
 
 async def generate_query(state: OverallState):
 
+    template = system_prompt_template
+    template = template.partial(kg_full_name=config.get_kg_full_name())
+    template = template.partial(kg_description=config.get_kg_description())
+
+    if "initial_question" in state.keys():
+        template = template.partial(initial_question=state["initial_question"])
+
     selected_classes = ""
     for item in state["selected_classes"]:
         selected_classes = f"{selected_classes}\n{item}"
+    template = template.partial(selected_classes=selected_classes)
 
-    prompt = system_prompt_template.format(
-        question=state["initial_question"], context=selected_classes
-    )
-    logger.info(f"Prompt created: {prompt}")
-    result = await llm.ainvoke(prompt)
+    query_generation_prompt = template.format()
+    logger.info(f"Prompt created: {query_generation_prompt}")
+
+    result = await llm.ainvoke(query_generation_prompt)
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 

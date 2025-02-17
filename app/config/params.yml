@@ -1,8 +1,11 @@
 # KG full name (used in prompts)
-kg_full_name: Integrated Database of Small Molecules (IDSM) Knowledge Graph
+kg_full_name: Integrated Database of Small Molecules knowledge graph (IDSM)
 
 # KG short name (used to generate file paths)
 kg_short_name: idsm
+
+# KG textual description (used in prompts)
+kg_description: IDSM provides fast similarity and structural search functionality in databases such as ChEMBL, ChEBI or PubChem.
 
 # SPARQL endpoint serving the KG
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
