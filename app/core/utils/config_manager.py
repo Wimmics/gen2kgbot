@@ -102,9 +102,24 @@ def get_current_scenario() -> str:
         raise Exception("No scenario id has been set up")
 
 
+def get_kg_full_name() -> str:
+    return config["kg_full_name"]
+
+
+def get_kg_short_name() -> str:
+    return config["kg_short_name"]
+
+
+def get_vector_db_name() -> str:
+    return config[get_current_scenario()]["text_embedding_llm"]["vector_db"]
+
+
+def get_embeddings_model_id() -> str:
+    return config[get_current_scenario()]["text_embedding_llm"]["id"]
+
+
 def get_kg_sparql_endpoint_url() -> str:
-    endpoint_url = config["kg_sparql_endpoint_url"]
-    return endpoint_url
+    return config["kg_sparql_endpoint_url"]
 
 
 def get_known_prefixes() -> dict:
@@ -114,8 +129,40 @@ def get_known_prefixes() -> dict:
     return config["prefixes"]
 
 
-def get_class_context_directory() -> Path:
-    str_path = config["class_context_directory"]
+def get_class_context_cache_directory() -> Path:
+    """
+    Generate the path for the cache of class context files, and
+    create the directory structure if it does not exist.
+
+    The path includes the KG short name (e.g. "idsm") and "classes_context" sub-directories.
+    E.g. "./data/isdm/classes_context"
+    """
+    str_path = (
+        config["class_context_cache_directory"]
+        + f"/{get_kg_short_name().lower()}/classes_context"
+    )
+    if os.path.isabs(str_path):
+        path = Path(str_path)
+    else:
+        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
+def get_embeddings_directory() -> Path:
+    """
+    Generate the path of the pre-computed embedding files, and
+    create the directory structure if it does not exist.
+
+    The path includes the KG short name (e.g. "idsm"), vector db name (e.g. "faiss") sub-directories.
+    E.g. "./data/isdm/faiss_embeddings"
+    """
+    str_path = (
+        config["embeddings_directory"]
+        + f"/{get_kg_short_name().lower()}/{get_vector_db_name()}_embeddings"
+    )
     if os.path.isabs(str_path):
         path = Path(str_path)
     else:
@@ -233,17 +280,15 @@ def get_llm(scenario: str) -> BaseChatModel:
     return llm
 
 
-def get_embedding_type(scenario: str) -> Embeddings:
+def get_embedding_type() -> Embeddings:
     """
-    Instantiate a text embedding model based on the scenario configuration
-
-    Args:
-        scenario (str): scenario identifier
+    Instantiate a text embedding model based on the current scenario configuration
 
     Returns:
         Embeddings: text embedding model
     """
 
+    scenario = get_current_scenario()
     embedding_type = config[scenario]["text_embedding_llm"]["type"]
     model_id = config[scenario]["text_embedding_llm"]["id"]
 
@@ -271,36 +316,26 @@ def get_class_vector_db() -> VectorStore:
     if globals()["classes_vector_db"] != None:
         return globals()["classes_vector_db"]
 
-    scenario = get_current_scenario()
-    embeddings = get_embedding_type(scenario=scenario)
+    embeddings = get_embedding_type()
+    model_id = get_embeddings_model_id()
+    vector_db = get_vector_db_name()
 
-    model_id = config[scenario]["text_embedding_llm"]["id"]
-    vector_db = config[scenario]["text_embedding_llm"]["vector_db"]
-
-    embedding_map = {
-        "nomic-embed-text": "nomic",
-        "mxbai-embed-large": "mxbai",
-        "all-minilm": "minilm",
-    }
-    embedding_id = embedding_map.get(model_id)
-
-    embedding_directory = (
-        f"data/{vector_db}_embeddings/idsm/v3_4_full_{embedding_id}_{vector_db}_index"
-    )
+    embeddings_directory = f"{get_embeddings_directory()}/{config["class_context_embeddings_prefix"]}{model_id}_{vector_db}_index"
+    logger.debug(f"Classes context embeddings directory: {embeddings_directory}")
 
     if vector_db == "faiss":
         db = FAISS.load_local(
-            embedding_directory,
+            embeddings_directory,
             embeddings=embeddings,
             allow_dangerous_deserialization=True,
         )
-        logger.info(f"Class Vector DB initialized: {embedding_directory}")
+        logger.info(f"Classes context vector DB initialized: {embeddings_directory}")
 
     elif vector_db == "chroma":
         db = Chroma(
-            persist_directory=embedding_directory, embedding_function=embeddings
+            persist_directory=embeddings_directory, embedding_function=embeddings
         )
-        logger.info(f"Class Vector DB initialized: {embedding_directory}")
+        logger.info(f"Classes context vector DB initialized: {embeddings_directory}")
 
     else:
         logger.error(f"Unsupported type of vector db: {vector_db}")
@@ -323,36 +358,26 @@ def get_query_vector_db() -> VectorStore:
     if globals()["queries_vector_db"] != None:
         return globals()["queries_vector_db"]
 
-    scenario = get_current_scenario()
-    embeddings = get_embedding_type(scenario=scenario)
+    embeddings = get_embedding_type()
+    model_id = get_embeddings_model_id()
+    vector_db = get_vector_db_name()
 
-    model_id = config[scenario]["text_embedding_llm"]["id"]
-    vector_db = config[scenario]["text_embedding_llm"]["vector_db"]
-
-    embedding_map = {
-        "nomic-embed-text": "nomic",
-        "mxbai-embed-large": "mxbai",
-        "all-minilm": "minilm",
-    }
-    embedding_id = embedding_map.get(model_id)
-
-    embedding_directory = (
-        f"data/{vector_db}_embeddings/idsm/query_v1_{embedding_id}_{vector_db}_index"
-    )
+    embeddings_directory = f"{get_embeddings_directory()}/{config["queries_embeddings_prefix"]}{model_id}_{vector_db}_index"
+    logger.debug(f"SPARQL queries embeddings directory: {embeddings_directory}")
 
     if vector_db == "faiss":
         db = FAISS.load_local(
-            embedding_directory,
+            embeddings_directory,
             embeddings=embeddings,
             allow_dangerous_deserialization=True,
         )
-        logger.info(f"Query Vector DB initialized: {embedding_directory}")
+        logger.info(f"SPARQL queries vector DB initialized: {embeddings_directory}")
 
     elif vector_db == "chroma":
         db = Chroma(
-            persist_directory=embedding_directory, embedding_function=embeddings
+            persist_directory=embeddings_directory, embedding_function=embeddings
         )
-        logger.info(f"Query Vector DB initialized: {embedding_directory}")
+        logger.info(f"SPARQL queries vector DB initialized: {embeddings_directory}")
 
     else:
         logger.error(f"Unsupported type of vector db: {vector_db}")

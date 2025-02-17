@@ -120,7 +120,7 @@ def generate_class_context_filename(class_uri: str) -> str:
     Generate a file name for the class uri
     """
     class_name = class_uri.split("/")[-1]
-    context_directory = Path(config.get_class_context_directory())
+    context_directory = Path(config.get_class_context_cache_directory())
 
     return f"{context_directory}/{class_name}.ttl"
 

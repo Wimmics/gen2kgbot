@@ -1,4 +1,10 @@
-# SPARQL endpoint serving the KG to be queried
+# KG full name (used in prompts)
+kg_full_name: Integrated Database of Small Molecules (IDSM) Knowledge Graph
+
+# KG short name (used to generate file paths)
+kg_short_name: idsm
+
+# SPARQL endpoint serving the KG
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
 # kg_sparql_endpoint_url: "https://enpkg.commons-lab.org/graphdb/repositories/ENPKG" 
 
@@ -17,11 +23,22 @@ prefixes:
   schema:         "http://schema.org/"
   sio:            "http://semanticscience.org/resource/"
 
-# Path for the cache of classes context
-class_context_directory: "./data/classes_context/idsm" 
+# Root path for the cache of classes context. Will be appended with "{kg_short_name}/classes_context"
+class_context_cache_directory: "./data"
+
+# Root path for the pre-computed embeddings of classes context and queries. Will be appended with "{kg_short_name}/{vectordb}_embeddings"
+embeddings_directory: "./data" 
+
+# Prefix of the file names for the pre-computed embeddings of classes context. Will be appended with "{model_id}_{vector_db}_index"
+# e.g. "v3_4_full_" will yield something like "v3_4_full_nomic-embed-text_faiss_index"
+class_context_embeddings_prefix: "v3_4_full_" 
+
+# Prefix of the file names for the pre-computed embeddings of SPARQL queries. Will be appended with "{model_id}_{vector_db}_index"
+# e.g. "query_v1_" will yield something like "query_v1_nomic-embed-text_faiss_index"
+queries_embeddings_prefix: "query_v1_" 
 
 # Path to a usable temporary directory
-temp_directory: "tmp"
+temp_directory: "./tmp"
 
 
 # embedding_generation:
