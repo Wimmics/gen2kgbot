@@ -7,6 +7,7 @@ from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     select_similar_classes,
+    create_prompt_from_template,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
 )
@@ -39,6 +40,15 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
         return END
 
 
+def create_prompt(state: OverallState) -> OverallState:
+    return create_prompt_from_template(system_prompt_template, state)
+
+
+async def generate_query(state: OverallState):
+    result = await llm.ainvoke(state["query_generation_prompt"])
+    return {"messages": result}
+
+
 def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
     """
     Check if the query generation task produced 0, 1 or more SPARQL query,
@@ -62,37 +72,18 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
         return END
 
 
-async def generate_query(state: OverallState):
-
-    template = system_prompt_template
-    template = template.partial(kg_full_name=config.get_kg_full_name())
-    template = template.partial(kg_description=config.get_kg_description())
-
-    if "initial_question" in state.keys():
-        template = template.partial(initial_question=state["initial_question"])
-
-    selected_classes = ""
-    for item in state["selected_classes"]:
-        selected_classes = f"{selected_classes}\n{item}"
-    template = template.partial(selected_classes=selected_classes)
-
-    query_generation_prompt = template.format()
-    logger.info(f"Prompt created: {query_generation_prompt}")
-
-    result = await llm.ainvoke(query_generation_prompt)
-    return {"messages": [HumanMessage(state["initial_question"]), result]}
-
-
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 
 builder.add_node("select_similar_classes", select_similar_classes)
+builder.add_node("create_prompt", create_prompt)
 builder.add_node("generate_query", generate_query)
 builder.add_node("run_query", run_query)
 builder.add_node("interpret_results", interpret_csv_query_results)
 
 builder.add_edge(START, "select_similar_classes")
-builder.add_edge("select_similar_classes", "generate_query")
+builder.add_edge("select_similar_classes", "create_prompt")
+builder.add_edge("create_prompt", "generate_query")
 builder.add_conditional_edges("generate_query", generate_query_router)
 builder.add_conditional_edges("run_query", run_query_router)
 builder.add_edge("interpret_results", END)

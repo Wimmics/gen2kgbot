@@ -51,7 +51,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
 
     question = state["initial_question"]
     logger.info(f"Users' question: {question}")
-    logger.info("Looking for ontology classes related to the question...")
+    logger.info("Looking for classes related to the question in the vector db...")
 
     # Retrieve the most similar text
     retrieved_documents = db.similarity_search(question, k=10)
@@ -122,7 +122,8 @@ def create_prompt_from_template(
             selected_classes_str = f"{selected_classes_str}\n{item}"
         template = template.partial(selected_classes=selected_classes_str)
 
-    if "merged_classes_context" in template.input_variables:
+    has_merged_classes_context = "merged_classes_context" in template.input_variables
+    if has_merged_classes_context:
         # Load all the class contexts in a common graph
         merged_graph = get_empty_graph_with_prefixes()
         for cls_context in state["selected_classes_context"]:
@@ -152,11 +153,17 @@ def create_prompt_from_template(
     query_generation_prompt = template.format()
     logger.info(f"Prompt created:\n{query_generation_prompt}.")
 
-    return {
-        "messages": SystemMessage(query_generation_prompt),
-        "merged_classes_context": merged_graph_ttl,
-        "query_generation_prompt": query_generation_prompt,
-    }
+    if has_merged_classes_context:
+        return {
+            "messages": SystemMessage(query_generation_prompt),
+            "merged_classes_context": merged_graph_ttl,
+            "query_generation_prompt": query_generation_prompt,
+        }
+    else:
+        return {
+            "messages": SystemMessage(query_generation_prompt),
+            "query_generation_prompt": query_generation_prompt,
+        }
 
 
 async def interpret_csv_query_results(state: OverallState) -> OverallState:

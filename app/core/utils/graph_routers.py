@@ -38,6 +38,8 @@ def get_class_context_router(
     """
     next_nodes = []
 
+    logger.info("Looking for class contexts (in ttl) from the cache folder...")
+
     for item in state["selected_classes"]:
         cls = ast.literal_eval(item)
         cls_path = generate_class_context_filename(cls[0])

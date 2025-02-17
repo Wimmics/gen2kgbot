@@ -303,6 +303,10 @@ def get_embedding_model() -> Embeddings:
         embeddings = OpenAIEmbeddings(model=model_id)
         logger.info("Text embedding model initialized: OpenAiEmbeddings")
 
+    else:
+        logger.error(f"Unsupported type of embedding model: {embedding_type}")
+        raise Exception(f"Unsupported type of embedding model: {embedding_type}")
+
     return embeddings
 
 
