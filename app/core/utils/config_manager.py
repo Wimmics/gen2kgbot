@@ -402,7 +402,9 @@ async def main(graph: CompiledStateGraph):
         graph (CompiledStateGraph): Langraph compiled state graph
     """
 
+    logger.info("Running scenario: " + get_scenario())
     question = args.question
+    logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
     # logger.info("==============================================================")

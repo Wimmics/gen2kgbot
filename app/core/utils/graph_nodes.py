@@ -25,15 +25,20 @@ SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
 
 
 def preprocess_question(input: OverallState) -> OverallState:
+    """
+    Extract named entities from the user question, to help selected similar SPARQL queries
+    """
+
     logger.debug("Preprocessing the question...")
 
     extracted_classes = extract_relevant_entities_spacy(input["initial_question"])
-    relevant_entities = AIMessage(f"{",".join(extracted_classes)}")
-    logger.debug(f"Extracted following entities: {extracted_classes}")
+    logger.debug(f"Extracted following named entities: {extracted_classes}")
+    relevant_entities = f"{",".join(extracted_classes)}"
 
     return {
-        "messages": relevant_entities,
+        "messages": AIMessage(relevant_entities),
         "initial_question": input["initial_question"],
+        "question_relevant_entities": relevant_entities,
         "number_of_tries": 0,
     }
 
@@ -53,7 +58,6 @@ def select_similar_classes(state: OverallState) -> OverallState:
     db = config.get_class_context_vector_db()
 
     question = state["initial_question"]
-    logger.info(f"Users' question: {question}")
     logger.info("Looking for classes related to the question in the vector db...")
 
     # Retrieve the most similar text
@@ -94,6 +98,23 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
     return {"selected_classes_context": [graph_ttl]}
 
 
+def select_similar_query_examples(state: OverallState) -> OverallState:
+
+    # Retrieve the SPARQL queries most similar to the question
+    question = state["question_relevant_entities"]
+    retrieved_documents = config.get_query_vector_db().similarity_search(question, k=3)
+
+    # Show the retrieved document's content
+    result = ""
+    for item in retrieved_documents:
+        result = f"{result}\n```sparql\n{item.page_content}\n```\n"
+    logger.info(
+        f"Selected {len(retrieved_documents)} SPARQL queries similar to the named entities of the quesion."
+    )
+
+    return {"messages": AIMessage(result), "selected_queries": result}
+
+
 def create_query_generation_prompt(
     template: PromptTemplate, state: OverallState
 ) -> OverallState:
@@ -108,7 +129,7 @@ def create_query_generation_prompt(
     Returns:
         dict: state updated with the prompt generated and the class contexts all merged in a single graph
     """
-    logger.debug(f"Query generation prompt template: {template}")
+    # logger.debug(f"Query generation prompt template: {template}")
 
     if "kg_full_name" in template.input_variables:
         template = template.partial(kg_full_name=config.get_kg_full_name())
@@ -190,9 +211,7 @@ def verify_query(state: OverallState) -> OverallState:
         logger.info("Query generation task did not produce any SPARQL query.")
         return {
             "number_of_tries": state["number_of_tries"] + 1,
-            "messages": [
-                HumanMessage("No SPARQL query was generated.")
-            ],
+            "messages": [HumanMessage("No SPARQL query was generated.")],
         }
     if no_queries > 1:
         logger.warning(
@@ -260,7 +279,7 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
     """
 
     template = interpret_csv_query_results_prompt
-    logger.debug(f"Results interpretation prompt template: {template}")
+    # logger.debug(f"Results interpretation prompt template: {template}")
 
     if "kg_full_name" in template.input_variables:
         template = template.partial(kg_full_name=config.get_kg_full_name())

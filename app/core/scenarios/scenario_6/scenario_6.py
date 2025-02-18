@@ -1,7 +1,6 @@
 import asyncio
 from typing import Literal
 from langgraph.graph import StateGraph, START, END
-from langchain_core.messages import AIMessage
 from app.core.scenarios.scenario_6.prompt import (
     system_prompt_template,
     retry_prompt,
@@ -11,6 +10,7 @@ from app.core.utils.graph_nodes import (
     select_similar_classes,
     get_class_context_from_cache,
     get_class_context_from_kg,
+    select_similar_query_examples,
     create_query_generation_prompt,
     generate_query,
     verify_query,
@@ -44,25 +44,6 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
 # Node
 
 
-def select_similar_query_examples(state: OverallState) -> OverallState:
-
-    db = config.get_query_vector_db()
-
-    query = state["messages"][-1].content
-
-    # Retrieve the most similar text
-    retrieved_documents = db.similarity_search(query, k=3)
-
-    # show the retrieved document's content
-    result = ""
-    for item in retrieved_documents:
-        result = f"{result}\n```sparql\n{item.page_content}\n```\n"
-
-    logger.info("Done with selecting some similar queries to help query generation")
-
-    return {"messages": AIMessage(result), "selected_queries": result}
-
-
 def create_prompt(state: OverallState) -> OverallState:
     return create_query_generation_prompt(system_prompt_template, state)
 
@@ -86,32 +67,26 @@ def create_retry_prompt(state: OverallState) -> OverallState:
 
 
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
-preprocessing_builder = StateGraph(
+prepro_builder = StateGraph(
     state_schema=OverallState, input=OverallState, output=OverallState
 )
 
-preprocessing_builder.add_node("preprocess_question", preprocess_question)
-preprocessing_builder.add_node("select_similar_classes", select_similar_classes)
-preprocessing_builder.add_node(
-    "get_context_class_from_cache", get_class_context_from_cache
-)
-preprocessing_builder.add_node("get_context_class_from_kg", get_class_context_from_kg)
-preprocessing_builder.add_node(
-    "select_similar_query_examples", select_similar_query_examples
-)
+prepro_builder.add_node("preprocess_question", preprocess_question)
+prepro_builder.add_node("select_similar_classes", select_similar_classes)
+prepro_builder.add_node("get_context_class_from_cache", get_class_context_from_cache)
+prepro_builder.add_node("get_context_class_from_kg", get_class_context_from_kg)
+prepro_builder.add_node("select_similar_query_examples", select_similar_query_examples)
 
-preprocessing_builder.add_edge(START, "preprocess_question")
-preprocessing_builder.add_edge("preprocess_question", "select_similar_query_examples")
-preprocessing_builder.add_edge("preprocess_question", "select_similar_classes")
-preprocessing_builder.add_edge("select_similar_query_examples", END)
-preprocessing_builder.add_conditional_edges(
-    "select_similar_classes", get_class_context_router
-)
-preprocessing_builder.add_edge("get_context_class_from_cache", END)
-preprocessing_builder.add_edge("get_context_class_from_kg", END)
+prepro_builder.add_edge(START, "preprocess_question")
+prepro_builder.add_edge("preprocess_question", "select_similar_query_examples")
+prepro_builder.add_edge("preprocess_question", "select_similar_classes")
+prepro_builder.add_edge("select_similar_query_examples", END)
+prepro_builder.add_conditional_edges("select_similar_classes", get_class_context_router)
+prepro_builder.add_edge("get_context_class_from_cache", END)
+prepro_builder.add_edge("get_context_class_from_kg", END)
 
 
-builder.add_node("preprocessing_subgraph", preprocessing_builder.compile())
+builder.add_node("preprocessing_subgraph", prepro_builder.compile())
 builder.add_node("create_prompt", create_prompt)
 builder.add_node("generate_query", generate_query)
 
