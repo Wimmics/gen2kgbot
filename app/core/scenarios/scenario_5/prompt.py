@@ -29,27 +29,43 @@ Here are the properties and data types that are used with instances of the class
 )
 
 
-interpreter_prompt = SystemMessage(
-    """You are KGBot, a specialized assistant designed to help users interpret SPARQL query results related to the PubChem Knowledge Graph.
 
-You are provided with results in CSV format and tasked with generating a clear, concise textual interpretation of the data.
+retry_system_prompt_template = PromptTemplate.from_template(
+    """
+You are a specialized assistant for creating SPARQL queries related to the {kg_full_name}.
 
-Please provide an analysis and summary of the following results:
+You are given a previous response that may either contain no SPARQL query, or contain a SPARQL query that is not snytactically correct.
+
+If no SPARQL query is present, generate one based on the context provided.
+If a non-functional SPARQL query is present, fix it based on the context provided.
+
+In your response:
+- Place the SPARQL query inside a markdown codeblock with the ```sparql ``` tag.
+- Ensure the query is tailored to the details in the prompt — do not create a query from scratch, do not make up a generic query.
+- Limit your response to at most one SPARQL query.
+- Do not add any other unnecessary codeblock or comment.
+
+DO NOT FORGET the ```sparql ``` language tag. It is crucial for the rest of the process.
+
+The user's question is:
+{initial_question}
+
+
+Here are some classes, properties and data types that that can be relevant to the user's question:
+--------------------------------
+{merged_classes_context}
+--------------------------------
+
+
+The last answer you provided, that either does not contain a SPARQL query or have an unparsable SPARQL query:
+-------------------------------------
+{last_answer}
+-------------------------------------
+
+
+The verification did not pass because:
+--------------------------------
+{last_answer_error_cause}
+--------------------------------
 """
-)
-
-retry_prompt = SystemMessage(
-    """You are KGBot, a specialized assistant for creating SPARQL queries related to the PubChem Knowledge Graph.
-
-You are given a previous response, which may either lack a SPARQL query or contain a query that doesn't execute correctly.
-
-If a SPARQL query is present and non-functional, fix it based on the context provided.
-
-When providing a SPARQL query:
-
-- Always place the query inside a markdown code block with the ```sparql ``` language tag.
-- Ensure the query is tailored to the details in the prompt—avoid creating a new query or offering a generic one.
-- Respond with a single query, and avoid adding additional code blocks unless absolutely necessary.
-
-DO NOT FORGET the ```sparql ``` language tag. It is crucial for the rest of the process."""
 )

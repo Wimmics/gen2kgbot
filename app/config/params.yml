@@ -1,5 +1,6 @@
 # KG full name (used in prompts)
-kg_full_name: Integrated Database of Small Molecules knowledge graph (IDSM)
+kg_full_name: PubChem knowledge graph (IDSM)
+#kg_full_name: Integrated Database of Small Molecules knowledge graph (IDSM)
 
 # KG short name (used to generate file paths)
 kg_short_name: idsm

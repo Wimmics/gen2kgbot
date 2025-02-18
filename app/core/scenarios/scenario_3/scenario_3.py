@@ -1,6 +1,4 @@
 import asyncio
-from typing import Literal
-from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_3.prompt import system_prompt_template
 from app.core.utils.graph_nodes import (
@@ -26,7 +24,6 @@ def create_prompt(state: OverallState) -> OverallState:
 
 
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
-
 
 builder.add_node("select_similar_classes", select_similar_classes)
 builder.add_node("create_prompt", create_prompt)

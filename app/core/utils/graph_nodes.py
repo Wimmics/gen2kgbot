@@ -134,7 +134,8 @@ def create_query_generation_prompt(
         state (dict): current state of the conversation
 
     Returns:
-        dict: state updated with the prompt generated and the class contexts all merged in a single graph
+        dict: state updated with the prompt generated (query_generation_prompt)
+            and optionally the class contexts all merged in a single graph (merged_classes_context)
     """
     # logger.debug(f"Query generation prompt template: {template}")
 
@@ -144,16 +145,20 @@ def create_query_generation_prompt(
     if "kg_description" in template.input_variables:
         template = template.partial(kg_description=config.get_kg_description())
 
-    if "initial_question" in state.keys():
+    if "initial_question" in template.input_variables:
         template = template.partial(initial_question=state["initial_question"])
 
-    if "selected_classes" in state.keys():
+    if (
+        "selected_classes" in template.input_variables
+        and "selected_classes" in state.keys()
+    ):
         selected_classes_str = ""
         for item in state["selected_classes"]:
             selected_classes_str = f"{selected_classes_str}\n{item}"
         template = template.partial(selected_classes=selected_classes_str)
 
     has_merged_classes_context = "merged_classes_context" in template.input_variables
+
     if has_merged_classes_context:
         # Load all the class contexts in a common graph
         merged_graph = get_empty_graph_with_prefixes()
@@ -172,8 +177,11 @@ def create_query_generation_prompt(
         merged_graph_ttl = merged_graph.serialize(format="turtle")
         template = template.partial(merged_classes_context=merged_graph_ttl)
 
-    if "selected_queries" in state.keys():
-        template = template.partial(example_sparql_queries=state["selected_queries"])
+    if (
+        "selected_queries" in template.input_variables
+        and "selected_queries" in state.keys()
+    ):
+        template = template.partial(selected_queries=state["selected_queries"])
 
     # Make sure there are no more unset input variables
     if template.input_variables:
@@ -197,6 +205,66 @@ def create_query_generation_prompt(
         }
 
 
+def create_retry_query_generation_prompt(
+    template: PromptTemplate, state: OverallState
+) -> OverallState:
+    """
+    Generate a prompt from a template using the inputs available in the current state,
+    to retry the query generation task.
+
+    Args:
+        template (PromptTemplate): template to use
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state updated with the retry prompt (query_generation_prompt)
+    """
+    # logger.debug(f"Retry query generation prompt template: {template}")
+
+    if "kg_full_name" in template.input_variables:
+        template = template.partial(kg_full_name=config.get_kg_full_name())
+
+    if "kg_description" in template.input_variables:
+        template = template.partial(kg_description=config.get_kg_description())
+
+    if "initial_question" in template.input_variables:
+        template = template.partial(initial_question=state["initial_question"])
+
+    if (
+        "merged_classes_context" in template.input_variables
+        and "merged_classes_context" in state.keys()
+    ):
+        template = template.partial(
+            merged_classes_context=state["merged_classes_context"]
+        )
+
+    if (
+        "selected_queries" in template.input_variables
+        and "selected_queries" in state.keys()
+    ):
+        template = template.partial(selected_queries=state["selected_queries"])
+
+    if "last_answer" in template.input_variables:
+        template = template.partial(last_answer=state["messages"][-2].content)
+
+    if "last_answer_error_cause" in template.input_variables:
+        template = template.partial(
+            last_answer_error_cause=state["messages"][-1].content
+        )
+
+    # Make sure there are no more unset input variables
+    if template.input_variables:
+        raise Exception(
+            f"Template has unused input variables: {template.input_variables}"
+        )
+
+    prompt = template.format()
+    logger.info(f"Retry query generation prompt created:\n{prompt}.")
+    return {
+        "query_generation_prompt": prompt,
+    }
+
+
 def generate_query(state: OverallState):
     """
     Invoke the LLM with the prompt asking to create a SPARQL query
@@ -209,7 +277,7 @@ def generate_query(state: OverallState):
 def verify_query(state: OverallState) -> OverallState:
     """
     Check if a query was generated and if it is syntactically correct.
-    If more than one query was produced, just send a warning and process the first one.
+    If more than one query was produced, just log a warning and process the first one.
 
     If so, set the query in `state["last_generated_query"]`, otherwise increment `state["number_of_tries"]`.
 
@@ -239,7 +307,11 @@ def verify_query(state: OverallState) -> OverallState:
         logger.warning(f"The generated SPARQL query is invalid: {e}")
         return {
             "number_of_tries": state["number_of_tries"] + 1,
-            "messages": [AIMessage(f"{e}")],
+            "messages": [
+                HumanMessage(
+                    f"{e}"
+                )
+            ],
         }
 
     logger.info("The generated SPARQL query is syntactically correct.")
