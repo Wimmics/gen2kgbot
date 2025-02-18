@@ -1,9 +1,5 @@
 # Gen²KGBot - Generic Generative Knowledge Graph Robot
 
-## General information
-
-We use the ```dev``` branch for pushing our contributions [https://github.com/holobiomics-lab/kgbot_rag_backend/tree/dev](https://github.com/holobiomics-lab/kgbot/tree/dev). Please create your own branch like (either user centric like```dev_youctagh``` or feature centric like ```dev_langgraph_studio```) and do a pull request to the ```dev``` branch when ready for reviewing.
-
 ## Scenarios
 
 - Scenario 1: simply ask the question to the LLM, to figure out what it "knows" about the topic. No query to the KG.
@@ -12,6 +8,11 @@ We use the ```dev``` branch for pushing our contributions [https://github.com/ho
 - Scenario 4: Scenario 3 + add in the context a description (in Turtle) of the prioperties used with the instances of selected classes. Triples of the form: `<class> <prop> <datatype or class>.`
 - Scenario 5: Scenario 4 + retry mechanism if the generated SPQRQ query is not syntactically correct.
 - Scenario 6: Scenario 6 + add in the context some example SPARQL queries related to the question.
+
+
+## General information
+
+We use the ```dev``` branch for pushing contributions. Please create your own branch like (either user-centric or feature-centric) and do a pull request to the ```dev``` branch when ready for reviewing.
 
 
 ## Environment setup
@@ -78,74 +79,6 @@ python -m app.core.scenarios.scenario_1.scenario_1 -c "What is the name of prote
 - **Each scenario** have its own [subfolder](./app/core/scenarios) in `app.core.scenarios`
 - **The notebooks** for creating the embeddings are in [the folder](./app/notebooks) `app.notebooks`
 
-````bash
-.
-.
-├── app
-│   ├── config
-│   │   ├── logging.ini
-│   │   ├── params.ini
-│   │   └── sparql.ini
-│   ├── core
-│   │   ├── scenarios
-│   │   │   ├── scenario_1
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── scenario_1.py
-│   │   │   │   └── utils
-│   │   │   │       ├── prompt.py
-│   │   │   ├── scenario_2
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── scenario_2.py
-│   │   │   │   └── utils
-│   │   │   │       ├── prompt.py
-│   │   │   ├── scenario_3
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── scenario_3.py
-│   │   │   │   └── utils
-│   │   │   │       ├── prompt.py
-│   │   │   ├── scenario_4
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── scenario_4.py
-│   │   │   │   └── utils
-│   │   │   │       ├── preprocessing.py
-│   │   │   │       ├── prompt.py
-│   │   │   ├── scenario_5
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── scenario_5.py
-│   │   │   │   └── utils
-│   │   │   │       ├── preprocessing.py
-│   │   │   │       ├── prompt.py
-│   │   │   └── scenario_6
-│   │   │       ├── __init__.py
-│   │   │       ├── scenario_6_old.py
-│   │   │       ├── scenario_6.py
-│   │   │       └── utils
-│   │   │           ├── preprocessing.py
-│   │   │           ├── prompt.py
-│   │   └── utils
-│   │       ├── construct_util.py
-│   │       ├── __init__.py
-│   │       ├── printing.py
-│   │       ├── sparql_toolkit.py
-│   │       └── utils.py
-│   ├── notebooks
-│   │   ├── Construct_Schema_IDSM_1.ipynb
-│   │   ├── Construct_Schema_IDSM_2.ipynb
-│   │   ├── Similar_Query_IDSM_v1.ipynb
-│   │   └── utils
-│   │       ├── construct_util.py
-│   ├── tests
-├── data
-├── __init__.py
-├── logs
-└── tmp
-├── environment_mac.yml
-├── environment_ubuntu.yml
-├── environment_windows.yml
-├── langgraph.json
-└── README.md
-
-````
 
 ## Development Guidelines
 
@@ -168,10 +101,6 @@ To maintain a unified code style across our project, we adhere to the PEP8 conve
     Install Black Formatter from the VSCode extensions marketplace.
     Right-click inside any Python file and select Format Document to automatically format your code.
 
-### Good practices with keys
-
-  As good practive with keys, to further isolate and later facilitate the deployment with online plataforms, please provide the keys as parameters and don't use environmental variables as those are not scalable for production. 
-
 
 ## Logging guidelines
 
@@ -179,7 +108,7 @@ These guidelines will help us efficiently track application behavior, debug issu
 
 **Configuration**
 
-Our logging configuration is centralized in an INI file located at app/config/logging.ini. This setup allows us to manage logging behavior across all scripts from a single location.
+Our logging configuration is centralized in an INI file located at app/config/logging.yml. This setup allows us to manage logging behavior across all scripts from a single location.
 
 
 **Integrating Logging into Your Scripts**
@@ -187,9 +116,9 @@ Our logging configuration is centralized in an INI file located at app/config/lo
 To leverage logging setup, please incorporate the following code at the beginning of each Python script:
 
 ```python
-from app.core.utils.utils import setup_logger
+from app.core.utils.logger_manager import setup_logger
 
-logger = setup_logger(__name__)
+logger = setup_logger(__package__, __file__)
 ```
 
 **Usage Recommendations**
@@ -210,4 +139,4 @@ Our configuration supports outputting log messages to two destinations:
 - Console: Log messages at the INFO level and above will be outputted to the console. This setup is intended for general monitoring and quick diagnostics.
 - File: A more detailed log, including messages at the DEBUG level and above, is written to a file. 
 
-The log files are located within the app/config/logs directory. 
+The log files are located within the /logs directory.
