@@ -12,7 +12,7 @@ from app.core.utils.graph_nodes import (
     select_similar_classes,
     get_class_context_from_cache,
     get_class_context_from_kg,
-    create_prompt_from_template,
+    create_query_generation_prompt,
     generate_query,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
@@ -65,7 +65,7 @@ def verify_query_router(
 
 
 def create_prompt(state: OverallState) -> OverallState:
-    return create_prompt_from_template(system_prompt_template, state)
+    return create_query_generation_prompt(system_prompt_template, state)
 
 
 def verify_query(state: OverallState) -> OverallState:

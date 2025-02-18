@@ -91,7 +91,7 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
     return {"selected_classes_context": [graph_ttl]}
 
 
-def create_prompt_from_template(
+def create_query_generation_prompt(
     template: PromptTemplate, state: OverallState
 ) -> OverallState:
     """
@@ -105,7 +105,7 @@ def create_prompt_from_template(
     Returns:
         dict: state updated with the prompt generated and the class contexts all merged in a single graph
     """
-    logger.debug(f"Template: {template}")
+    logger.debug(f"Query generation prompt template: {template}")
 
     if "kg_full_name" in template.input_variables:
         template = template.partial(kg_full_name=config.get_kg_full_name())
@@ -150,43 +150,34 @@ def create_prompt_from_template(
             f"Template has unused input variables: {template.input_variables}"
         )
 
-    query_generation_prompt = template.format()
-    logger.info(f"Prompt created:\n{query_generation_prompt}.")
+    prompt = template.format()
+    logger.info(f"Query generation prompt created:\n{prompt}.")
 
     if has_merged_classes_context:
         return {
-            "messages": SystemMessage(query_generation_prompt),
+            "messages": SystemMessage(prompt),
             "merged_classes_context": merged_graph_ttl,
-            "query_generation_prompt": query_generation_prompt,
+            "query_generation_prompt": prompt,
         }
     else:
         return {
-            "messages": SystemMessage(query_generation_prompt),
-            "query_generation_prompt": query_generation_prompt,
+            "messages": SystemMessage(prompt),
+            "query_generation_prompt": prompt,
         }
 
 
 async def generate_query(state: OverallState):
+    """
+    Invoke the LLM with the prompt asking to create a SPARQL query
+    """
     result = await config.get_llm().ainvoke(state["query_generation_prompt"])
     return {"messages": result}
 
 
-async def interpret_csv_query_results(state: OverallState) -> OverallState:
-    csv_results_message = state["last_query_results"]
-    llm = config.get_llm()
-    result = await llm.ainvoke(
-        interpret_csv_query_results_prompt.format(
-            question=state["initial_question"], results=csv_results_message
-        )
-    )
-
-    logger.debug(f"Interpretation of the query results:\n{result.content}")
-    return OverallState({"messages": result, "results_interpretation": result})
-
-
 def run_query(state: OverallState) -> OverallState:
     """
-    Submit the generated SPARQL query to the endpoint and return the results
+    Submit the generated SPARQL query to the endpoint.
+    Return the SPARQL CSV results or SPARQL_QUERY_EXEC_ERROR error string in the current state (last_query_results).
 
     Args:
         state (dict): current state of the conversation
@@ -195,7 +186,8 @@ def run_query(state: OverallState) -> OverallState:
         dict: state updated with last query (last_generated_query) and query results (last_query_results)
     """
 
-    # Depending on the scenario, the last generated query may already be in the state or not
+    # The last generated query may already be in the state (secnarios 4-6)
+    # or in the conversation (scenarios 1-3)
     if "last_generated_query" in state:
         query = state["last_generated_query"]
     else:
@@ -211,3 +203,44 @@ def run_query(state: OverallState) -> OverallState:
             "last_generated_query": query,
             "last_query_results": SPARQL_QUERY_EXEC_ERROR,
         }
+
+
+async def interpret_csv_query_results(state: OverallState) -> OverallState:
+    """
+    Generate a prompt asking the interpret the SPARQL CSV results and invoke the LLM.
+
+    Args:
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state updated with the response from the LLM in results_interpretation
+    """
+
+    template = interpret_csv_query_results_prompt
+    logger.debug(f"Results interpretation prompt template: {template}")
+
+    if "kg_full_name" in template.input_variables:
+        template = template.partial(kg_full_name=config.get_kg_full_name())
+
+    if "kg_description" in template.input_variables:
+        template = template.partial(kg_description=config.get_kg_description())
+
+    if "initial_question" in state.keys():
+        template = template.partial(initial_question=state["initial_question"])
+
+    sparql_csv_results = state["last_query_results"]
+    if "last_query_results" in state.keys():
+        template = template.partial(last_query_results=sparql_csv_results)
+
+    # Make sure there are no more unset input variables
+    if template.input_variables:
+        raise Exception(
+            f"Template has unused input variables: {template.input_variables}"
+        )
+
+    prompt = template.format()
+    logger.info(f"Results interpretation prompt created:\n{prompt}.")
+    result = await config.get_llm().ainvoke(prompt)
+
+    logger.debug(f"Interpretation of the query results:\n{result.content}")
+    return OverallState({"messages": result, "results_interpretation": result})

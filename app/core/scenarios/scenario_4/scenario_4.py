@@ -8,7 +8,7 @@ from app.core.utils.graph_nodes import (
     select_similar_classes,
     get_class_context_from_cache,
     get_class_context_from_kg,
-    create_prompt_from_template,
+    create_query_generation_prompt,
     generate_query,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
@@ -25,22 +25,25 @@ SCENARIO = "scenario_4"
 config.set_scenario(SCENARIO)
 
 
-# Routers
-
-
-def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
-    if state["last_query_results"].find(SPARQL_QUERY_EXEC_ERROR) == -1:
-        logger.info("Query execution yielded some results")
-        return "interpret_results"
-    else:
-        logger.info("Processing completed.")
-        return END
+def create_prompt(state: OverallState) -> OverallState:
+    return create_query_generation_prompt(system_prompt_template, state)
 
 
 def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
-    generated_queries = find_sparql_queries(state["messages"][-1].content)
+    """
+    Check if the query generation task produced 0, 1 or more SPARQL query,
+    and route to the next step accordingly.
+    If more than one query was produced, just send a warning and process the first one.
+    """
 
-    if len(generated_queries) > 0:
+    no_queries = len(find_sparql_queries(state["messages"][-1].content))
+
+    if no_queries > 1:
+        logger.warning(
+            f"Query generation task produced {no_queries} SPARQL queries. Will process the first one."
+        )
+        return "run_query"
+    elif no_queries == 1:
         logger.info("Query generation task produced one SPARQL query")
         return "run_query"
     else:
@@ -49,11 +52,22 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
         return END
 
 
-# Nodes
+def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
+    """
+    Check if the query was successful and route to the next step accordingly.
 
+    Args:
+        state (OverallState): current state of the conversation
 
-def create_prompt(state: OverallState) -> OverallState:
-    return create_prompt_from_template(system_prompt_template, state)
+    Returns:
+        Literal["interpret_results", END]: next step in the conversation
+    """
+    if state["last_query_results"].find(SPARQL_QUERY_EXEC_ERROR) == -1:
+        logger.info("Query execution yielded some results")
+        return "interpret_results"
+    else:
+        logger.info("Processing completed.")
+        return END
 
 
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
