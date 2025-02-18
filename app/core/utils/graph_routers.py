@@ -4,7 +4,7 @@ that are common to multiple scenarios
 """
 
 import ast
-from typing import List
+from typing import Literal, List
 import os
 from app.core.utils.graph_state import OverallState
 import app.core.utils.config_manager as config
@@ -16,6 +16,8 @@ from langgraph.constants import Send
 
 
 logger = config.setup_logger(__package__, __file__)
+
+MAX_NUMBER_OF_TRIES: int = 3
 
 
 def get_class_context_router(
@@ -52,3 +54,21 @@ def get_class_context_router(
             next_nodes.append(Send("get_context_class_from_kg", cls))
 
     return next_nodes
+
+
+def verify_query_router(
+    state: OverallState,
+) -> Literal["run_query", "create_retry_prompt", "__end__"]:
+    """
+    Decide whether to run the query, retry or stop (scenarios 5 and 6)
+    """
+
+    if "last_generated_query" in state:
+        return "run_query"
+    else:
+        if state["number_of_tries"] < MAX_NUMBER_OF_TRIES:
+            logger.info(f"Retries left: {MAX_NUMBER_OF_TRIES - state['number_of_tries']}")
+            return "create_retry_prompt"
+        else:
+            logger.info("Max retries reached. Processing stopped.")
+        return END

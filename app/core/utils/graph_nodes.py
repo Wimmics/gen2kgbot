@@ -3,8 +3,7 @@ This module implements the Langgraph nodes that are common to multiple scenarios
 """
 
 from datetime import datetime, timezone
-from rdflib import Graph
-from langchain_core.messages import SystemMessage, AIMessage
+from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
 from app.core.utils.graph_state import OverallState
 from app.core.utils.question_preprocessing import extract_relevant_entities_spacy
@@ -13,8 +12,12 @@ import app.core.utils.config_manager as config
 from app.core.utils.construct_util import (
     get_class_context,
     get_empty_graph_with_prefixes,
+    add_known_prefixes_to_query,
 )
 from app.core.utils.prompts import interpret_csv_query_results_prompt
+from rdflib import Graph
+from rdflib.plugins.sparql.parser import parseQuery
+from rdflib.plugins.sparql.algebra import translateQuery
 
 logger = config.setup_logger(__package__, __file__)
 
@@ -166,12 +169,50 @@ def create_query_generation_prompt(
         }
 
 
-async def generate_query(state: OverallState):
+def generate_query(state: OverallState):
     """
     Invoke the LLM with the prompt asking to create a SPARQL query
     """
-    result = await config.get_llm().ainvoke(state["query_generation_prompt"])
+    result = config.get_llm().invoke(state["query_generation_prompt"])
+    logger.debug(f"Query generation response:\n{result.content}")
     return {"messages": result}
+
+
+def verify_query(state: OverallState) -> OverallState:
+    """
+    Check if a query was generated and if it syntactically correct.
+    """
+
+    queries = find_sparql_queries(state["messages"][-1].content)
+    no_queries = len(queries)
+
+    if no_queries == 0:
+        logger.info("Query generation task did not produce any SPARQL query.")
+        return {
+            "number_of_tries": state["number_of_tries"] + 1,
+            "messages": [
+                HumanMessage("No SPARQL query was generated.")
+            ],
+        }
+    if no_queries > 1:
+        logger.warning(
+            f"Query generation task produced {no_queries} SPARQL queries. Will process the first one."
+        )
+
+    try:
+        query = queries[0]
+        logger.info("Query generation task produced a SPARQL query.")
+        logger.debug(f"Generated SPARQL query:\n{query}")
+        translateQuery(parseQuery(add_known_prefixes_to_query(queries[0])))
+    except Exception as e:
+        logger.warning(f"The generated SPARQL query is invalid: {e}")
+        return {
+            "number_of_tries": state["number_of_tries"] + 1,
+            "messages": [AIMessage(f"{e}")],
+        }
+
+    logger.info("The generated SPARQL query is syntactically correct.")
+    return {"last_generated_query": queries[0]}
 
 
 def run_query(state: OverallState) -> OverallState:
@@ -193,19 +234,21 @@ def run_query(state: OverallState) -> OverallState:
     else:
         query = find_sparql_queries(state["messages"][-1].content)[0]
 
+    logger.info("Submitting the generated SPARQL query to the endpoint...")
     try:
         csv_result = run_sparql_query(query=query)
+        logger.info("SPARQL execution completed.")
         logger.debug(f"Query execution results:\n{csv_result}")
         return {"last_generated_query": query, "last_query_results": csv_result}
     except Exception as e:
-        logger.warning(f"An error occurred when running the query: {e}")
+        logger.warning(f"An error occurred when executing the SPARQL query: {e}")
         return {
             "last_generated_query": query,
             "last_query_results": SPARQL_QUERY_EXEC_ERROR,
         }
 
 
-async def interpret_csv_query_results(state: OverallState) -> OverallState:
+def interpret_csv_query_results(state: OverallState) -> OverallState:
     """
     Generate a prompt asking the interpret the SPARQL CSV results and invoke the LLM.
 
@@ -240,7 +283,7 @@ async def interpret_csv_query_results(state: OverallState) -> OverallState:
 
     prompt = template.format()
     logger.info(f"Results interpretation prompt created:\n{prompt}.")
-    result = await config.get_llm().ainvoke(prompt)
+    result = config.get_llm().invoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
     return OverallState({"messages": result, "results_interpretation": result})

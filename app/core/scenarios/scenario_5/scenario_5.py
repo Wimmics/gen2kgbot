@@ -1,12 +1,10 @@
 import asyncio
 from typing import Literal
-from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_5.prompt import (
     system_prompt_template,
     retry_prompt,
 )
-from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.graph_nodes import (
     preprocess_question,
     select_similar_classes,
@@ -14,23 +12,20 @@ from app.core.utils.graph_nodes import (
     get_class_context_from_kg,
     create_query_generation_prompt,
     generate_query,
+    verify_query,
     run_query,
     SPARQL_QUERY_EXEC_ERROR,
     interpret_csv_query_results,
 )
-from app.core.utils.graph_routers import get_class_context_router
+from app.core.utils.graph_routers import get_class_context_router, verify_query_router
 from app.core.utils.graph_state import InputState, OverallState
 import app.core.utils.config_manager as config
 from app.core.utils.logger_manager import setup_logger
-from rdflib.plugins.sparql.algebra import translateQuery
-from rdflib.plugins.sparql.parser import parseQuery
 
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_5"
 config.set_scenario(SCENARIO)
-
-MAX_NUMBER_OF_TRIES: int = 3
 
 
 # Routers
@@ -45,49 +40,11 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
         return END
 
 
-def verify_query_router(
-    state: OverallState,
-) -> Literal["run_query", "create_retry_prompt", "__end__"]:
-    if "last_generated_query" in state:
-        logger.info("Query generation task produced one SPARQL query")
-        return "run_query"
-    else:
-        logger.warning("Query generation task did not produce a proper SPARQL query")
-        if state["number_of_tries"] < MAX_NUMBER_OF_TRIES:
-            logger.info(f"Tries left {MAX_NUMBER_OF_TRIES - state['number_of_tries']}")
-            return "create_retry_prompt"
-        else:
-            logger.info("Max retries reached. Processing stopped.")
-        return END
-
-
 # Nodes
 
 
 def create_prompt(state: OverallState) -> OverallState:
     return create_query_generation_prompt(system_prompt_template, state)
-
-
-def verify_query(state: OverallState) -> OverallState:
-    queries = find_sparql_queries(state["messages"][-1].content)
-
-    if len(queries) == 0:
-        return {
-            "number_of_tries": state["number_of_tries"] + 1,
-            "messages": [
-                HumanMessage("No properly formatted SPARQL query was generated.")
-            ],
-        }
-
-    try:
-        translateQuery(parseQuery(queries[0]))
-    except Exception as e:
-        return {
-            "number_of_tries": state["number_of_tries"] + 1,
-            "messages": [AIMessage(f"{e}")],
-        }
-
-    return {"last_generated_query": queries[0]}
 
 
 def create_retry_prompt(state: OverallState) -> OverallState:
