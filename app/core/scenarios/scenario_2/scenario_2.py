@@ -3,12 +3,11 @@ from typing import Literal
 from langchain_core.messages import AIMessage, HumanMessage, BaseMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_2.prompt import system_prompt_template
-from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     run_query,
 )
-from app.core.utils.graph_routers import run_query_router
+from app.core.utils.graph_routers import generate_query_router, run_query_router
 from app.core.utils.graph_state import InputState, OverallState
 import app.core.utils.config_manager as config
 from app.core.utils.logger_manager import setup_logger
@@ -17,16 +16,6 @@ logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_2"
 config.set_scenario(SCENARIO)
-
-
-def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
-    if len(find_sparql_queries(state["messages"][-1].content)) > 0:
-        logger.info("Query generation task produced a SPARQL query")
-        return "run_query"
-    else:
-        logger.warning("Query generation task did not produce a proper SPARQL query")
-        logger.info("Processing completed.")
-        return END
 
 
 async def generate_query(state: OverallState) -> OverallState:

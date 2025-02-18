@@ -209,8 +209,11 @@ def generate_query(state: OverallState):
 def verify_query(state: OverallState) -> OverallState:
     """
     Check if a query was generated and if it is syntactically correct.
+    If more than one query was produced, just send a warning and process the first one.
 
     If so, set the query in `state["last_generated_query"]`, otherwise increment `state["number_of_tries"]`.
+
+    Used in scenarios 5 and 6.
     """
 
     queries = find_sparql_queries(state["messages"][-1].content)
