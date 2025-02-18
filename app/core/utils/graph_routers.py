@@ -8,10 +8,9 @@ from typing import Literal, List
 import os
 from app.core.utils.graph_state import OverallState
 import app.core.utils.config_manager as config
-
-from app.core.utils.construct_util import (
-    generate_class_context_filename,
-)
+from app.core.utils.construct_util import generate_class_context_filename
+from app.core.utils.graph_nodes import SPARQL_QUERY_EXEC_ERROR
+from langgraph.graph import END
 from langgraph.constants import Send
 
 
@@ -60,15 +59,50 @@ def verify_query_router(
     state: OverallState,
 ) -> Literal["run_query", "create_retry_prompt", "__end__"]:
     """
-    Decide whether to run the query, retry or stop (scenarios 5 and 6)
-    """
+    Decide whether to run the query, retry or stop if max number of attemps is reached.
+    Only used in scenarios 5 and 6.
 
+    Args:
+        state (OverallState): current state of the conversation
+
+    Returns:
+        Literal["run_query", "create_retry_prompt", END]: next step in the conversation
+    """
     if "last_generated_query" in state:
         return "run_query"
     else:
         if state["number_of_tries"] < MAX_NUMBER_OF_TRIES:
-            logger.info(f"Retries left: {MAX_NUMBER_OF_TRIES - state['number_of_tries']}")
+            logger.info(
+                f"Retries left: {MAX_NUMBER_OF_TRIES - state['number_of_tries']}"
+            )
             return "create_retry_prompt"
         else:
             logger.info("Max retries reached. Processing stopped.")
+        return END
+
+
+def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
+    """
+    Check the SPARQL query results and decide whether to go to intepretation or stop.
+
+    Args:
+        state (OverallState): current state of the conversation
+
+    Returns:
+        Literal["interpret_results", END]: next step in the conversation
+    """
+    results = state["last_query_results"]
+    if results.find(SPARQL_QUERY_EXEC_ERROR) == -1:
+        nolines = len(results.splitlines())
+        if nolines == 0:
+            logger.warning("SPARQL query returned invalid csv output")
+            return END
+        elif nolines == 1:
+            logger.info("SPARQL query executed succcessully but returned empty results")
+            return END
+        else:
+            logger.info("SPARQL query executed succcessully and returned non-empty results")
+            return "interpret_results"
+    else:
+        logger.info("SPARQL query execution failed.")
         return END

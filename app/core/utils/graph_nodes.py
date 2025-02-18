@@ -26,8 +26,15 @@ SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
 
 def preprocess_question(input: OverallState) -> OverallState:
     """
-    Extract named entities from the user question, to help selected similar SPARQL queries
+    Extract named entities from the user question, to help selected similar SPARQL queries.
+    Only applies in scenario 6.
     """
+
+    if config.get_scenario() != "scenario_6":
+        return {
+            "initial_question": input["initial_question"],
+            "number_of_tries": 0,
+        }
 
     logger.debug("Preprocessing the question...")
 
@@ -201,7 +208,9 @@ def generate_query(state: OverallState):
 
 def verify_query(state: OverallState) -> OverallState:
     """
-    Check if a query was generated and if it syntactically correct.
+    Check if a query was generated and if it is syntactically correct.
+
+    If so, set the query in `state["last_generated_query"]`, otherwise increment `state["number_of_tries"]`.
     """
 
     queries = find_sparql_queries(state["messages"][-1].content)
@@ -260,7 +269,7 @@ def run_query(state: OverallState) -> OverallState:
         logger.debug(f"Query execution results:\n{csv_result}")
         return {"last_generated_query": query, "last_query_results": csv_result}
     except Exception as e:
-        logger.warning(f"An error occurred when executing the SPARQL query: {e}")
+        logger.warning(f"SPARQL query executon failed: {e}")
         return {
             "last_generated_query": query,
             "last_query_results": SPARQL_QUERY_EXEC_ERROR,

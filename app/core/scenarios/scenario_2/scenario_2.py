@@ -7,8 +7,8 @@ from app.core.utils.sparql_toolkit import find_sparql_queries
 from app.core.utils.graph_nodes import (
     interpret_csv_query_results,
     run_query,
-    SPARQL_QUERY_EXEC_ERROR,
 )
+from app.core.utils.graph_routers import run_query_router
 from app.core.utils.graph_state import InputState, OverallState
 import app.core.utils.config_manager as config
 from app.core.utils.logger_manager import setup_logger
@@ -17,16 +17,6 @@ logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_2"
 config.set_scenario(SCENARIO)
-
-
-# Router
-def run_query_router(state: OverallState) -> Literal["interpret_results", "__end__"]:
-    if state["last_query_results"].find(SPARQL_QUERY_EXEC_ERROR) == -1:
-        logger.info("Query execution yielded some results")
-        return "interpret_results"
-    else:
-        logger.info("Processing completed.")
-        return END
 
 
 def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"]:
@@ -39,7 +29,6 @@ def generate_query_router(state: OverallState) -> Literal["run_query", "__end__"
         return END
 
 
-# Node
 async def generate_query(state: OverallState) -> OverallState:
     logger.info(f"Question: {state["initial_question"]}")
 
