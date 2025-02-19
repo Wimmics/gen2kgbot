@@ -1,4 +1,3 @@
-from langchain_core.messages import SystemMessage
 from langchain_core.prompts import PromptTemplate
 
 system_prompt_template = PromptTemplate.from_template(

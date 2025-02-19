@@ -16,8 +16,7 @@ def get_env_variable(var_name: str) -> str:
 app = FastAPI()
 
 origins = [
-    "http://localhost",
-    "http://localhost:4200",
+    "*"
 ]
 
 app.add_middleware(

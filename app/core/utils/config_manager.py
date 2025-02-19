@@ -356,7 +356,7 @@ def get_class_context_vector_db() -> VectorStore:
     """
 
     # Already initialized?
-    if globals()["classes_vector_db"] != None:
+    if globals()["classes_vector_db"] is not None:
         return globals()["classes_vector_db"]
 
     model_id = get_embeddings_model_id()
@@ -365,7 +365,7 @@ def get_class_context_vector_db() -> VectorStore:
     logger.debug(f"Classes context embeddings directory: {embeddings_directory}")
 
     db = create_vector_db(embeddings_directory)
-    logger.info(f"Classes context vector DB initialized.")
+    logger.info("Classes context vector DB initialized.")
     globals()["classes_vector_db"] = db
     return db
 
@@ -380,7 +380,7 @@ def get_query_vector_db() -> VectorStore:
     """
 
     # Already initialized?
-    if globals()["queries_vector_db"] != None:
+    if globals()["queries_vector_db"] is not None:
         return globals()["queries_vector_db"]
 
     model_id = get_embeddings_model_id()
@@ -389,7 +389,7 @@ def get_query_vector_db() -> VectorStore:
     logger.debug(f"SPARQL queries embeddings directory: {embeddings_directory}")
 
     db = create_vector_db(embeddings_directory)
-    logger.info(f"SPARQL queries vector DB initialized.")
+    logger.info("SPARQL queries vector DB initialized.")
     globals()["queries_vector_db"] = db
     return db
 
@@ -407,11 +407,11 @@ async def main(graph: CompiledStateGraph):
     logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    # logger.info("==============================================================")
-    # for m in state["messages"]:
-    #     logger.info(m.pretty_repr())
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
 
-    # if "last_generated_query" in state:
-    #     logger.info("==============================================================")
-    #     logger.info("last_generated_query: " + state["last_generated_query"])
-    # logger.info("==============================================================")
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")

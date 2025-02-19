@@ -1,5 +1,6 @@
 import spacy
 
+
 def extract_relevant_entities_spacy(question: str) -> list[str]:
     """
     Extract relevant entities from the NL question
@@ -35,5 +36,5 @@ def extract_relevant_entities_spacy(question: str) -> list[str]:
 
 
 # # Example use
-#question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
-#print("Extracted relevant entities:", extract_relevant_entities_spacy(question))
+# question = "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 10 µM?"
+# print("Extracted relevant entities:", extract_relevant_entities_spacy(question))
