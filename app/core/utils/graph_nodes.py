@@ -106,8 +106,15 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
 
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
+    """
+    Retrieve the SPARQL queries most similar to the question
 
-    # Retrieve the SPARQL queries most similar to the question
+    Args:
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state updated messages and queries (selected_queries)
+    """
     question = state["question_relevant_entities"]
     retrieved_documents = config.get_query_vector_db().similarity_search(question, k=3)
 
@@ -167,13 +174,13 @@ def create_query_generation_prompt(
             merged_graph = merged_graph + g.parse(data=cls_context)
 
         # Save the graph
-        timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
-        merged_graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
-        merged_graph.serialize(
-            destination=merged_graph_file,
-            format="turtle",
-        )
-        logger.info(f"Graph of selected classes context saved to {merged_graph_file}")
+        # timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
+        # merged_graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
+        # merged_graph.serialize(
+        #     destination=merged_graph_file,
+        #     format="turtle",
+        # )
+        #logger.info(f"Graph of selected classes context saved to {merged_graph_file}")
         merged_graph_ttl = merged_graph.serialize(format="turtle")
         template = template.partial(merged_classes_context=merged_graph_ttl)
 
@@ -279,9 +286,14 @@ def verify_query(state: OverallState) -> OverallState:
     Check if a query was generated and if it is syntactically correct.
     If more than one query was produced, just log a warning and process the first one.
 
-    If so, set the query in `state["last_generated_query"]`, otherwise increment `state["number_of_tries"]`.
-
     Used in scenarios 5 and 6.
+
+    Args:
+        state (dict): current state of the conversation
+
+    Return:
+        dict: state updated with the query if it was correct (last_generated_query),
+            otherwise increment number of tries (number_of_tries)
     """
 
     queries = find_sparql_queries(state["messages"][-1].content)
@@ -307,11 +319,7 @@ def verify_query(state: OverallState) -> OverallState:
         logger.warning(f"The generated SPARQL query is invalid: {e}")
         return {
             "number_of_tries": state["number_of_tries"] + 1,
-            "messages": [
-                HumanMessage(
-                    f"{e}"
-                )
-            ],
+            "messages": [HumanMessage(f"{e}")],
         }
 
     logger.info("The generated SPARQL query is syntactically correct.")

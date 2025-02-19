@@ -22,7 +22,7 @@ MAX_NUMBER_OF_TRIES: int = 3
 
 def get_class_context_router(
     state: OverallState,
-) -> List[Send]:
+) -> Literal['get_context_class_from_cache', 'get_context_class_from_kg']:
     """
     Looks in the cache folder whether the context of the selected similar classes are
     already present. If not, route to the node that will fetch the context from the knowledge graph.
