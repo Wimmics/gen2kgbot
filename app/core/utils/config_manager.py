@@ -23,17 +23,16 @@ from app.core.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
-# Selected seq2seq LLM
-current_llm = None
+# Selected seq2seq LLM. Dictionary with the scenario id as key
+current_llm = {}
 
-# Running scenario id
-current_scenario = None
+# Vector db that contains the documents describing the classes in the form: "(uri, label, description)".
+# Dictionary with the scenario id as key
+classes_vector_db = {}
 
-# Vector db that contains the documents describing the classes in the form: "(uri, label, description)"
-classes_vector_db = None
-
-# Vector db that contains the example SPARQL queries and associated questions
-queries_vector_db = None
+# Vector db that contains the example SPARQL queries and associated questions.
+# Dictionary with the scenario id as key
+queries_vector_db = {}
 
 
 def setup_cli():
@@ -86,22 +85,6 @@ def get_configuration() -> dict:
 config = get_configuration()
 
 
-def set_scenario(scenario: str):
-    """
-    Set the scenario id and initialize the seq2seq llm
-    """
-    globals()["current_scenario"] = scenario
-    get_llm()
-
-
-def get_scenario() -> str:
-    if current_scenario:
-        return current_scenario
-    else:
-        logger.error("No scenario id has been set up")
-        raise Exception("No scenario id has been set up")
-
-
 def get_kg_full_name() -> str:
     return config["kg_full_name"]
 
@@ -110,12 +93,8 @@ def get_kg_short_name() -> str:
     return config["kg_short_name"]
 
 
-def get_vector_db_name() -> str:
-    return config[get_scenario()]["text_embedding_llm"]["vector_db"]
-
-
-def get_embeddings_model_id() -> str:
-    return config[get_scenario()]["text_embedding_llm"]["id"]
+def get_kg_description() -> str:
+    return config["kg_description"]
 
 
 def get_kg_sparql_endpoint_url() -> str:
@@ -127,10 +106,6 @@ def get_known_prefixes() -> dict:
     Get the prefixes and associated namespaces from configuration file
     """
     return config["prefixes"]
-
-
-def get_kg_description() -> str:
-    return config["kg_description"]
 
 
 def get_class_context_cache_directory() -> Path:
@@ -154,28 +129,6 @@ def get_class_context_cache_directory() -> Path:
     return path
 
 
-def get_embeddings_directory() -> Path:
-    """
-    Generate the path of the pre-computed embedding files, and
-    create the directory structure if it does not exist.
-
-    The path includes the KG short name (e.g. "idsm"), vector db name (e.g. "faiss") sub-directories.
-    E.g. "./data/idsm/faiss_embeddings"
-    """
-    str_path = (
-        config["data_directory"]
-        + f"/{get_kg_short_name().lower()}/{get_vector_db_name()}_embeddings"
-    )
-    if os.path.isabs(str_path):
-        path = Path(str_path)
-    else:
-        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
 def get_temp_directory() -> Path:
     str_path = config["temp_directory"]
     if os.path.isabs(str_path):
@@ -188,21 +141,49 @@ def get_temp_directory() -> Path:
     return path
 
 
-def get_llm() -> BaseChatModel:
+def get_vector_db_name(scenario_id: str) -> str:
+    return config[scenario_id]["text_embedding_llm"]["vector_db"]
+
+
+def get_embeddings_model_id(scenario_id: str) -> str:
+    return config[scenario_id]["text_embedding_llm"]["id"]
+
+
+def get_embeddings_directory(vector_db_name: str) -> Path:
+    """
+    Generate the path of the pre-computed embedding files, and
+    create the directory structure if it does not exist.
+
+    The path includes the KG short name (e.g. "idsm"), vector db name (e.g. "faiss") sub-directories.
+    E.g. "./data/idsm/faiss_embeddings"
+    """
+    str_path = (
+        config["data_directory"]
+        + f"/{get_kg_short_name().lower()}/{vector_db_name}_embeddings"
+    )
+    if os.path.isabs(str_path):
+        path = Path(str_path)
+    else:
+        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
+def get_llm(scenario_id: str) -> BaseChatModel:
     """
     Create a seq2seq LLM based on the scenario configuration
     """
 
-    if globals()["current_llm"] is not None:
-        return globals()["current_llm"]
+    if scenario_id in current_llm.keys() and current_llm[scenario_id] is not None:
+        return current_llm[scenario_id]
 
-    scenario = get_scenario()
-
-    model_type = config[scenario]["seq2seq_llm"]["type"]
-    model_id = config[scenario]["seq2seq_llm"]["id"]
-    temperature = config[scenario]["seq2seq_llm"]["temperature"]
-    max_retries = config[scenario]["seq2seq_llm"]["max_retries"]
-    model_kwargs = config[scenario]["seq2seq_llm"]["model_kwargs"]
+    model_type = config[scenario_id]["seq2seq_llm"]["type"]
+    model_id = config[scenario_id]["seq2seq_llm"]["id"]
+    temperature = config[scenario_id]["seq2seq_llm"]["temperature"]
+    max_retries = config[scenario_id]["seq2seq_llm"]["max_retries"]
+    model_kwargs = config[scenario_id]["seq2seq_llm"]["model_kwargs"]
 
     if model_type == "openai":
         llm = ChatOpenAI(
@@ -224,7 +205,7 @@ def get_llm() -> BaseChatModel:
         )
 
     elif model_type == "ollama-server":
-        base_url = config[scenario]["seq2seq_llm"]["base_url"]
+        base_url = config[scenario_id]["seq2seq_llm"]["base_url"]
 
         # TODO Hundle Ollama Servers with Auth
         llm = ChatOllama(
@@ -237,7 +218,7 @@ def get_llm() -> BaseChatModel:
         )
 
     elif model_type == "ovh":
-        base_url = config[scenario]["seq2seq_llm"]["base_url"]
+        base_url = config[scenario_id]["seq2seq_llm"]["base_url"]
 
         llm = ChatOpenAI(
             temperature=temperature,
@@ -271,7 +252,7 @@ def get_llm() -> BaseChatModel:
         )
 
     elif model_type == "deepseek":
-        base_url = config[scenario]["seq2seq_llm"]["base_url"]
+        base_url = config[scenario_id]["seq2seq_llm"]["base_url"]
         llm = ChatOpenAI(
             temperature=temperature,
             model=model_id,
@@ -283,21 +264,23 @@ def get_llm() -> BaseChatModel:
         )
 
     logger.info(f"Seq2seq LLM initialized: {model_type} - {model_id} ")
-    globals()["current_llm"] = llm
+    globals()["current_llm"][scenario_id] = llm
     return llm
 
 
-def get_embedding_model() -> Embeddings:
+def get_embedding_model(scenario_id: str) -> Embeddings:
     """
-    Instantiate a text embedding model based on the current scenario configuration
+    Instantiate a text embedding model based on the scenario configuration
+
+    Args:
+        scenario_id (str): scenario ID
 
     Returns:
         Embeddings: text embedding model
     """
 
-    scenario = get_scenario()
-    embedding_type = config[scenario]["text_embedding_llm"]["type"]
-    model_id = config[scenario]["text_embedding_llm"]["id"]
+    embedding_type = config[scenario_id]["text_embedding_llm"]["type"]
+    model_id = config[scenario_id]["text_embedding_llm"]["id"]
 
     if embedding_type == "ollama-embeddings":
         embeddings = OllamaEmbeddings(model=model_id)
@@ -314,83 +297,98 @@ def get_embedding_model() -> Embeddings:
     return embeddings
 
 
-def create_vector_db(embeddings_directory: str) -> VectorStore:
+def create_vector_db(
+    scenario_id: str, vector_db_name: str, embeddings_directory: str
+) -> VectorStore:
     """
     Create a vector db based on the configuration,
     and load the pre-computed embeddings from the given directory
 
     Args:
+        scenario_id (str): scenario ID
+        vector_db_name (str): type of vector db (currently supported: "faiss", "chroma")
         embeddings_directory (str): directory containing the pre-computed embeddings
 
     Returns:
         VectorStore: vector db
     """
 
-    embeddings = get_embedding_model()
-    vector_db = get_vector_db_name()
+    embeddings = get_embedding_model(scenario_id)
 
-    if vector_db == "faiss":
+    if vector_db_name == "faiss":
         db = FAISS.load_local(
             embeddings_directory,
             embeddings=embeddings,
             allow_dangerous_deserialization=True,
         )
-    elif vector_db == "chroma":
+    elif vector_db_name == "chroma":
         db = Chroma(
             persist_directory=embeddings_directory, embedding_function=embeddings
         )
     else:
-        logger.error(f"Unsupported type of vector DB: {vector_db}")
-        raise Exception(f"Unsupported type of vector DB: {vector_db}")
+        logger.error(f"Unsupported type of vector DB: {vector_db_name}")
+        raise Exception(f"Unsupported type of vector DB: {vector_db_name}")
 
     return db
 
 
-def get_class_context_vector_db() -> VectorStore:
+def get_class_context_vector_db(scenario_id: str) -> VectorStore:
     """
-    Create a vector db based on the configuration,
+    Create a vector db based on the scenario configuration,
     and load the pre-computed embeddings of the RDFS/OWL classes
 
+    Args:
+        scenario_id (str): scenario ID
+
     Returns:
         VectorStore: vector db
     """
 
     # Already initialized?
-    if globals()["classes_vector_db"] != None:
-        return globals()["classes_vector_db"]
+    if (
+        scenario_id in classes_vector_db.keys()
+        and classes_vector_db[scenario_id] != None
+    ):
+        return classes_vector_db[scenario_id]
 
-    model_id = get_embeddings_model_id()
-    vector_db = get_vector_db_name()
-    embeddings_directory = f"{get_embeddings_directory()}/{config["class_context_embeddings_prefix"]}{model_id}_{vector_db}_index"
+    model_id = get_embeddings_model_id(scenario_id)
+    vector_db_name = get_vector_db_name(scenario_id)
+    embeddings_directory = f"{get_embeddings_directory(vector_db_name)}/{config["class_context_embeddings_prefix"]}{model_id}_{vector_db_name}_index"
     logger.debug(f"Classes context embeddings directory: {embeddings_directory}")
 
-    db = create_vector_db(embeddings_directory)
+    db = create_vector_db(scenario_id, vector_db_name, embeddings_directory)
     logger.info(f"Classes context vector DB initialized.")
-    globals()["classes_vector_db"] = db
+    globals()["classes_vector_db"][scenario_id] = db
     return db
 
 
-def get_query_vector_db() -> VectorStore:
+def get_query_vector_db(scenario_id: str) -> VectorStore:
     """
-    Create a vector db based on the configuration,
+    Create a vector db based on the scenario configuration,
     and load the pre-computed embeddings of the SPARQL queries
+
+    Args:
+        scenario_id (str): scenario ID
 
     Returns:
         VectorStore: vector db
     """
 
     # Already initialized?
-    if globals()["queries_vector_db"] != None:
-        return globals()["queries_vector_db"]
+    if (
+        scenario_id in queries_vector_db.keys()
+        and queries_vector_db[scenario_id] != None
+    ):
+        return queries_vector_db
 
-    model_id = get_embeddings_model_id()
-    vector_db = get_vector_db_name()
-    embeddings_directory = f"{get_embeddings_directory()}/{config["queries_embeddings_prefix"]}{model_id}_{vector_db}_index"
+    model_id = get_embeddings_model_id(scenario_id)
+    vector_db_name = get_vector_db_name(scenario_id)
+    embeddings_directory = f"{get_embeddings_directory(vector_db_name)}/{config["queries_embeddings_prefix"]}{model_id}_{vector_db_name}_index"
     logger.debug(f"SPARQL queries embeddings directory: {embeddings_directory}")
 
-    db = create_vector_db(embeddings_directory)
+    db = create_vector_db(scenario_id, vector_db_name, embeddings_directory)
     logger.info(f"SPARQL queries vector DB initialized.")
-    globals()["queries_vector_db"] = db
+    globals()["queries_vector_db"][scenario_id] = db
     return db
 
 
@@ -402,7 +400,6 @@ async def main(graph: CompiledStateGraph):
         graph (CompiledStateGraph): Langraph compiled state graph
     """
 
-    logger.info("Running scenario: " + get_scenario())
     question = args.question
     logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))

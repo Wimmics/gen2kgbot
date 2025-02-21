@@ -16,7 +16,11 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_3"
-config.set_scenario(SCENARIO)
+
+
+def init(state: OverallState) -> OverallState:
+    logger.info(f"Running scenario: {SCENARIO}")
+    return OverallState({"scenario_id": SCENARIO})
 
 
 def create_prompt(state: OverallState) -> OverallState:
@@ -25,13 +29,15 @@ def create_prompt(state: OverallState) -> OverallState:
 
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
+builder.add_node("init", init)
 builder.add_node("select_similar_classes", select_similar_classes)
 builder.add_node("create_prompt", create_prompt)
 builder.add_node("generate_query", generate_query)
 builder.add_node("run_query", run_query)
 builder.add_node("interpret_results", interpret_csv_query_results)
 
-builder.add_edge(START, "select_similar_classes")
+builder.add_edge(START, "init")
+builder.add_edge("init", "select_similar_classes")
 builder.add_edge("select_similar_classes", "create_prompt")
 builder.add_edge("create_prompt", "generate_query")
 builder.add_conditional_edges("generate_query", generate_query_router)
@@ -39,11 +45,6 @@ builder.add_conditional_edges("run_query", run_query_router)
 builder.add_edge("interpret_results", END)
 
 graph = builder.compile()
-
-
-def run_scenario(question: str):
-    return graph.ainvoke(input=InputState({"initial_question": question}))
-
 
 if __name__ == "__main__":
     asyncio.run(config.main(graph))

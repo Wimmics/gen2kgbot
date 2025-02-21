@@ -29,7 +29,11 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_6"
-config.set_scenario(SCENARIO)
+
+
+def init(state: OverallState) -> OverallState:
+    logger.info(f"Running scenario: {SCENARIO}")
+    return OverallState({"scenario_id": SCENARIO})
 
 
 def create_prompt(state: OverallState) -> OverallState:
@@ -45,13 +49,15 @@ prepro_builder = StateGraph(
     state_schema=OverallState, input=OverallState, output=OverallState
 )
 
+prepro_builder.add_node("init", init)
 prepro_builder.add_node("preprocess_question", preprocess_question)
 prepro_builder.add_node("select_similar_classes", select_similar_classes)
 prepro_builder.add_node("get_context_class_from_cache", get_class_context_from_cache)
 prepro_builder.add_node("get_context_class_from_kg", get_class_context_from_kg)
 prepro_builder.add_node("select_similar_query_examples", select_similar_query_examples)
 
-prepro_builder.add_edge(START, "preprocess_question")
+prepro_builder.add_edge(START, "init")
+prepro_builder.add_edge("init", "preprocess_question")
 prepro_builder.add_edge("preprocess_question", "select_similar_query_examples")
 prepro_builder.add_edge("preprocess_question", "select_similar_classes")
 prepro_builder.add_edge("select_similar_query_examples", END)
@@ -82,10 +88,6 @@ builder.add_conditional_edges("run_query", run_query_router)
 builder.add_edge("interpret_results", END)
 
 graph = builder.compile()
-
-
-def run_scenario(question: str):
-    return graph.ainvoke(input=InputState({"initial_question": question}))
 
 
 if __name__ == "__main__":

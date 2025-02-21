@@ -10,29 +10,31 @@ from app.core.scenarios.scenario_1.prompt import system_prompt_template
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_1"
-config.set_scenario(SCENARIO)
+
+
+def init(state: OverallState) -> OverallState:
+    logger.info(f"Running scenario: {SCENARIO}")
+    return OverallState({"scenario_id": SCENARIO})
 
 
 async def interpret_results(state: OverallState):
     logger.info(f"Question: {state["initial_question"]}")
-    result = await config.get_llm().ainvoke(
+    result = await config.get_llm(state["scenario_id"]).ainvoke(
         system_prompt_template.format(question=state["initial_question"])
     )
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
-s1_builder = StateGraph(
-    state_schema=OverallState, input=InputState, output=OverallState
-)
-s1_builder.add_node("Interpret_results", interpret_results)
-s1_builder.add_edge(START, "Interpret_results")
-s1_builder.add_edge("Interpret_results", END)
+builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
-graph = s1_builder.compile()
+builder.add_node("init", init)
+builder.add_node("Interpret_results", interpret_results)
 
+builder.add_edge(START, "init")
+builder.add_edge("init", "Interpret_results")
+builder.add_edge("Interpret_results", END)
 
-def run_scenario(question: str):
-    return graph.ainvoke(input=InputState({"initial_question": question}))
+graph = builder.compile()
 
 
 if __name__ == "__main__":

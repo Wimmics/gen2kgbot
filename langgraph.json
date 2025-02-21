@@ -1,16 +1,15 @@
 {
-  "dockerfile_lines": [],
-  "graphs": {
-    "Scenario 1": "./app/core/scenarios/scenario_1/scenario_1.py:graph",
-    "Scenario 2": "./app/core/scenarios/scenario_2/scenario_2.py:graph",
-    "Scenario 3": "./app/core/scenarios/scenario_3/scenario_3.py:graph",
-    "Scenario 4": "./app/core/scenarios/scenario_4/scenario_4.py:graph",
-    "Scenario 5": "./app/core/scenarios/scenario_5/scenario_5.py:graph",
-    "Scenario 6": "./app/core/scenarios/scenario_6/scenario_6.py:graph"
-  },
-  "env": "./.env",
-  "python_version": "3.13",
-  "dependencies": [
-    "."
-  ]
+    "graphs": {
+        "Scenario 1": "./app/core/scenarios/scenario_1/scenario_1.py:graph",
+        "Scenario 2": "./app/core/scenarios/scenario_2/scenario_2.py:graph",
+        "Scenario 3": "./app/core/scenarios/scenario_3/scenario_3.py:graph",
+        "Scenario 4": "./app/core/scenarios/scenario_4/scenario_4.py:graph",
+        "Scenario 5": "./app/core/scenarios/scenario_5/scenario_5.py:graph",
+        "Scenario 6": "./app/core/scenarios/scenario_6/scenario_6.py:graph"
+    },
+    "env": "./.env",
+    "python_version": "3.12",
+    "dependencies": [
+        "."
+    ]
 }
