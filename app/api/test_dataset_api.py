@@ -7,7 +7,7 @@ from app.api.models.test_dataset_query_request import TestDatasetQueryRequest
 from app.api.services.generate_question_dataset_service import generate_questions
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.services.test_answer_dataset_service import test_answer
+from app.api.services.test_answer_dataset_service import judge_answer
 
 
 def get_env_variable(var_name: str) -> str:
@@ -55,7 +55,16 @@ app.add_middleware(
 
 @app.post("/api/test_dataset/judge_query")
 async def test_dataset_judge_query(test_request: TestDatasetQueryRequest):
-    answer = await test_answer(
+    """
+    This endpoint is used to judge the answer of a question based on the given SPARQL query.
+
+    Args:
+        test_request (TestDatasetQueryRequest): The request object containing the necessary information to judge the answer.
+
+    Returns:
+        dict: The result of the judgement.
+    """
+    answer = await judge_answer(
         base_uri=test_request.base_uri,
         model_provider=test_request.modelProvider,
         model_name=test_request.modelName,
@@ -70,6 +79,15 @@ async def test_dataset_judge_query(test_request: TestDatasetQueryRequest):
 async def test_dataset_generate_question(
     test_request: TestDatasetGenerateQuestionRequest,
 ):
+    """
+    This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
+
+    Args:
+        test_request (TestDatasetGenerateQuestionRequest): The request object containing the necessary information to generate questions.
+
+    Returns:
+        dict: The generated questions.
+    """
     answer = await generate_questions(
         base_uri=test_request.base_uri,
         model_provider=test_request.model_provider,

@@ -21,6 +21,25 @@ async def generate_questions(
     number_of_questions: int,
     enforce_structured_output: bool,
 ):
+    """
+    Generate a fixed number of questions from a given KG schema, description and additional context using a language model.
+
+    Args:
+        model_provider (str): The provider of the language model
+        model_name (str): The name of the language model
+        base_uri (str): The base URI of the language model
+        kg_schema (str): The schema of the knowledge graph e.g. a list of used ontologies or a list of classes and properties to be used in the questions
+        kg_description (str): The description of the knowledge graph
+        additional_context (str): Some additional context to be used in the question generation, e.g. the abstract of the paper presenting the KG
+        number_of_questions (int): The number of questions to generate
+        enforce_structured_output (bool): Whether to enforce structured output by adding a prefix to the prompt
+
+    Returns:
+        str: The generated questions
+
+    Raises:
+        HTTPException: If an error occurs during the question generation
+    """
 
     query_test_prompt_template = ChatPromptTemplate.from_template(
         question_generation_prompt

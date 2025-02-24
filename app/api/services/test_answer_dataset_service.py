@@ -8,7 +8,7 @@ from langchain_ollama import ChatOllama
 from app.api.services.prompts.query_test_prompt import query_test_prompt
 
 
-async def test_answer(
+async def judge_answer(
     model_provider: str,
     model_name: str,
     base_uri: str,
@@ -16,7 +16,23 @@ async def test_answer(
     sparql_query: str,
     sparql_query_context: str,
 ):
+    """
+    Judge the sparql query correctness given a question and the sparql query context using a language model.
 
+    Args:
+        model_provider (str): The provider of the language model
+        model_name (str): The name of the language model
+        base_uri (str): The base URI of the language model
+        question (str): The asked question to be judged in natural language
+        sparql_query (str): The sparql query to be judged
+        sparql_query_context (str): The list of QNames and Full QNames used in the sparql query with some additional context e.g. rdfs:label, rdfs:comment
+
+    Returns:
+        str: The judged answer
+
+    Raises:
+        HTTPException: If an error occurs during the question answering
+    """
     query_test_prompt_template = ChatPromptTemplate.from_template(query_test_prompt)
 
     llm: BaseChatModel
