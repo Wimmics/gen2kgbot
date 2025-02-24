@@ -1,4 +1,4 @@
-name: gen2kgbot_unified
+name: gen2kgbot
 channels:
   - conda-forge
   #- defaults
@@ -7,8 +7,8 @@ channels:
 dependencies:
   - python=3.12.*
   - chromadb
-  # - faiss-cpu
-  - faiss-gpu
+  # - faiss-cpu  # to use instead of faiss-gpu if no GPU is available
+  - faiss-gpu  # to use instead of faiss_cpu if a GPU is available
   - langchain
   - langchain-chroma
   - langchain-community

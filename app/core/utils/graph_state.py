@@ -5,6 +5,10 @@ from langgraph.graph import MessagesState
 
 
 class InputState(TypedDict):
+    """
+    Attributes:
+        initial_question (str): the question to be answered by the Gen²KGBot workflow.
+    """
     initial_question: str
 
 

@@ -1,8 +1,13 @@
 import os
 from fastapi import FastAPI
+from app.api.models.test_dataset_generate_question_request import (
+    TestDatasetGenerateQuestionRequest,
+)
 from app.api.models.test_dataset_query_request import TestDatasetQueryRequest
-from app.api.services.test_dataset_service import get_query_test_answer
+from app.api.services.generate_question_dataset_service import generate_questions
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api.services.test_answer_dataset_service import test_answer
 
 
 def get_env_variable(var_name: str) -> str:
@@ -15,9 +20,7 @@ def get_env_variable(var_name: str) -> str:
 
 app = FastAPI()
 
-origins = [
-    "*"
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -52,13 +55,30 @@ app.add_middleware(
 
 @app.post("/api/test_dataset/judge_query")
 async def test_dataset_judge_query(test_request: TestDatasetQueryRequest):
-    answer = await get_query_test_answer(
+    answer = await test_answer(
         base_uri=test_request.base_uri,
         model_provider=test_request.modelProvider,
         model_name=test_request.modelName,
         question=test_request.question,
         sparql_query=test_request.sparql_query,
         sparql_query_context=test_request.sparql_query_context,
+    )
+    return {"result": answer}
+
+
+@app.post("/api/test_dataset/generate-question")
+async def test_dataset_generate_question(
+    test_request: TestDatasetGenerateQuestionRequest,
+):
+    answer = await generate_questions(
+        base_uri=test_request.base_uri,
+        model_provider=test_request.model_provider,
+        model_name=test_request.model_name,
+        number_of_questions=test_request.number_of_questions,
+        additional_context=test_request.additional_context,
+        kg_description=test_request.kg_description,
+        kg_schema=test_request.kg_schema,
+        enforce_structured_output=test_request.enforce_structured_output,
     )
     return {"result": answer}
 

@@ -5,20 +5,26 @@ from langchain_deepseek import ChatDeepSeek
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.language_models import BaseChatModel
 from langchain_ollama import ChatOllama
+from app.api.services.prompts.question_generation_prompt import (
+    question_generation_prompt,
+    enforce_structured_output_prompt,
+)
 
-from app.api.services.prompts.query_test_prompt import query_test_prompt
 
-
-async def get_query_test_answer(
+async def generate_questions(
     model_provider: str,
     model_name: str,
     base_uri: str,
-    question: str,
-    sparql_query: str,
-    sparql_query_context: str,
+    kg_schema: str,
+    kg_description: str,
+    additional_context: str,
+    number_of_questions: int,
+    enforce_structured_output: bool,
 ):
 
-    query_test_prompt_template = ChatPromptTemplate.from_template(query_test_prompt)
+    query_test_prompt_template = ChatPromptTemplate.from_template(
+        question_generation_prompt
+    )
 
     llm: BaseChatModel
 
@@ -45,9 +51,15 @@ async def get_query_test_answer(
 
         result_from_json_mode = await chain_for_json_mode.ainvoke(
             {
-                "question": question,
-                "sparql": sparql_query,
-                "qname_info": sparql_query_context,
+                "kg_schema": kg_schema,
+                "kg_description": kg_description,
+                "additional_context": additional_context,
+                "number_of_questions": number_of_questions,
+                "enforce_structured_output_prompt": (
+                    enforce_structured_output_prompt
+                    if enforce_structured_output
+                    else ""
+                ),
             }
         )
         return result_from_json_mode.content
