@@ -2,7 +2,6 @@
 This module implements the Langgraph nodes that are common to multiple scenarios
 """
 
-from datetime import datetime, timezone
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
 from app.core.utils.graph_state import OverallState
@@ -24,27 +23,27 @@ logger = config.setup_logger(__package__, __file__)
 SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
 
 
-def preprocess_question(input: OverallState) -> OverallState:
+def preprocess_question(state: OverallState) -> OverallState:
     """
     Extract named entities from the user question, to help selected similar SPARQL queries.
     Only applies in scenario 6.
     """
 
-    if config.get_scenario() != "scenario_6":
+    if state["scenario_id"] != "scenario_6":
         return {
-            "initial_question": input["initial_question"],
+            "initial_question": state["initial_question"],
             "number_of_tries": 0,
         }
 
     logger.debug("Preprocessing the question...")
 
-    extracted_classes = extract_relevant_entities_spacy(input["initial_question"])
+    extracted_classes = extract_relevant_entities_spacy(state["initial_question"])
     logger.debug(f"Extracted following named entities: {extracted_classes}")
     relevant_entities = f"{",".join(extracted_classes)}"
 
     return {
         "messages": AIMessage(relevant_entities),
-        "initial_question": input["initial_question"],
+        "initial_question": state["initial_question"],
         "question_relevant_entities": relevant_entities,
         "number_of_tries": 0,
     }
@@ -62,7 +61,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
         dict: state updated with selected_classes
     """
 
-    db = config.get_class_context_vector_db()
+    db = config.get_class_context_vector_db(state["scenario_id"])
 
     question = state["initial_question"]
     logger.info("Looking for classes related to the question in the vector db...")
@@ -106,10 +105,19 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
 
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
+    """
+    Retrieve the SPARQL queries most similar to the question
 
-    # Retrieve the SPARQL queries most similar to the question
+    Args:
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state updated messages and queries (selected_queries)
+    """
     question = state["question_relevant_entities"]
-    retrieved_documents = config.get_query_vector_db().similarity_search(question, k=3)
+    retrieved_documents = config.get_query_vector_db(
+        state["scenario_id"]
+    ).similarity_search(question, k=3)
 
     # Show the retrieved document's content
     result = ""
@@ -167,13 +175,13 @@ def create_query_generation_prompt(
             merged_graph = merged_graph + g.parse(data=cls_context)
 
         # Save the graph
-        timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
-        merged_graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
-        merged_graph.serialize(
-            destination=merged_graph_file,
-            format="turtle",
-        )
-        logger.info(f"Graph of selected classes context saved to {merged_graph_file}")
+        # timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
+        # merged_graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
+        # merged_graph.serialize(
+        #     destination=merged_graph_file,
+        #     format="turtle",
+        # )
+        # logger.info(f"Graph of selected classes context saved to {merged_graph_file}")
         merged_graph_ttl = merged_graph.serialize(format="turtle")
         template = template.partial(merged_classes_context=merged_graph_ttl)
 
@@ -269,7 +277,9 @@ def generate_query(state: OverallState):
     """
     Invoke the LLM with the prompt asking to create a SPARQL query
     """
-    result = config.get_llm().invoke(state["query_generation_prompt"])
+    result = config.get_llm(state["scenario_id"]).invoke(
+        state["query_generation_prompt"]
+    )
     logger.debug(f"Query generation response:\n{result.content}")
     return {"messages": result}
 
@@ -279,9 +289,14 @@ def verify_query(state: OverallState) -> OverallState:
     Check if a query was generated and if it is syntactically correct.
     If more than one query was produced, just log a warning and process the first one.
 
-    If so, set the query in `state["last_generated_query"]`, otherwise increment `state["number_of_tries"]`.
-
     Used in scenarios 5 and 6.
+
+    Args:
+        state (dict): current state of the conversation
+
+    Return:
+        dict: state updated with the query if it was correct (last_generated_query),
+            otherwise increment number of tries (number_of_tries)
     """
 
     queries = find_sparql_queries(state["messages"][-1].content)
@@ -307,11 +322,7 @@ def verify_query(state: OverallState) -> OverallState:
         logger.warning(f"The generated SPARQL query is invalid: {e}")
         return {
             "number_of_tries": state["number_of_tries"] + 1,
-            "messages": [
-                HumanMessage(
-                    f"{e}"
-                )
-            ],
+            "messages": [HumanMessage(f"{e}")],
         }
 
     logger.info("The generated SPARQL query is syntactically correct.")
@@ -386,7 +397,7 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
 
     prompt = template.format()
     logger.info(f"Results interpretation prompt created:\n{prompt}.")
-    result = config.get_llm().invoke(prompt)
+    result = config.get_llm(state["scenario_id"]).invoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
     return OverallState({"messages": result, "results_interpretation": result})

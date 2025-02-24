@@ -28,7 +28,11 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_5"
-config.set_scenario(SCENARIO)
+
+
+def init(state: OverallState) -> OverallState:
+    logger.info(f"Running scenario: {SCENARIO}")
+    return OverallState({"scenario_id": SCENARIO})
 
 
 def create_prompt(state: OverallState) -> OverallState:
@@ -41,6 +45,7 @@ def create_retry_prompt(state: OverallState) -> OverallState:
 
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
+builder.add_node("init", init)
 builder.add_node("preprocess_question", preprocess_question)
 builder.add_node("select_similar_classes", select_similar_classes)
 builder.add_node("get_context_class_from_cache", get_class_context_from_cache)
@@ -52,7 +57,8 @@ builder.add_node("run_query", run_query)
 builder.add_node("create_retry_prompt", create_retry_prompt)
 builder.add_node("interpret_results", interpret_csv_query_results)
 
-builder.add_edge(START, "preprocess_question")
+builder.add_edge(START, "init")
+builder.add_edge("init", "preprocess_question")
 builder.add_edge("preprocess_question", "select_similar_classes")
 builder.add_conditional_edges("select_similar_classes", get_class_context_router)
 builder.add_edge("get_context_class_from_cache", "create_prompt")
@@ -66,10 +72,6 @@ builder.add_conditional_edges("run_query", run_query_router)
 builder.add_edge("interpret_results", END)
 
 graph = builder.compile()
-
-
-def run_scenario(question: str):
-    return graph.ainvoke(input=InputState({"initial_question": question}))
 
 
 if __name__ == "__main__":

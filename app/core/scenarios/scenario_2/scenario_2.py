@@ -14,7 +14,11 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_2"
-config.set_scenario(SCENARIO)
+
+
+def init(state: OverallState) -> OverallState:
+    logger.info(f"Running scenario: {SCENARIO}")
+    return OverallState({"scenario_id": SCENARIO})
 
 
 async def generate_query(state: OverallState) -> OverallState:
@@ -34,28 +38,24 @@ async def generate_query(state: OverallState) -> OverallState:
     prompt = template.format()
     logger.debug(f"Prompt created:\n{prompt}")
 
-    result = await config.get_llm().ainvoke(template.format())
+    result = await config.get_llm(state["scenario_id"]).ainvoke(template.format())
     return OverallState({"messages": [HumanMessage(state["initial_question"]), result]})
 
 
-s2_builder = StateGraph(
-    state_schema=OverallState, input=InputState, output=OverallState
-)
+builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
-s2_builder.add_node("generate_query", generate_query)
-s2_builder.add_node("run_query", run_query)
-s2_builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("init", init)
+builder.add_node("generate_query", generate_query)
+builder.add_node("run_query", run_query)
+builder.add_node("interpret_results", interpret_csv_query_results)
 
-s2_builder.add_edge(START, "generate_query")
-s2_builder.add_conditional_edges("generate_query", generate_query_router)
-s2_builder.add_conditional_edges("run_query", run_query_router)
-s2_builder.add_edge("interpret_results", END)
+builder.add_edge(START, "init")
+builder.add_edge("init", "generate_query")
+builder.add_conditional_edges("generate_query", generate_query_router)
+builder.add_conditional_edges("run_query", run_query_router)
+builder.add_edge("interpret_results", END)
 
-graph = s2_builder.compile()
-
-
-def run_scenario(question: str):
-    return graph.ainvoke(input=InputState({"initial_question": question}))
+graph = builder.compile()
 
 
 if __name__ == "__main__":

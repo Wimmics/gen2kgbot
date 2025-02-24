@@ -15,6 +15,8 @@ class InputState(TypedDict):
 class OverallState(MessagesState, InputState):
     """
     Attributes:
+        scenario_id (str): identifier of the current scenario
+
         question_relevant_entities (list[str]): named entities extracted from the question by spacy
 
         selected_queries (str):
@@ -38,7 +40,7 @@ class OverallState(MessagesState, InputState):
 
         results_interpretation (str): interpretation of the SPARQL results of the last executed SPARQL query
     """
-
+    scenario_id: str
     question_relevant_entities: list[str]
     selected_queries: str
     selected_classes: list[str]
