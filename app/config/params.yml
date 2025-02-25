@@ -41,180 +41,95 @@ queries_embeddings_prefix: "query_v1_"
 # Path to a usable temporary directory
 temp_directory: "./tmp"
 
-
 # embedding_generation:
   # Utilitary endpoint to store the ontologies (if not present in the endpoint to be queried) 
   # work_sparql_endpoint_url: ""
   # text_embedding_llm:
-    # type: ollama-embeddings
+    # server_type: ollama-embeddings
     # id: mxbai-embed-large
     # vector_db: faiss
     # output_directory: "data/"
 
-
 # -----------------------------------------------------------
 # LLM configurations
 
-llama3_2-1b@local:
-  server_type: ollama
-  id: llama3.2:1b
-  temperature: 0
-  max_retries: 3 
-  model_kwargs: {"top_p": 0.95 }
-  
-llama-3_1-70B@ovh:
-  server_type: ovh
-  id: Meta-Llama-3_1-70B-Instruct
-  base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-  temperature: 0
-  max_retries: 3 
-  model_kwargs: {"top_p": 0.95 }
+seq2seq_models:
 
-deepseek-r1_1_5b@local:
-  server_type: ollama
-  id: deepseek-r1:1.5b
-  temperature: 0
-  max_retries: 3 
-  model_kwargs: {"top_p": 0.95 }
+  llama3_2-1b@local:
+    server_type: ollama
+    id: llama3.2:1b
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
+    
+  llama-3_1-70B@ovh:
+    server_type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
 
-deepseek-chat@deepseek:
-  server_type: deepseek
-  id: deepseek-chat
-  base_url: https://api.deepseek.com
-  temperature: 0
-  max_retries: 3 
-  model_kwargs: {"top_p": 0.95 }
+  deepseek-r1_1_5b@local:
+    server_type: ollama
+    id: deepseek-r1:1.5b
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
 
-deepseek-reasoner@deepseek:
-  server_type: deepseek
-  id: deepseek-reasoner
-  base_url: https://api.deepseek.com
-  temperature: 0
-  max_retries: 3 
-  model_kwargs: {"top_p": 0.95 }
+  deepseek-chat@deepseek:
+    server_type: deepseek
+    id: deepseek-chat
+    base_url: https://api.deepseek.com
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
 
-nomic-embed-text_faiss@local:
-  server_type: ollama-embeddings
-  id: nomic-embed-text
-  vector_db: faiss
-  temperature: 0
-  max_retries: 3 
-  model_kwargs: {"top_p": 0.95 }
+  deepseek-reasoner@deepseek:
+    server_type: deepseek
+    id: deepseek-reasoner
+    base_url: https://api.deepseek.com
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
 
-nomic-embed-text_chroma@local:
-  server_type: openai-embeddings   # ??
-  id: nomic-embed-text
-  vector_db: chroma
+  deepseek-reasoner@deepseek:
+    server_type: hugface
+    id: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+
+text_embedding_models:
+
+  nomic-embed-text_faiss@local:
+    server_type: ollama-embeddings
+    id: nomic-embed-text
+    vector_db: faiss
+
+  nomic-embed-text_chroma@local:
+    server_type: openai-embeddings
+    id: nomic-embed-text
+    vector_db: chroma
   
 # -----------------------------------------------------------
 # Scenarios
       
 scenario_1:
-  seq2seq_llm:
-    type: ollama
-    id: llama3.2:1b
-
-    # type: ovh
-    # id: Meta-Llama-3_1-70B-Instruct
-    # base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-
-    temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
-
+  seq2seq_model: llama3_2-1b@local
     
 scenario_2:
-  seq2seq_llm: 
-    type: ollama
-    id: llama3.2:1b
-
-    # type: ovh
-    # id: Meta-Llama-3_1-70B-Instruct
-    # base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-
-    temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
+  seq2seq_model: llama3_2-1b@local
 
 scenario_3:
-  seq2seq_llm:
-    #type: ollama
-    #id: deepseek-r1:1.5b
-
-    type: ovh
-    id: Meta-Llama-3_1-70B-Instruct
-    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-    temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
-  text_embedding_llm:
-    type: ollama-embeddings
-    # type: openai-embeddings
-    id: nomic-embed-text
-    vector_db: faiss
-    # vector_db: chroma
+  seq2seq_model: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_4:
-  seq2seq_llm: 
-    type: ollama
-    id: deepseek-r1:1.5b
-
-    type: ovh
-    id: Meta-Llama-3_1-70B-Instruct
-    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-
-    temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
-  text_embedding_llm:
-    type: ollama-embeddings
-    # type: openai-embeddings
-    id: nomic-embed-text
-    vector_db: faiss
-    # vector_db: chroma
+  seq2seq_model: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_5:
-  seq2seq_llm:
-    # type: ollama
-    # id: deepseek-r1:1.5b
-
-    type: ovh
-    id: Meta-Llama-3_1-70B-Instruct
-    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-
-    temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
-  text_embedding_llm:
-    type: ollama-embeddings
-    # type: openai-embeddings
-    id: nomic-embed-text
-    vector_db: faiss
-    # vector_db: chroma
+  seq2seq_model: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_6:
-  seq2seq_llm:
-    type: ovh
-    id: Meta-Llama-3_1-70B-Instruct
-    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-    
-    # type: deepseek
-    # base_url: https://api.deepseek.com
-    # id: deepseek-chat
-    # id: deepseek-reasoner
-
-    # type: ollama
-    # id: deepseek-r1:1.5b
-
-    # type: hugface
-    # id: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
-    
-    temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
-  text_embedding_llm:
-    type: ollama-embeddings
-    # type: openai-embeddings
-    id: nomic-embed-text
-    vector_db: faiss
-    # vector_db: chroma
+  seq2seq_model: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local

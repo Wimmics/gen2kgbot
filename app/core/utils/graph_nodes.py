@@ -284,7 +284,7 @@ def generate_query(state: OverallState):
     """
     Invoke the LLM with the prompt asking to create a SPARQL query
     """
-    result = config.get_llm(state["scenario_id"]).invoke(
+    result = config.get_seq2seq_model(state["scenario_id"]).invoke(
         state["query_generation_prompt"]
     )
     logger.debug(f"Query generation response:\n{result.content}")
@@ -404,7 +404,7 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
 
     prompt = template.format()
     logger.info(f"Results interpretation prompt created:\n{prompt}.")
-    result = config.get_llm(state["scenario_id"]).invoke(prompt)
+    result = config.get_seq2seq_model(state["scenario_id"]).invoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
     return OverallState({"messages": result, "results_interpretation": result})

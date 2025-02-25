@@ -19,9 +19,10 @@ def init(state: OverallState) -> OverallState:
 
 async def interpret_results(state: OverallState):
     logger.info(f"Question: {state["initial_question"]}")
-    result = await config.get_llm(state["scenario_id"]).ainvoke(
+    result = await config.get_seq2seq_model(state["scenario_id"]).ainvoke(
         system_prompt_template.format(question=state["initial_question"])
     )
+    logger.info(f"Model's response:\n{result.content}")
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
