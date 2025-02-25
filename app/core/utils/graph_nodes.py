@@ -200,17 +200,13 @@ def create_query_generation_prompt(
     prompt = template.format()
     logger.info(f"Query generation prompt created:\n{prompt}.")
 
+    result_state = {
+        "messages": SystemMessage(prompt),
+        "query_generation_prompt": prompt,
+    }
     if has_merged_classes_context:
-        return {
-            "messages": SystemMessage(prompt),
-            "merged_classes_context": merged_graph_ttl,
-            "query_generation_prompt": prompt,
-        }
-    else:
-        return {
-            "messages": SystemMessage(prompt),
-            "query_generation_prompt": prompt,
-        }
+        result_state["merged_classes_context"] = merged_graph_ttl
+    return result_state
 
 
 def create_retry_query_generation_prompt(
@@ -239,6 +235,16 @@ def create_retry_query_generation_prompt(
         template = template.partial(initial_question=state["initial_question"])
 
     if (
+        "selected_classes" in template.input_variables
+        and "selected_classes" in state.keys()
+    ):
+        selected_classes_str = ""
+        for item in state["selected_classes"]:
+            selected_classes_str = f"{selected_classes_str}\n{item}"
+        template = template.partial(selected_classes=selected_classes_str)
+
+    # state["merged_classes_context"] must have been set during the first attempt to generate a prompt
+    if (
         "merged_classes_context" in template.input_variables
         and "merged_classes_context" in state.keys()
     ):
@@ -252,6 +258,7 @@ def create_retry_query_generation_prompt(
     ):
         template = template.partial(selected_queries=state["selected_queries"])
 
+    # Add the answer previously given by the model, and that was incorrect
     if "last_answer" in template.input_variables:
         template = template.partial(last_answer=state["messages"][-2].content)
 
