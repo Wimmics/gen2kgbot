@@ -2,6 +2,7 @@
 This module implements the Langgraph nodes that are common to multiple scenarios
 """
 
+from datetime import timezone, datetime
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
 from app.core.utils.graph_state import OverallState
@@ -12,6 +13,7 @@ from app.core.utils.construct_util import (
     get_class_context,
     get_empty_graph_with_prefixes,
     add_known_prefixes_to_query,
+    fulliri_to_prefixed,
 )
 from app.core.utils.prompts import interpret_csv_query_results_prompt
 from rdflib import Graph
@@ -82,11 +84,11 @@ def get_class_context_from_cache(cls_path: str) -> OverallState:
         cls_path (str): path to the class context file
 
     Returns:
-        dict: state where selected_classes_context.
+        dict: state with selected_classes_context.
             This will be added to selected_classes_context in the current context
     """
     with open(cls_path) as f:
-        return {"selected_classes_context": ["\n".join(f.readlines())]}
+        return {"selected_classes_context": ["".join(f.readlines())]}
 
 
 def get_class_context_from_kg(cls: tuple) -> OverallState:
@@ -97,11 +99,11 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
         cls (tuple): (class URI, label, description)
 
     Returns:
-        dict: state where selected_classes_context.
+        dict: state with selected_classes_context.
             This will be added to selected_classes_context in the current context
     """
-    graph_ttl = get_class_context(cls)
-    return {"selected_classes_context": [graph_ttl]}
+    context = get_class_context(cls)
+    return {"selected_classes_context": [context]}
 
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
@@ -135,7 +137,8 @@ def create_query_generation_prompt(
 ) -> OverallState:
     """
     Generate a prompt from a template using the inputs available in the current state.
-    Depending on the scenario, the inputs variables may not be the same.
+    Depending on the scenario and wether this is a 1st time generation or a retry,
+    the inputs variables may not be the same.
 
     Args:
         template (PromptTemplate): template to use
@@ -143,7 +146,7 @@ def create_query_generation_prompt(
 
     Returns:
         dict: state updated with the prompt generated (query_generation_prompt)
-            and optionally the class contexts all merged in a single graph (merged_classes_context)
+            and optionally the class contexts all merged (merged_classes_context)
     """
     # logger.debug(f"Query generation prompt template: {template}")
 
@@ -163,105 +166,56 @@ def create_query_generation_prompt(
         selected_classes_str = ""
         for item in state["selected_classes"]:
             selected_classes_str = f"{selected_classes_str}\n{item}"
-        template = template.partial(selected_classes=selected_classes_str)
+        template = template.partial(
+            selected_classes=fulliri_to_prefixed(selected_classes_str)
+        )
+
+    if (
+        "selected_queries" in template.input_variables
+        and "selected_queries" in state.keys()
+    ):
+        template = template.partial(selected_queries=state["selected_queries"])
 
     has_merged_classes_context = "merged_classes_context" in template.input_variables
 
     if has_merged_classes_context:
-        # Load all the class contexts in a common graph
-        merged_graph = get_empty_graph_with_prefixes()
-        for cls_context in state["selected_classes_context"]:
-            g = Graph()
-            merged_graph = merged_graph + g.parse(data=cls_context)
+        merged_graph_str = ""
+        if "merged_classes_context" in state.keys():
+            # This is a retry, state["merged_classes_context"] has already been set during the previous attempt
+            merged_graph_str = state["merged_classes_context"]
+        else:
+            # This is the first attempt, merge all class contexts together
+            if config.get_class_context_format() == "turtle":
+                # Load all the class contexts in a common graph
+                merged_graph = get_empty_graph_with_prefixes()
+                for cls_context in state["selected_classes_context"]:
+                    merged_graph = merged_graph + Graph().parse(data=cls_context)
+                # save_full_context(merged_graph)
+                merged_graph_str = merged_graph.serialize(format="turtle")
 
-        # Save the graph
-        # timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
-        # merged_graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
-        # merged_graph.serialize(
-        #     destination=merged_graph_file,
-        #     format="turtle",
-        # )
-        # logger.info(f"Graph of selected classes context saved to {merged_graph_file}")
-        merged_graph_ttl = merged_graph.serialize(format="turtle")
-        template = template.partial(merged_classes_context=merged_graph_ttl)
+            elif config.get_class_context_format() == "tuple":
+                for cls_context in state["selected_classes_context"]:
+                    if cls_context not in ["", "\n"]:
+                        merged_graph_str = (
+                            f"{merged_graph_str}\n{fulliri_to_prefixed(cls_context)}"
+                        )
+            else:
+                raise ValueError(
+                    f"Invalid requested format for class context: {format}"
+                )
 
-    if (
-        "selected_queries" in template.input_variables
-        and "selected_queries" in state.keys()
-    ):
-        template = template.partial(selected_queries=state["selected_queries"])
+        template = template.partial(merged_classes_context=merged_graph_str)
 
-    # Make sure there are no more unset input variables
-    if template.input_variables:
-        raise Exception(
-            f"Template has unused input variables: {template.input_variables}"
-        )
+    is_retry = (
+        "last_answer" in template.input_variables
+        or "last_answer_error_cause" in template.input_variables
+    )
 
-    prompt = template.format()
-    logger.info(f"Query generation prompt created:\n{prompt}.")
-
-    result_state = {
-        "messages": SystemMessage(prompt),
-        "query_generation_prompt": prompt,
-    }
-    if has_merged_classes_context:
-        result_state["merged_classes_context"] = merged_graph_ttl
-    return result_state
-
-
-def create_retry_query_generation_prompt(
-    template: PromptTemplate, state: OverallState
-) -> OverallState:
-    """
-    Generate a prompt from a template using the inputs available in the current state,
-    to retry the query generation task.
-
-    Args:
-        template (PromptTemplate): template to use
-        state (dict): current state of the conversation
-
-    Returns:
-        dict: state updated with the retry prompt (query_generation_prompt)
-    """
-    # logger.debug(f"Retry query generation prompt template: {template}")
-
-    if "kg_full_name" in template.input_variables:
-        template = template.partial(kg_full_name=config.get_kg_full_name())
-
-    if "kg_description" in template.input_variables:
-        template = template.partial(kg_description=config.get_kg_description())
-
-    if "initial_question" in template.input_variables:
-        template = template.partial(initial_question=state["initial_question"])
-
-    if (
-        "selected_classes" in template.input_variables
-        and "selected_classes" in state.keys()
-    ):
-        selected_classes_str = ""
-        for item in state["selected_classes"]:
-            selected_classes_str = f"{selected_classes_str}\n{item}"
-        template = template.partial(selected_classes=selected_classes_str)
-
-    # state["merged_classes_context"] must have been set during the first attempt to generate a prompt
-    if (
-        "merged_classes_context" in template.input_variables
-        and "merged_classes_context" in state.keys()
-    ):
-        template = template.partial(
-            merged_classes_context=state["merged_classes_context"]
-        )
-
-    if (
-        "selected_queries" in template.input_variables
-        and "selected_queries" in state.keys()
-    ):
-        template = template.partial(selected_queries=state["selected_queries"])
-
-    # Add the answer previously given by the model, and that was incorrect
+    # If retry, add the answer previously given by the model, and that was incorrect
     if "last_answer" in template.input_variables:
         template = template.partial(last_answer=state["messages"][-2].content)
 
+    # If retry, add the cause for the last error
     if "last_answer_error_cause" in template.input_variables:
         template = template.partial(
             last_answer_error_cause=state["messages"][-1].content
@@ -274,10 +228,16 @@ def create_retry_query_generation_prompt(
         )
 
     prompt = template.format()
-    logger.info(f"Retry query generation prompt created:\n{prompt}.")
-    return {
-        "query_generation_prompt": prompt,
-    }
+    result_state = {"query_generation_prompt": prompt}
+    if is_retry:
+        logger.info(f"Retry query generation prompt created:\n{prompt}.")
+    else:
+        logger.info(f"1st-time query generation prompt created:\n{prompt}.")
+        result_state["messages"] = SystemMessage(prompt)
+        if has_merged_classes_context:
+            result_state["merged_classes_context"] = merged_graph_str
+
+    return result_state
 
 
 def generate_query(state: OverallState):
@@ -408,3 +368,13 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
     return OverallState({"messages": result, "results_interpretation": result})
+
+
+def save_full_context(graph: Graph):
+    timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
+    graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
+    graph.serialize(
+        destination=graph_file,
+        format="turtle",
+    )
+    logger.info(f"Graph of selected classes context saved to {graph_file}")
