@@ -1,9 +1,12 @@
 import os
 from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from app.api.models.test_dataset_answer_question_request import TestDatasetAnswerQuestionRequest
 from app.api.models.test_dataset_generate_question_request import (
     TestDatasetGenerateQuestionRequest,
 )
 from app.api.models.test_dataset_query_request import TestDatasetQueryRequest
+from app.api.services.answer_question_service import generate_stream_responses
 from app.api.services.generate_question_dataset_service import generate_questions
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -29,28 +32,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# def serialize_aimessagechunk(chunk):
-#     if isinstance(chunk, AIMessageChunk):
-#         return chunk.content
-#     else:
-#         raise TypeError(
-#             f"Object of type {type(chunk).__name__} is not correctly formatted for serialization"
-#         )
-
-
-# async def generate_chat_events(message):
-#     # async for event in scenario_6_app.astream_events(
-#     #     {"initial_question": message}, version="v1"
-#     # ):
-#     #     if event["event"] == "on_chat_model_stream":
-#     #         chunk_content = serialize_aimessagechunk(event["data"]["chunk"])
-#     #         chunk_content_html = chunk_content.replace("\n", "<br>")
-#     #         yield f"data: {chunk_content_html}\n\n"
-#     #     elif event["event"] == "on_chat_model_end":
-#     #         print("Chat model has completed its response.")
-
-#     #     print(f"{event['metadata'].get('langgraph_node', '')} => {event['data']}")
 
 
 @app.post("/api/test_dataset/judge_query")
@@ -99,6 +80,33 @@ async def test_dataset_generate_question(
         enforce_structured_output=test_request.enforce_structured_output,
     )
     return {"result": answer}
+
+
+@app.post("/api/test_dataset/answer_question")
+def test_dataset_answer_question(
+    test_request: TestDatasetAnswerQuestionRequest,
+):
+    """
+    This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
+
+    Args:
+        test_request (TestDatasetGenerateQuestionRequest): The request object containing the necessary information to generate questions.
+
+    Returns:
+        dict: The generated questions.
+    """
+
+    # setLLM(
+    #     model_provider=test_request.model_provider,
+    #     model_name=test_request.model_name,
+    #     base_uri=test_request.base_uri,
+    # )
+
+    return StreamingResponse(
+        generate_stream_responses(question=test_request.question),
+        # media_type="text/event-stream",
+        media_type="application/json",
+    )
 
 
 if __name__ == "__main__":

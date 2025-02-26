@@ -379,7 +379,7 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
         scenario_id in queries_vector_db.keys()
         and queries_vector_db[scenario_id] is not None
     ):
-        return queries_vector_db
+        return queries_vector_db[scenario_id]
 
     model_id = get_embeddings_model_id(scenario_id)
     vector_db_name = get_vector_db_name(scenario_id)
