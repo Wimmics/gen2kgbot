@@ -23,8 +23,9 @@ Here is a list of classes that can be relevant to the user's question:
 
 Here are the properties and data types that are used with instances of the classes:
 
+```turtle
 {merged_classes_context}
-
+```
 
 These are example SPARQL queries that can help you generate the proper query:
 
@@ -52,8 +53,9 @@ DO NOT FORGET the ```sparql ``` language tag. It is crucial for the rest of the 
 
 Here are some classes, properties and data types that that can be relevant to the user's question:
 
+```turtle
 {merged_classes_context}
-
+```
 
 Example SPARQL queries:
 {selected_queries}

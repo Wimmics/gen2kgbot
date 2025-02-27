@@ -1,7 +1,9 @@
 import os
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from app.api.models.test_dataset_answer_question_request import TestDatasetAnswerQuestionRequest
+from app.api.models.test_dataset_answer_question_request import (
+    TestDatasetAnswerQuestionRequest,
+)
 from app.api.models.test_dataset_generate_question_request import (
     TestDatasetGenerateQuestionRequest,
 )
@@ -69,17 +71,32 @@ async def test_dataset_generate_question(
     Returns:
         dict: The generated questions.
     """
-    answer = await generate_questions(
-        base_uri=test_request.base_uri,
-        model_provider=test_request.model_provider,
-        model_name=test_request.model_name,
-        number_of_questions=test_request.number_of_questions,
-        additional_context=test_request.additional_context,
-        kg_description=test_request.kg_description,
-        kg_schema=test_request.kg_schema,
-        enforce_structured_output=test_request.enforce_structured_output,
+
+    return StreamingResponse(
+        generate_questions(
+            base_uri=test_request.base_uri,
+            model_provider=test_request.model_provider,
+            model_name=test_request.model_name,
+            number_of_questions=test_request.number_of_questions,
+            additional_context=test_request.additional_context,
+            kg_description=test_request.kg_description,
+            kg_schema=test_request.kg_schema,
+            enforce_structured_output=test_request.enforce_structured_output,
+        ),
+        # media_type="text/event-stream",
+        media_type="application/json",
     )
-    return {"result": answer}
+    # answer = await generate_questions(
+    #     base_uri=test_request.base_uri,
+    #     model_provider=test_request.model_provider,
+    #     model_name=test_request.model_name,
+    #     number_of_questions=test_request.number_of_questions,
+    #     additional_context=test_request.additional_context,
+    #     kg_description=test_request.kg_description,
+    #     kg_schema=test_request.kg_schema,
+    #     enforce_structured_output=test_request.enforce_structured_output,
+    # )
+    # return {"result": answer}
 
 
 @app.post("/api/test_dataset/answer_question")
