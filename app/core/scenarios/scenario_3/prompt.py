@@ -16,7 +16,7 @@ In your response:
 The user's question is:
 {initial_question}
 
-Here is a list of classes that can be relevant to the user's question:
+Here is a list of classes relevant to the user's question, formatted as (class uri, label, description):
 {selected_classes}
 """
 )

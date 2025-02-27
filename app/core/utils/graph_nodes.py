@@ -11,6 +11,7 @@ from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
 import app.core.utils.config_manager as config
 from app.core.utils.construct_util import (
     get_class_context,
+    get_class_properties_context,
     get_empty_graph_with_prefixes,
     add_known_prefixes_to_query,
     fulliri_to_prefixed,
@@ -84,26 +85,35 @@ def get_class_context_from_cache(cls_path: str) -> OverallState:
         cls_path (str): path to the class context file
 
     Returns:
-        dict: state with selected_classes_context.
-            This will be added to selected_classes_context in the current context
+        dict: state with selected_classes_context and selected_classes_properties.
+            This will be added to the current context.
     """
-    with open(cls_path) as f:
-        return {"selected_classes_context": ["".join(f.readlines())]}
+    cls_f = open(cls_path)
+    cls_p = open(cls_path + "_properties")
+    return {
+        "selected_classes_context": ["".join(cls_f.readlines())],
+        "selected_classes_properties": ["".join(cls_p.readlines())],
+    }
 
 
 def get_class_context_from_kg(cls: tuple) -> OverallState:
     """
-    Retrieve a class context from the knowledge graph
+    Retrieve a class context from the knowledge graph,
+    i.e., a description of the properties that instances of a class have.
+    This includes triples/tuples (class uri, property uri, type), and
+    tuples (property uri, label, description).
 
     Args:
         cls (tuple): (class URI, label, description)
 
     Returns:
-        dict: state with selected_classes_context.
-            This will be added to selected_classes_context in the current context
+        dict: state with selected_classes_context and selected_classes_properties.
+            These will be added to the current context.
     """
-    context = get_class_context(cls)
-    return {"selected_classes_context": [context]}
+    return {
+        "selected_classes_context": [get_class_context(cls)],
+        "selected_classes_properties": [get_class_properties_context(cls)],
+    }
 
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
@@ -176,13 +186,13 @@ def create_query_generation_prompt(
     ):
         template = template.partial(selected_queries=state["selected_queries"])
 
+    # Manage the context of selected classes
     has_merged_classes_context = "merged_classes_context" in template.input_variables
-
     if has_merged_classes_context:
-        merged_graph_str = ""
+        merged_str = ""
         if "merged_classes_context" in state.keys():
             # This is a retry, state["merged_classes_context"] has already been set during the previous attempt
-            merged_graph_str = state["merged_classes_context"]
+            merged_str = state["merged_classes_context"]
         else:
             # This is the first attempt, merge all class contexts together
             if config.get_class_context_format() == "turtle":
@@ -191,20 +201,38 @@ def create_query_generation_prompt(
                 for cls_context in state["selected_classes_context"]:
                     merged_graph = merged_graph + Graph().parse(data=cls_context)
                 # save_full_context(merged_graph)
-                merged_graph_str = merged_graph.serialize(format="turtle")
+                merged_str = merged_graph.serialize(format="turtle")
 
             elif config.get_class_context_format() == "tuple":
                 for cls_context in state["selected_classes_context"]:
                     if cls_context not in ["", "\n"]:
-                        merged_graph_str = (
-                            f"{merged_graph_str}\n{fulliri_to_prefixed(cls_context)}"
-                        )
+                        merged_str = f"{merged_str}\n{fulliri_to_prefixed(cls_context)}"
             else:
                 raise ValueError(
                     f"Invalid requested format for class context: {format}"
                 )
 
-        template = template.partial(merged_classes_context=merged_graph_str)
+        template = template.partial(merged_classes_context=merged_str)
+
+    # Manage the description of the properties used with the selected classes
+    has_merged_classes_props = "merged_classes_properties" in template.input_variables
+    if has_merged_classes_props:
+        merged_str = ""
+        if "merged_classes_properties" in state.keys():
+            # This is a retry, state["merged_classes_properties"] has already been set during the previous attempt
+            merged_str = state["merged_classes_properties"]
+        else:
+            # This is the first attempt, merge all class properties together.
+            # Each class has a list of properties, one per line. Therefore there may be duplicate properties throughout all the classes.
+            # So we split by lines to be able to remove duplicates.
+            props_list = []
+            for props_str in state["selected_classes_properties"]:
+                props_list += fulliri_to_prefixed(props_str).split("\n")
+            # Deduplicate and merge
+            merged_str = "\n".join(set(props_list))
+
+        merged_str = merged_str.replace("'None'", "None")
+        template = template.partial(merged_classes_properties=merged_str)
 
     is_retry = (
         "last_answer" in template.input_variables
@@ -234,8 +262,10 @@ def create_query_generation_prompt(
     else:
         logger.info(f"1st-time query generation prompt created:\n{prompt}.")
         result_state["messages"] = SystemMessage(prompt)
+        if has_merged_classes_props:
+            result_state["merged_classes_context"] = merged_str
         if has_merged_classes_context:
-            result_state["merged_classes_context"] = merged_graph_str
+            result_state["merged_classes_properties"] = merged_str
 
     return result_state
 

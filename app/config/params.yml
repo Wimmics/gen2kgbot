@@ -1,12 +1,12 @@
 # KG full name (used in prompts)
-kg_full_name: PubChem knlowledge graph
+kg_full_name: PubChem knowledge graph
 #kg_full_name: Integrated Database of Small Molecules knowledge graph (IDSM)
 
 # KG short name (used to generate file paths)
 kg_short_name: idsm
 
 # KG textual description (used in prompts)
-kg_description: IDSM provides fast similarity and structural search functionality in knowledge graph such as ChEMBL, ChEBI or .
+kg_description: The IDSM SPARQL endpoint provides fast similarity and structural search functionality in knowledge graph such as ChEMBL, ChEBI or PubChem.
 
 # SPARQL endpoint serving the KG
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
@@ -15,7 +15,6 @@ kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
 prefixes:
   bao:            "http://www.bioassayontology.org/bao#"
   cito:           "http://purl.org/spar/cito/"
-  #chebi:          "http://purl.obolibrary.org/obo/CHEBI_"
   cheminf:        "http://semanticscience.org/resource/CHEMINF_"
   chembl:         "http://rdf.ebi.ac.uk/terms/chembl#"
   dc:             "http://purl.org/dc/elements/1.1/"

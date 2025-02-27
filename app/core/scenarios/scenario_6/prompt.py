@@ -18,12 +18,15 @@ The user's question is:
 {initial_question}
 
 
-Here is a list of classes that can be relevant to the user's question:
+Here is a list of classes relevant to the user's question, formatted as (class uri, label, description):
 {selected_classes}
 
 
-Here are the properties and data types that are used with instances of the classes:
+Here is a list of properties relevant to the user's question, formatted as (property uri, label, description):
+{merged_classes_properties}
 
+
+Here is how the properties are used by instances of the classes, formatted as (subject's class uri, property uri, object type):
 {merged_classes_context}
 
 
@@ -51,18 +54,20 @@ When providing a SPARQL query:
 DO NOT FORGET the ```sparql ``` language tag. It is crucial for the rest of the process.
 
 
-Here are some classes, properties and data types that that can be relevant to the user's question:
-
-{merged_classes_context}
-
-
-Example SPARQL queries:
-{selected_queries}
-
-
 The user's question is:
 {initial_question}
 
+
+Here are some classes, properties and data types that that can be relevant to the user's question:
+--------------------------------
+{merged_classes_context}
+--------------------------------
+
+
+Example SPARQL queries:
+--------------------------------
+{selected_queries}
+--------------------------------
 
 
 The last answer you provided, that either does not contain a SPARQL query or have an unparsable SPARQL query:
