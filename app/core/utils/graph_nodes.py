@@ -407,3 +407,4 @@ def save_full_context(graph: Graph):
         format="turtle",
     )
     logger.info(f"Graph of selected classes context saved to {graph_file}")
+    return OverallState({"messages": result, "results_interpretation": result.content})

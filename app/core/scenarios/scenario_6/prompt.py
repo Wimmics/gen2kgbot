@@ -1,4 +1,3 @@
-from langchain_core.messages import SystemMessage
 from langchain_core.prompts import PromptTemplate
 
 system_prompt_template = PromptTemplate.from_template(
@@ -25,10 +24,10 @@ Here is a list of classes relevant to the user's question, formatted as (class u
 Here is a list of properties relevant to the user's question, formatted as (property uri, label, description):
 {merged_classes_properties}
 
-
 Here is how the properties are used by instances of the classes, formatted as (subject's class uri, property uri, object type):
+```turtle
 {merged_classes_context}
-
+```
 
 These are example SPARQL queries that can help you generate the proper query:
 
@@ -57,28 +56,21 @@ DO NOT FORGET the ```sparql ``` language tag. It is crucial for the rest of the 
 The user's question is:
 {initial_question}
 
-
 Here are some classes, properties and data types that that can be relevant to the user's question:
---------------------------------
+```turtle
 {merged_classes_context}
---------------------------------
+```
 
 
 Example SPARQL queries:
---------------------------------
 {selected_queries}
---------------------------------
 
 
 The last answer you provided, that either does not contain a SPARQL query or have an unparsable SPARQL query:
--------------------------------------
 {last_answer}
--------------------------------------
 
 
 The verification did not pass because:
---------------------------------
 {last_answer_error_cause}
---------------------------------
 """
 )

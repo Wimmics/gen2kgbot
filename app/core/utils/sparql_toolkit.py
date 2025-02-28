@@ -1,4 +1,3 @@
-import csv
 from typing import List
 from rdflib import Graph
 from rdflib.exceptions import ParserError

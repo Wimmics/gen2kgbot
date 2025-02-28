@@ -1,9 +1,14 @@
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated
+from typing_extensions import TypedDict
 from langgraph.graph import MessagesState
 
 
 class InputState(TypedDict):
+    """
+    Attributes:
+        initial_question (str): the question to be answered by the Gen²KGBot workflow.
+    """
     initial_question: str
 
 
