@@ -4,9 +4,9 @@
 
 - Scenario 1: simply ask the question to the LLM, to figure out what it "knows" about the topic. No query to the KG.
 - Scenario 2: ask the model to create a SPARQL query without any information other than the user's question.
-- Scenario 3: ask the model to create a SPARQL query based on the user's question, a list of classes related to the question, in the form (class name, label, description)
-- Scenario 4: Scenario 3 + add in the context a description (in Turtle) of the prioperties used with the instances of selected classes. Triples of the form: `<class> <prop> <datatype or class>.`
-- Scenario 5: Scenario 4 + retry mechanism if the generated SPQRQ query is not syntactically correct.
+- Scenario 3: ask the model to create a SPARQL query based on the user's question, a list of classes related to the question, formatted as tuples (class uri, label, description)
+- Scenario 4: Scenario 3 + add in the context a description of the properties used with the instances of selected classes. Triples of the form: `<class> <prop> <datatype or class>.`
+- Scenario 5: Scenario 4 + retry mechanism if the generated SPARQL query is not syntactically correct.
 - Scenario 6: Scenario 6 + add in the context some example SPARQL queries related to the question.
 
 

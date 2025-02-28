@@ -2,6 +2,7 @@
 This module implements the Langgraph nodes that are common to multiple scenarios
 """
 
+from datetime import timezone, datetime
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
 from app.core.utils.graph_state import OverallState
@@ -10,8 +11,10 @@ from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
 import app.core.utils.config_manager as config
 from app.core.utils.construct_util import (
     get_class_context,
+    get_class_properties_context,
     get_empty_graph_with_prefixes,
     add_known_prefixes_to_query,
+    fulliri_to_prefixed,
 )
 from app.core.utils.prompts import interpret_csv_query_results_prompt
 from rdflib import Graph
@@ -25,21 +28,20 @@ SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
 
 def preprocess_question(state: OverallState) -> OverallState:
     """
-    Extract named entities from the user question, to help selected similar SPARQL queries.
-    Only applies in scenario 6.
+    Extract named entities from the user question.
+
+    Args:
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state updated with initial_question, number_of_tries,
+            and question_relevant_entities that contains the comma-separated list of named entities
     """
 
-    if state["scenario_id"] != "scenario_6":
-        return {
-            "initial_question": state["initial_question"],
-            "number_of_tries": 0,
-        }
-
     logger.debug("Preprocessing the question...")
-
     extracted_classes = extract_relevant_entities_spacy(state["initial_question"])
-    logger.debug(f"Extracted following named entities: {extracted_classes}")
-    relevant_entities = f"{",".join(extracted_classes)}"
+    relevant_entities = f"{", ".join(extracted_classes)}"
+    logger.debug(f"Extracted following named entities: {relevant_entities}")
 
     return {
         "messages": AIMessage(relevant_entities),
@@ -52,7 +54,7 @@ def preprocess_question(state: OverallState) -> OverallState:
 def select_similar_classes(state: OverallState) -> OverallState:
     """
     Retrieve, from the vector db, the descritption of ontology classes
-    related to the question
+    related to the named entities extracted from the question
 
     Args:
         state (dict): current state of the conversation
@@ -63,11 +65,11 @@ def select_similar_classes(state: OverallState) -> OverallState:
 
     db = config.get_class_context_vector_db(state["scenario_id"])
 
-    question = state["initial_question"]
+    question_entities = state["question_relevant_entities"]
     logger.info("Looking for classes related to the question in the vector db...")
 
     # Retrieve the most similar text
-    retrieved_documents = db.similarity_search(question, k=10)
+    retrieved_documents = db.similarity_search(question_entities, k=10)
     retrieved_classes = [item.page_content for item in retrieved_documents]
 
     logger.info(f"Found {len(retrieved_classes)} classes related to the question.")
@@ -82,26 +84,35 @@ def get_class_context_from_cache(cls_path: str) -> OverallState:
         cls_path (str): path to the class context file
 
     Returns:
-        dict: state where selected_classes_context.
-            This will be added to selected_classes_context in the current context
+        dict: state with selected_classes_context and selected_classes_properties.
+            This will be added to the current context.
     """
-    with open(cls_path) as f:
-        return {"selected_classes_context": ["\n".join(f.readlines())]}
+    cls_f = open(cls_path)
+    cls_p = open(cls_path + "_properties")
+    return {
+        "selected_classes_context": ["".join(cls_f.readlines())],
+        "selected_classes_properties": ["".join(cls_p.readlines())],
+    }
 
 
 def get_class_context_from_kg(cls: tuple) -> OverallState:
     """
-    Retrieve a class context from the knowledge graph
+    Retrieve a class context from the knowledge graph,
+    i.e., a description of the properties that instances of a class have.
+    This includes triples/tuples (class uri, property uri, type), and
+    tuples (property uri, label, description).
 
     Args:
         cls (tuple): (class URI, label, description)
 
     Returns:
-        dict: state where selected_classes_context.
-            This will be added to selected_classes_context in the current context
+        dict: state with selected_classes_context and selected_classes_properties.
+            These will be added to the current context.
     """
-    graph_ttl = get_class_context(cls)
-    return {"selected_classes_context": [graph_ttl]}
+    return {
+        "selected_classes_context": [get_class_context(cls)],
+        "selected_classes_properties": [get_class_properties_context(cls)],
+    }
 
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
@@ -135,7 +146,8 @@ def create_query_generation_prompt(
 ) -> OverallState:
     """
     Generate a prompt from a template using the inputs available in the current state.
-    Depending on the scenario, the inputs variables may not be the same.
+    Depending on the scenario and wether this is a 1st time generation or a retry,
+    the inputs variables may not be the same.
 
     Args:
         template (PromptTemplate): template to use
@@ -143,7 +155,7 @@ def create_query_generation_prompt(
 
     Returns:
         dict: state updated with the prompt generated (query_generation_prompt)
-            and optionally the class contexts all merged in a single graph (merged_classes_context)
+            and optionally the class contexts all merged (merged_classes_context)
     """
     # logger.debug(f"Query generation prompt template: {template}")
 
@@ -163,93 +175,8 @@ def create_query_generation_prompt(
         selected_classes_str = ""
         for item in state["selected_classes"]:
             selected_classes_str = f"{selected_classes_str}\n{item}"
-        template = template.partial(selected_classes=selected_classes_str)
-
-    has_merged_classes_context = "merged_classes_context" in template.input_variables
-
-    if has_merged_classes_context:
-        # Load all the class contexts in a common graph
-        merged_graph = get_empty_graph_with_prefixes()
-        for cls_context in state["selected_classes_context"]:
-            g = Graph()
-            merged_graph = merged_graph + g.parse(data=cls_context)
-
-        # Save the graph
-        # timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
-        # merged_graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
-        # merged_graph.serialize(
-        #     destination=merged_graph_file,
-        #     format="turtle",
-        # )
-        # logger.info(f"Graph of selected classes context saved to {merged_graph_file}")
-        merged_graph_ttl = merged_graph.serialize(format="turtle")
-        template = template.partial(merged_classes_context=merged_graph_ttl)
-
-    if (
-        "selected_queries" in template.input_variables
-        and "selected_queries" in state.keys()
-    ):
-        template = template.partial(selected_queries=state["selected_queries"])
-
-    # Make sure there are no more unset input variables
-    if template.input_variables:
-        raise Exception(
-            f"Template has unused input variables: {template.input_variables}"
-        )
-
-    prompt = template.format()
-    logger.info(f"Query generation prompt created:\n{prompt}.")
-
-    result_state = {
-        "messages": SystemMessage(prompt),
-        "query_generation_prompt": prompt,
-    }
-    if has_merged_classes_context:
-        result_state["merged_classes_context"] = merged_graph_ttl
-    return result_state
-
-
-def create_retry_query_generation_prompt(
-    template: PromptTemplate, state: OverallState
-) -> OverallState:
-    """
-    Generate a prompt from a template using the inputs available in the current state,
-    to retry the query generation task.
-
-    Args:
-        template (PromptTemplate): template to use
-        state (dict): current state of the conversation
-
-    Returns:
-        dict: state updated with the retry prompt (query_generation_prompt)
-    """
-    # logger.debug(f"Retry query generation prompt template: {template}")
-
-    if "kg_full_name" in template.input_variables:
-        template = template.partial(kg_full_name=config.get_kg_full_name())
-
-    if "kg_description" in template.input_variables:
-        template = template.partial(kg_description=config.get_kg_description())
-
-    if "initial_question" in template.input_variables:
-        template = template.partial(initial_question=state["initial_question"])
-
-    if (
-        "selected_classes" in template.input_variables
-        and "selected_classes" in state.keys()
-    ):
-        selected_classes_str = ""
-        for item in state["selected_classes"]:
-            selected_classes_str = f"{selected_classes_str}\n{item}"
-        template = template.partial(selected_classes=selected_classes_str)
-
-    # state["merged_classes_context"] must have been set during the first attempt to generate a prompt
-    if (
-        "merged_classes_context" in template.input_variables
-        and "merged_classes_context" in state.keys()
-    ):
         template = template.partial(
-            merged_classes_context=state["merged_classes_context"]
+            selected_classes=fulliri_to_prefixed(selected_classes_str)
         )
 
     if (
@@ -258,10 +185,64 @@ def create_retry_query_generation_prompt(
     ):
         template = template.partial(selected_queries=state["selected_queries"])
 
-    # Add the answer previously given by the model, and that was incorrect
+    # Manage the context of selected classes
+    has_merged_classes_context = "merged_classes_context" in template.input_variables
+    if has_merged_classes_context:
+        merged_str = ""
+        if "merged_classes_context" in state.keys():
+            # This is a retry, state["merged_classes_context"] has already been set during the previous attempt
+            merged_str = state["merged_classes_context"]
+        else:
+            # This is the first attempt, merge all class contexts together
+            if config.get_class_context_format() == "turtle":
+                # Load all the class contexts in a common graph
+                merged_graph = get_empty_graph_with_prefixes()
+                for cls_context in state["selected_classes_context"]:
+                    merged_graph = merged_graph + Graph().parse(data=cls_context)
+                # save_full_context(merged_graph)
+                merged_str = merged_graph.serialize(format="turtle")
+
+            elif config.get_class_context_format() == "tuple":
+                for cls_context in state["selected_classes_context"]:
+                    if cls_context not in ["", "\n"]:
+                        merged_str = f"{merged_str}\n{fulliri_to_prefixed(cls_context)}"
+            else:
+                raise ValueError(
+                    f"Invalid requested format for class context: {format}"
+                )
+
+        template = template.partial(merged_classes_context=merged_str)
+
+    # Manage the description of the properties used with the selected classes
+    has_merged_classes_props = "merged_classes_properties" in template.input_variables
+    if has_merged_classes_props:
+        merged_str = ""
+        if "merged_classes_properties" in state.keys():
+            # This is a retry, state["merged_classes_properties"] has already been set during the previous attempt
+            merged_str = state["merged_classes_properties"]
+        else:
+            # This is the first attempt, merge all class properties together.
+            # Each class has a list of properties, one per line. Therefore there may be duplicate properties throughout all the classes.
+            # So we split by lines to be able to remove duplicates.
+            props_list = []
+            for props_str in state["selected_classes_properties"]:
+                props_list += fulliri_to_prefixed(props_str).split("\n")
+            # Deduplicate and merge
+            merged_str = "\n".join(set(props_list))
+
+        merged_str = merged_str.replace("'None'", "None")
+        template = template.partial(merged_classes_properties=merged_str)
+
+    is_retry = (
+        "last_answer" in template.input_variables
+        or "last_answer_error_cause" in template.input_variables
+    )
+
+    # If retry, add the answer previously given by the model, and that was incorrect
     if "last_answer" in template.input_variables:
         template = template.partial(last_answer=state["messages"][-2].content)
 
+    # If retry, add the cause for the last error
     if "last_answer_error_cause" in template.input_variables:
         template = template.partial(
             last_answer_error_cause=state["messages"][-1].content
@@ -274,10 +255,18 @@ def create_retry_query_generation_prompt(
         )
 
     prompt = template.format()
-    logger.info(f"Retry query generation prompt created:\n{prompt}.")
-    return {
-        "query_generation_prompt": prompt,
-    }
+    result_state = {"query_generation_prompt": prompt}
+    if is_retry:
+        logger.info(f"Retry query generation prompt created:\n{prompt}.")
+    else:
+        logger.info(f"1st-time query generation prompt created:\n{prompt}.")
+        result_state["messages"] = SystemMessage(prompt)
+        if has_merged_classes_props:
+            result_state["merged_classes_context"] = merged_str
+        if has_merged_classes_context:
+            result_state["merged_classes_properties"] = merged_str
+
+    return result_state
 
 
 def generate_query(state: OverallState):
@@ -407,4 +396,15 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
     result = config.get_seq2seq_model(state["scenario_id"]).invoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
+    return OverallState({"messages": result, "results_interpretation": result})
+
+
+def save_full_context(graph: Graph):
+    timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
+    graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
+    graph.serialize(
+        destination=graph_file,
+        format="turtle",
+    )
+    logger.info(f"Graph of selected classes context saved to {graph_file}")
     return OverallState({"messages": result, "results_interpretation": result.content})
