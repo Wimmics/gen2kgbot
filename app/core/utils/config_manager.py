@@ -125,7 +125,8 @@ def get_class_context_cache_directory() -> Path:
     E.g. "./data/idsm/classes_context/turtle" or "./data/idsm/classes_context/tuple"
     """
     str_path = (
-        config["data_directory"] + f"/{get_kg_short_name().lower()}/classes_context/{get_class_context_format()}"
+        config["data_directory"]
+        + f"/{get_kg_short_name().lower()}/classes_context/{get_class_context_format()}"
     )
     if os.path.isabs(str_path):
         path = Path(str_path)
@@ -196,9 +197,21 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
 
     server_type = llm_config["server_type"]
     model_id = llm_config["id"]
-    temperature = llm_config["temperature"]
-    max_retries = llm_config["max_retries"]
-    model_kwargs = llm_config["model_kwargs"]
+
+    if "temperature" in llm_config.keys():
+        temperature = llm_config["temperature"]
+    else:
+        temperature = None
+
+    if "max_retries" in llm_config.keys():
+        max_retries = llm_config["max_retries"]
+    else:
+        max_retries = None
+
+    if "model_kwargs" in llm_config.keys():
+        model_kwargs = llm_config["model_kwargs"]
+    else:
+        model_kwargs = {}
 
     if server_type == "openai":
         llm_config = ChatOpenAI(

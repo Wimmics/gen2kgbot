@@ -15,7 +15,6 @@ kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
 prefixes:
   bao:            "http://www.bioassayontology.org/bao#"
   cito:           "http://purl.org/spar/cito/"
-  cheminf:        "http://semanticscience.org/resource/CHEMINF_"
   chembl:         "http://rdf.ebi.ac.uk/terms/chembl#"
   dc:             "http://purl.org/dc/elements/1.1/"
   dcterms:        "http://purl.org/dc/terms/"
@@ -77,6 +76,17 @@ seq2seq_models:
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
 
+  gpt-4o@openai:
+    server_type: openai
+    id: gpt-4o
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
+    
+  o3-mini@openai:
+    server_type: openai
+    id: o3-mini
+    
   deepseek-r1_1_5b@local:
     server_type: ollama
     id: deepseek-r1:1.5b
