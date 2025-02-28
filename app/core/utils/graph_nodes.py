@@ -407,4 +407,4 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
     result = config.get_seq2seq_model(state["scenario_id"]).invoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
-    return OverallState({"messages": result, "results_interpretation": result})
+    return OverallState({"messages": result, "results_interpretation": result.content})

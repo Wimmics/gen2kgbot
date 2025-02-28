@@ -4,7 +4,7 @@ that are common to multiple scenarios
 """
 
 import ast
-from typing import Literal, List
+from typing import Literal
 import os
 from app.core.utils.graph_state import OverallState
 import app.core.utils.config_manager as config

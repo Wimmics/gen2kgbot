@@ -360,7 +360,7 @@ def get_class_context_vector_db(scenario_id: str) -> VectorStore:
     # Already initialized?
     if (
         scenario_id in classes_vector_db.keys()
-        and classes_vector_db[scenario_id] != None
+        and classes_vector_db[scenario_id] is not None
     ):
         return classes_vector_db[scenario_id]
 
@@ -370,7 +370,7 @@ def get_class_context_vector_db(scenario_id: str) -> VectorStore:
     logger.debug(f"Classes context embeddings directory: {embeddings_directory}")
 
     db = create_vector_db(scenario_id, vector_db_name, embeddings_directory)
-    logger.info(f"Classes context vector DB initialized.")
+    logger.info("Classes context vector DB initialized.")
     globals()["classes_vector_db"][scenario_id] = db
     return db
 
@@ -390,9 +390,9 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
     # Already initialized?
     if (
         scenario_id in queries_vector_db.keys()
-        and queries_vector_db[scenario_id] != None
+        and queries_vector_db[scenario_id] is not None
     ):
-        return queries_vector_db
+        return queries_vector_db[scenario_id]
 
     model_id = get_embeddings_model_id(scenario_id)
     vector_db_name = get_vector_db_name(scenario_id)
@@ -400,7 +400,7 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
     logger.debug(f"SPARQL queries embeddings directory: {embeddings_directory}")
 
     db = create_vector_db(scenario_id, vector_db_name, embeddings_directory)
-    logger.info(f"SPARQL queries vector DB initialized.")
+    logger.info("SPARQL queries vector DB initialized.")
     globals()["queries_vector_db"][scenario_id] = db
     return db
 
@@ -417,11 +417,11 @@ async def main(graph: CompiledStateGraph):
     logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    # logger.info("==============================================================")
-    # for m in state["messages"]:
-    #     logger.info(m.pretty_repr())
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
 
-    # if "last_generated_query" in state:
-    #     logger.info("==============================================================")
-    #     logger.info("last_generated_query: " + state["last_generated_query"])
-    # logger.info("==============================================================")
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")

@@ -1,4 +1,3 @@
-from langchain_core.messages import SystemMessage
 from langchain_core.prompts import PromptTemplate
 
 system_prompt_template = PromptTemplate.from_template(
@@ -27,8 +26,6 @@ Here are the properties and data types that are used with instances of the class
 {merged_classes_context}
 """
 )
-
-
 
 retry_system_prompt_template = PromptTemplate.from_template(
     """
