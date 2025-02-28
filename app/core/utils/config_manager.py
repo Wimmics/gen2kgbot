@@ -142,11 +142,15 @@ def get_temp_directory() -> Path:
 
 
 def get_vector_db_name(scenario_id: str) -> str:
-    return config[scenario_id]["text_embedding_llm"]["vector_db"]
+    embed_id = config[scenario_id]["text_embedding_model"]
+    embed_config = config["text_embedding_models"][embed_id]
+    return embed_config["vector_db"]
 
 
 def get_embeddings_model_id(scenario_id: str) -> str:
-    return config[scenario_id]["text_embedding_llm"]["id"]
+    embed_id = config[scenario_id]["text_embedding_model"]
+    embed_config = config["text_embedding_models"][embed_id]
+    return embed_config["id"]
 
 
 def get_embeddings_directory(vector_db_name: str) -> Path:
@@ -171,7 +175,7 @@ def get_embeddings_directory(vector_db_name: str) -> Path:
     return path
 
 
-def get_llm(scenario_id: str) -> BaseChatModel:
+def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
     """
     Create a seq2seq LLM based on the scenario configuration
     """
@@ -179,14 +183,17 @@ def get_llm(scenario_id: str) -> BaseChatModel:
     if scenario_id in current_llm.keys() and current_llm[scenario_id] is not None:
         return current_llm[scenario_id]
 
-    model_type = config[scenario_id]["seq2seq_llm"]["type"]
-    model_id = config[scenario_id]["seq2seq_llm"]["id"]
-    temperature = config[scenario_id]["seq2seq_llm"]["temperature"]
-    max_retries = config[scenario_id]["seq2seq_llm"]["max_retries"]
-    model_kwargs = config[scenario_id]["seq2seq_llm"]["model_kwargs"]
+    llm_id = config[scenario_id]["seq2seq_model"]
+    llm_config = config["seq2seq_models"][llm_id]
 
-    if model_type == "openai":
-        llm = ChatOpenAI(
+    server_type = llm_config["server_type"]
+    model_id = llm_config["id"]
+    temperature = llm_config["temperature"]
+    max_retries = llm_config["max_retries"]
+    model_kwargs = llm_config["model_kwargs"]
+
+    if server_type == "openai":
+        llm_config = ChatOpenAI(
             temperature=temperature,
             model=model_id,
             max_retries=max_retries,
@@ -195,8 +202,8 @@ def get_llm(scenario_id: str) -> BaseChatModel:
             model_kwargs=model_kwargs,
         )
 
-    elif model_type == "ollama":
-        llm = ChatOllama(
+    elif server_type == "ollama":
+        llm_config = ChatOllama(
             temperature=temperature,
             model=model_id,
             max_retries=max_retries,
@@ -204,11 +211,11 @@ def get_llm(scenario_id: str) -> BaseChatModel:
             model_kwargs=model_kwargs,
         )
 
-    elif model_type == "ollama-server":
-        base_url = config[scenario_id]["seq2seq_llm"]["base_url"]
+    elif server_type == "ollama-server":
+        base_url = llm_config["base_url"]
 
         # TODO Hundle Ollama Servers with Auth
-        llm = ChatOllama(
+        llm_config = ChatOllama(
             temperature=temperature,
             model=model_id,
             max_retries=max_retries,
@@ -217,10 +224,10 @@ def get_llm(scenario_id: str) -> BaseChatModel:
             auth=("username", "password"),
         )
 
-    elif model_type == "ovh":
-        base_url = config[scenario_id]["seq2seq_llm"]["base_url"]
+    elif server_type == "ovh":
+        base_url = llm_config["base_url"]
 
-        llm = ChatOpenAI(
+        llm_config = ChatOpenAI(
             temperature=temperature,
             model=model_id,
             max_retries=max_retries,
@@ -230,7 +237,7 @@ def get_llm(scenario_id: str) -> BaseChatModel:
             model_kwargs=model_kwargs,
         )
 
-    elif model_type == "hugface":
+    elif server_type == "hugface":
         hfe = HuggingFaceEndpoint(
             repo_id=model_id,
             task="text-generation",
@@ -239,10 +246,10 @@ def get_llm(scenario_id: str) -> BaseChatModel:
             repetition_penalty=1.03,
         )
 
-        llm = ChatHuggingFace(llm=hfe, verbose=True)
+        llm_config = ChatHuggingFace(llm=hfe, verbose=True)
 
-    elif model_type == "google":
-        llm = ChatGoogleGenerativeAI(
+    elif server_type == "google":
+        llm_config = ChatGoogleGenerativeAI(
             model=model_id,
             temperature=temperature,
             max_retries=max_retries,
@@ -251,9 +258,9 @@ def get_llm(scenario_id: str) -> BaseChatModel:
             model_kwargs=model_kwargs,
         )
 
-    elif model_type == "deepseek":
-        base_url = config[scenario_id]["seq2seq_llm"]["base_url"]
-        llm = ChatOpenAI(
+    elif server_type == "deepseek":
+        base_url = llm_config["base_url"]
+        llm_config = ChatOpenAI(
             temperature=temperature,
             model=model_id,
             max_retries=max_retries,
@@ -263,9 +270,13 @@ def get_llm(scenario_id: str) -> BaseChatModel:
             model_kwargs=model_kwargs,
         )
 
-    logger.info(f"Seq2seq LLM initialized: {model_type} - {model_id} ")
-    globals()["current_llm"][scenario_id] = llm
-    return llm
+    else:
+        logger.error(f"Unsupported type of seq2seq model: {server_type}")
+        raise Exception(f"Unsupported type of seq2seq model: {server_type}")
+
+    logger.info(f"Seq2seq model initialized: {server_type} - {model_id} ")
+    globals()["current_llm"][scenario_id] = llm_config
+    return llm_config
 
 
 def get_embedding_model(scenario_id: str) -> Embeddings:
@@ -279,21 +290,23 @@ def get_embedding_model(scenario_id: str) -> Embeddings:
         Embeddings: text embedding model
     """
 
-    embedding_type = config[scenario_id]["text_embedding_llm"]["type"]
-    model_id = config[scenario_id]["text_embedding_llm"]["id"]
+    embed_id = config[scenario_id]["text_embedding_model"]
+    embed_config = config["text_embedding_models"][embed_id]
 
-    if embedding_type == "ollama-embeddings":
+    server_type = embed_config["server_type"]
+    model_id = embed_config["id"]
+
+    if server_type == "ollama-embeddings":
         embeddings = OllamaEmbeddings(model=model_id)
-        logger.info("Text embedding model initialized: OllamaEmbeddings")
 
-    elif embedding_type == "openai-embeddings":
+    elif server_type == "openai-embeddings":
         embeddings = OpenAIEmbeddings(model=model_id)
-        logger.info("Text embedding model initialized: OpenAiEmbeddings")
 
     else:
-        logger.error(f"Unsupported type of embedding model: {embedding_type}")
-        raise Exception(f"Unsupported type of embedding model: {embedding_type}")
+        logger.error(f"Unsupported type of embedding model: {server_type}")
+        raise Exception(f"Unsupported type of embedding model: {server_type}")
 
+    logger.info(f"Text embedding model initialized: {server_type} - {model_id} ")
     return embeddings
 
 

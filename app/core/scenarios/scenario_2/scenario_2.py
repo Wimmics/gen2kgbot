@@ -38,7 +38,7 @@ async def generate_query(state: OverallState) -> OverallState:
     prompt = template.format()
     logger.debug(f"Prompt created:\n{prompt}")
 
-    result = await config.get_llm(state["scenario_id"]).ainvoke(template.format())
+    result = await config.get_seq2seq_model(state["scenario_id"]).ainvoke(template.format())
     return OverallState({"messages": [HumanMessage(state["initial_question"]), result]})
 
 
