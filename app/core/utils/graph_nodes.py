@@ -28,21 +28,20 @@ SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
 
 def preprocess_question(state: OverallState) -> OverallState:
     """
-    Extract named entities from the user question, to help selected similar SPARQL queries.
-    Only applies in scenario 6.
+    Extract named entities from the user question.
+
+    Args:
+        state (dict): current state of the conversation
+
+    Returns:
+        dict: state updated with initial_question, number_of_tries,
+            and question_relevant_entities that contains the comma-separated list of named entities
     """
 
-    if state["scenario_id"] != "scenario_6":
-        return {
-            "initial_question": state["initial_question"],
-            "number_of_tries": 0,
-        }
-
     logger.debug("Preprocessing the question...")
-
     extracted_classes = extract_relevant_entities_spacy(state["initial_question"])
-    logger.debug(f"Extracted following named entities: {extracted_classes}")
-    relevant_entities = f"{",".join(extracted_classes)}"
+    relevant_entities = f"{", ".join(extracted_classes)}"
+    logger.debug(f"Extracted following named entities: {relevant_entities}")
 
     return {
         "messages": AIMessage(relevant_entities),
@@ -55,7 +54,7 @@ def preprocess_question(state: OverallState) -> OverallState:
 def select_similar_classes(state: OverallState) -> OverallState:
     """
     Retrieve, from the vector db, the descritption of ontology classes
-    related to the question
+    related to the named entities extracted from the question
 
     Args:
         state (dict): current state of the conversation
@@ -66,11 +65,11 @@ def select_similar_classes(state: OverallState) -> OverallState:
 
     db = config.get_class_context_vector_db(state["scenario_id"])
 
-    question = state["initial_question"]
+    question_entities = state["question_relevant_entities"]
     logger.info("Looking for classes related to the question in the vector db...")
 
     # Retrieve the most similar text
-    retrieved_documents = db.similarity_search(question, k=10)
+    retrieved_documents = db.similarity_search(question_entities, k=10)
     retrieved_classes = [item.page_content for item in retrieved_documents]
 
     logger.info(f"Found {len(retrieved_classes)} classes related to the question.")
