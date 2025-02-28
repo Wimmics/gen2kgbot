@@ -1,11 +1,21 @@
 import os
-from fastapi import HTTPException
 from langchain_openai import ChatOpenAI
 from langchain_deepseek import ChatDeepSeek
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.language_models import BaseChatModel
 from langchain_ollama import ChatOllama
 from app.api.services.prompts.query_test_prompt import query_test_prompt
+import json
+from langchain_core.messages import AIMessageChunk
+
+
+def serialize_aimessagechunk(chunk):
+    if isinstance(chunk, AIMessageChunk):
+        return chunk.content
+    else:
+        raise TypeError(
+            f"Object of type {type(chunk).__name__} is not correctly formatted for serialization"
+        )
 
 
 async def judge_answer(
@@ -37,34 +47,53 @@ async def judge_answer(
 
     llm: BaseChatModel
 
-    try:
-        if model_provider == "Ollama-local":
-            llm = ChatOllama(base_url="http://localhost:11434", model=model_name)
-        elif model_provider == "DeepSeek":
-            llm = ChatDeepSeek(model=model_name, api_key=os.getenv("DEEPSEEK_API_KEY"))
-        elif model_provider == "Ovh":
-            llm = ChatOpenAI(
-                model=model_name,
-                base_url=base_uri,
-                api_key=os.getenv("OVHCLOUD_API_KEY"),
-            )
-        elif model_provider == "OpenAI":
-            llm = ChatOpenAI(
-                model=model_name,
-                api_key=os.getenv("OPENAI_API_KEY"),
-            )
-        else:
-            raise ValueError("Unsupported LLM provider")
-
-        chain_for_json_mode = query_test_prompt_template | llm
-
-        result_from_json_mode = await chain_for_json_mode.ainvoke(
-            {
-                "question": question,
-                "sparql": sparql_query,
-                "qname_info": sparql_query_context,
-            }
+    if model_provider == "Ollama-local":
+        llm = ChatOllama(base_url="http://localhost:11434", model=model_name)
+    elif model_provider == "DeepSeek":
+        llm = ChatDeepSeek(model=model_name, api_key=os.getenv("DEEPSEEK_API_KEY"))
+    elif model_provider == "Ovh":
+        llm = ChatOpenAI(
+            model=model_name,
+            base_url=base_uri,
+            api_key=os.getenv("OVHCLOUD_API_KEY"),
         )
-        return result_from_json_mode.content
-    except Exception as e:
-        raise HTTPException(detail=str(e), status_code=500)
+    elif model_provider == "OpenAI":
+        llm = ChatOpenAI(
+            model=model_name,
+            api_key=os.getenv("OPENAI_API_KEY"),
+        )
+    else:
+        raise ValueError("Unsupported LLM provider")
+
+    chain_for_json_mode = query_test_prompt_template | llm
+
+    async for event in chain_for_json_mode.astream_events(
+        {
+            "question": question,
+            "sparql": sparql_query,
+            "qname_info": sparql_query_context,
+        },
+        version="v2",
+    ):
+
+        if event["event"] == "on_chat_model_stream":
+            chunk_content = serialize_aimessagechunk(event["data"]["chunk"])
+            response_part = {
+                "event": "on_chat_model_stream",
+                "data": chunk_content,
+            }
+            # print(response_part)
+            yield json.dumps(response_part)
+
+        elif event["event"] == "on_chat_model_end":
+            response_part = {
+                "event": "on_chat_model_end",
+            }
+            yield json.dumps(response_part)
+
+        elif event["event"] == "on_chat_model_start":
+
+            response_part = {
+                "event": "on_chat_model_start",
+            }
+            yield json.dumps(response_part)

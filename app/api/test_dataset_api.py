@@ -47,15 +47,18 @@ async def test_dataset_judge_query(test_request: TestDatasetQueryRequest):
     Returns:
         dict: The result of the judgement.
     """
-    answer = await judge_answer(
-        base_uri=test_request.base_uri,
-        model_provider=test_request.modelProvider,
-        model_name=test_request.modelName,
-        question=test_request.question,
-        sparql_query=test_request.sparql_query,
-        sparql_query_context=test_request.sparql_query_context,
+
+    return StreamingResponse(
+        judge_answer(
+            base_uri=test_request.base_uri,
+            model_provider=test_request.modelProvider,
+            model_name=test_request.modelName,
+            question=test_request.question,
+            sparql_query=test_request.sparql_query,
+            sparql_query_context=test_request.sparql_query_context,
+        ),
+        media_type="application/json",
     )
-    return {"result": answer}
 
 
 @app.post("/api/test_dataset/generate-question")
@@ -83,20 +86,8 @@ async def test_dataset_generate_question(
             kg_schema=test_request.kg_schema,
             enforce_structured_output=test_request.enforce_structured_output,
         ),
-        # media_type="text/event-stream",
         media_type="application/json",
     )
-    # answer = await generate_questions(
-    #     base_uri=test_request.base_uri,
-    #     model_provider=test_request.model_provider,
-    #     model_name=test_request.model_name,
-    #     number_of_questions=test_request.number_of_questions,
-    #     additional_context=test_request.additional_context,
-    #     kg_description=test_request.kg_description,
-    #     kg_schema=test_request.kg_schema,
-    #     enforce_structured_output=test_request.enforce_structured_output,
-    # )
-    # return {"result": answer}
 
 
 @app.post("/api/test_dataset/answer_question")
