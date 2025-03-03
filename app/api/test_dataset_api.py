@@ -8,10 +8,14 @@ from app.api.models.test_dataset_generate_question_request import (
     TestDatasetGenerateQuestionRequest,
 )
 from app.api.models.test_dataset_query_request import TestDatasetQueryRequest
+from app.api.models.test_dataset_scenario_schema_request import (
+    TestDatasetScenarioSchemaRequest,
+)
 from app.api.services.answer_question_service import generate_stream_responses
 from app.api.services.generate_question_dataset_service import generate_questions
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.services.graph_mermaid_service import get_graph_schema
 from app.api.services.test_answer_dataset_service import judge_answer
 
 
@@ -45,7 +49,7 @@ async def test_dataset_judge_query(test_request: TestDatasetQueryRequest):
         test_request (TestDatasetQueryRequest): The request object containing the necessary information to judge the answer.
 
     Returns:
-        dict: The result of the judgement.
+        StreamingResponse: The stream of the model judgement.
     """
 
     return StreamingResponse(
@@ -72,7 +76,7 @@ async def test_dataset_generate_question(
         test_request (TestDatasetGenerateQuestionRequest): The request object containing the necessary information to generate questions.
 
     Returns:
-        dict: The generated questions.
+        StreamingResponse: The stream of the generated questions.
     """
 
     return StreamingResponse(
@@ -95,26 +99,39 @@ def test_dataset_answer_question(
     test_request: TestDatasetAnswerQuestionRequest,
 ):
     """
-    This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
+    This endpoint is used to answer questions about a given Knowledge Graph
 
     Args:
-        test_request (TestDatasetGenerateQuestionRequest): The request object containing the necessary information to generate questions.
+        test_request (TestDatasetAnswerQuestionRequest): The request object containing the necessary information to answer a question.
 
     Returns:
-        dict: The generated questions.
+        StreamingResponse: the stream of the answer to the question.
     """
-
-    # setLLM(
-    #     model_provider=test_request.model_provider,
-    #     model_name=test_request.model_name,
-    #     base_uri=test_request.base_uri,
-    # )
 
     return StreamingResponse(
         generate_stream_responses(question=test_request.question),
         # media_type="text/event-stream",
         media_type="application/json",
     )
+
+
+@app.post("/api/test_dataset/scenario_graph_schema")
+def test_dataset_scenario_schema(
+    test_request: TestDatasetScenarioSchemaRequest,
+):
+    """
+    This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
+
+    Args:
+        test_request (TestDatasetGenerateQuestionRequest): The request object containing the necessary information to generate questions.
+
+    Returns:
+        dict:
+            A dictionary containing the the scenario schema following keys:
+            - `schema` (str): the mermaid schema of the scenario.
+    """
+
+    return {"schema": get_graph_schema(scenario_id=test_request.scenario_id)}
 
 
 if __name__ == "__main__":
