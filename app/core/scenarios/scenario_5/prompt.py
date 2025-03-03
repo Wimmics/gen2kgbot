@@ -25,7 +25,7 @@ Here is a list of properties relevant to the user's question, formatted as (prop
 {merged_classes_properties}
 
 
-Here is how the properties are used by instances of the classes, formatted as (subject's class uri, property uri, object type):
+Here is how the properties are used by instances of the classes:
 {merged_classes_context}
 """
 )
