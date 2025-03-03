@@ -12,7 +12,6 @@ from app.core.utils.graph_nodes import (
     create_query_generation_prompt,
     generate_query,
     verify_query,
-    create_retry_query_generation_prompt,
     run_query,
     interpret_csv_query_results,
 )
@@ -40,7 +39,7 @@ def create_prompt(state: OverallState) -> OverallState:
 
 
 def create_retry_prompt(state: OverallState) -> OverallState:
-    return create_retry_query_generation_prompt(retry_system_prompt_template, state)
+    return create_query_generation_prompt(retry_system_prompt_template, state)
 
 
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)

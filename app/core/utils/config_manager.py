@@ -1,4 +1,5 @@
 import os
+from typing import Literal
 from pathlib import Path
 import yaml
 from argparse import ArgumentParser
@@ -108,16 +109,24 @@ def get_known_prefixes() -> dict:
     return config["prefixes"]
 
 
+def get_class_context_format() -> Literal["turtle", "tuple"]:
+    format = config["class_context_format"]
+    if format != "turtle" and format != "tuple":
+        raise ValueError(f"Invalid parameter class_context_format: {format}")
+    return format
+
+
 def get_class_context_cache_directory() -> Path:
     """
     Generate the path for the cache of class context files, and
     create the directory structure if it does not exist.
 
-    The path includes the KG short name (e.g. "idsm") and "classes_context" sub-directories.
-    E.g. "./data/idsm/classes_context"
+    The path includes sub-dir: KG short name (e.g. "idsm"), "classes_context", the format (e.g. "turtle" or "tuple")
+    E.g. "./data/idsm/classes_context/turtle" or "./data/idsm/classes_context/tuple"
     """
     str_path = (
-        config["data_directory"] + f"/{get_kg_short_name().lower()}/classes_context"
+        config["data_directory"]
+        + f"/{get_kg_short_name().lower()}/classes_context/{get_class_context_format()}"
     )
     if os.path.isabs(str_path):
         path = Path(str_path)
@@ -188,9 +197,21 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
 
     server_type = llm_config["server_type"]
     model_id = llm_config["id"]
-    temperature = llm_config["temperature"]
-    max_retries = llm_config["max_retries"]
-    model_kwargs = llm_config["model_kwargs"]
+
+    if "temperature" in llm_config.keys():
+        temperature = llm_config["temperature"]
+    else:
+        temperature = None
+
+    if "max_retries" in llm_config.keys():
+        max_retries = llm_config["max_retries"]
+    else:
+        max_retries = None
+
+    if "model_kwargs" in llm_config.keys():
+        model_kwargs = llm_config["model_kwargs"]
+    else:
+        model_kwargs = {}
 
     if server_type == "openai":
         llm_config = ChatOpenAI(

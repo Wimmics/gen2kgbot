@@ -17,10 +17,10 @@ def init(state: OverallState) -> OverallState:
     return OverallState({"scenario_id": SCENARIO})
 
 
-async def interpret_results(state: OverallState):
+async def ask_question(state: OverallState):
     logger.info(f"Question: {state["initial_question"]}")
     result = await config.get_seq2seq_model(state["scenario_id"]).ainvoke(
-        system_prompt_template.format(question=state["initial_question"])
+        system_prompt_template.format(initial_question=state["initial_question"])
     )
     logger.info(f"Model's response:\n{result.content}")
     return {"messages": [HumanMessage(state["initial_question"]), result]}
@@ -29,11 +29,11 @@ async def interpret_results(state: OverallState):
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 builder.add_node("init", init)
-builder.add_node("Interpret_results", interpret_results)
+builder.add_node("ask_question", ask_question)
 
 builder.add_edge(START, "init")
-builder.add_edge("init", "Interpret_results")
-builder.add_edge("Interpret_results", END)
+builder.add_edge("init", "ask_question")
+builder.add_edge("ask_question", END)
 
 graph = builder.compile()
 

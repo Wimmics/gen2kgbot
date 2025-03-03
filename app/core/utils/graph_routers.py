@@ -9,7 +9,7 @@ import os
 from app.core.utils.graph_state import OverallState
 import app.core.utils.config_manager as config
 from app.core.utils.sparql_toolkit import find_sparql_queries
-from app.core.utils.construct_util import generate_class_context_filename
+from app.core.utils.construct_util import generate_context_filename
 from app.core.utils.graph_nodes import SPARQL_QUERY_EXEC_ERROR
 from langgraph.graph import END
 from langgraph.constants import Send
@@ -22,7 +22,7 @@ MAX_NUMBER_OF_TRIES: int = 3
 
 def get_class_context_router(
     state: OverallState,
-) -> Literal['get_context_class_from_cache', 'get_context_class_from_kg']:
+) -> Literal["get_context_class_from_cache", "get_context_class_from_kg"]:
     """
     Looks in the cache folder whether the context of the selected similar classes are
     already present. If not, route to the node that will fetch the context from the knowledge graph.
@@ -40,15 +40,21 @@ def get_class_context_router(
     """
     next_nodes = []
 
-    logger.info("Looking for class contexts (in ttl) from the cache folder...")
+    logger.info("Looking for class contexts from the cache folder...")
 
     for item in state["selected_classes"]:
         cls = ast.literal_eval(item)
-        cls_path = generate_class_context_filename(cls[0])
+        cls_path = generate_context_filename(cls[0])
+        cls_props_path = generate_context_filename(cls[0]) + "_properties"
 
         if os.path.exists(cls_path):
             logger.debug(f"Class context found in cache: {cls_path}.")
-            next_nodes.append(Send("get_context_class_from_cache", cls_path))
+            if os.path.exists(cls_props_path):
+                logger.debug(f"Class properties found in cache: {cls_props_path}.")
+                next_nodes.append(Send("get_context_class_from_cache", cls_path))
+            else:
+                logger.debug(f"Class properties not found in cache for class {cls}.")
+                next_nodes.append(Send("get_context_class_from_kg", cls))
         else:
             logger.debug(f"Class context not found in cache for class {cls}.")
             next_nodes.append(Send("get_context_class_from_kg", cls))

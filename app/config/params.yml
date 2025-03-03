@@ -1,34 +1,41 @@
 # KG full name (used in prompts)
-kg_full_name: PubChem knowledge graph (IDSM)
+kg_full_name: PubChem knowledge graph
 #kg_full_name: Integrated Database of Small Molecules knowledge graph (IDSM)
 
 # KG short name (used to generate file paths)
 kg_short_name: idsm
 
 # KG textual description (used in prompts)
-kg_description: IDSM provides fast similarity and structural search functionality in databases such as ChEMBL, ChEBI or PubChem.
+kg_description: The IDSM SPARQL endpoint provides fast similarity and structural search functionality in knowledge graph such as ChEMBL, ChEBI or PubChem.
 
 # SPARQL endpoint serving the KG
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
-# kg_sparql_endpoint_url: "https://enpkg.commons-lab.org/graphdb/repositories/ENPKG" 
 
 # Prefixes and namespaces to be used in the Turtle and SPARQL queries
 prefixes:
   bao:            "http://www.bioassayontology.org/bao#"
   cito:           "http://purl.org/spar/cito/"
-  chebi:          "http://purl.obolibrary.org/obo/CHEBI_"
-  cheminf:        "http://semanticscience.org/resource/CHEMINF_"
   chembl:         "http://rdf.ebi.ac.uk/terms/chembl#"
+  dc:             "http://purl.org/dc/elements/1.1/"
+  dcterms:        "http://purl.org/dc/terms/"
   enpkg:          "https://enpkg.commons-lab.org/kg/"
   enpkg_module:   "https://enpkg.commons-lab.org/module/"
   obo:            "http://purl.obolibrary.org/obo/"
+  owl:            "http://www.w3.org/2002/07/owl#"
   pav:            "http://purl.org/pav/"
   pubchem:        "http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#"
+  rdf:            "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  rdfs:           "http://www.w3.org/2000/01/rdf-schema#"
   schema:         "http://schema.org/"
+  snomedct:       "http://purl.bioontology.org/ontology/SNOMEDCT/"
   sio:            "http://semanticscience.org/resource/"
+  xs:             "http://www.w3.org/2001/XMLSchema#"
 
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"
+
+# Format of the classes context: one of "turtle", "tuple"
+class_context_format: tuple
 
 # Prefix of the file names for the pre-computed embeddings of classes context. Will be appended with "{model_id}_{vector_db}_index"
 # e.g. "v3_4_full_" will yield something like "v3_4_full_nomic-embed-text_faiss_index"
@@ -70,6 +77,17 @@ seq2seq_models:
     max_retries: 3 
     model_kwargs: {"top_p": 0.95 }
 
+  gpt-4o@openai:
+    server_type: openai
+    id: gpt-4o
+    temperature: 0
+    max_retries: 3 
+    model_kwargs: {"top_p": 0.95 }
+    
+  o3-mini@openai:
+    server_type: openai
+    id: o3-mini
+    
   deepseek-r1_1_5b@local:
     server_type: ollama
     id: deepseek-r1:1.5b
