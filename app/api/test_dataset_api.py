@@ -109,7 +109,9 @@ def test_dataset_answer_question(
     """
 
     return StreamingResponse(
-        generate_stream_responses(question=test_request.question),
+        generate_stream_responses(
+            scenario_id=test_request.scenario_id, question=test_request.question
+        ),
         # media_type="text/event-stream",
         media_type="application/json",
     )
