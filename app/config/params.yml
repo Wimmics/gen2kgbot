@@ -66,23 +66,23 @@ seq2seq_models:
     server_type: ollama
     id: llama3.2:1b
     temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
-    
+    max_retries: 3
+    "top_p": 0.95
+  
   llama-3_1-70B@ovh:
     server_type: ovh
     id: Meta-Llama-3_1-70B-Instruct
     base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
     temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
+    max_retries: 3
+    "top_p": 0.95
 
   gpt-4o@openai:
     server_type: openai
     id: gpt-4o
     temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
+    max_retries: 3
+    "top_p": 0.95
     
   o3-mini@openai:
     server_type: openai
@@ -93,23 +93,23 @@ seq2seq_models:
     id: deepseek-r1:1.5b
     temperature: 0
     max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
+    "top_p": 0.95
 
   deepseek-chat@deepseek:
     server_type: deepseek
     id: deepseek-chat
     base_url: https://api.deepseek.com
     temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
+    max_retries: 3
+    "top_p": 0.95
 
   deepseek-reasoner@deepseek:
     server_type: deepseek
     id: deepseek-reasoner
     base_url: https://api.deepseek.com
     temperature: 0
-    max_retries: 3 
-    model_kwargs: {"top_p": 0.95 }
+    max_retries: 3
+    "top_p": 0.95
 
   deepseek-reasoner@deepseek:
     server_type: hugface

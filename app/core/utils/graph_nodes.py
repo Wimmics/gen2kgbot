@@ -410,7 +410,7 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
 def save_full_context(graph: Graph):
     timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
     graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
-    graph.serialize(
+    result = graph.serialize(
         destination=graph_file,
         format="turtle",
     )

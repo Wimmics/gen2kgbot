@@ -213,6 +213,11 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
     else:
         model_kwargs = {}
 
+    if "top_p" in llm_config.keys():
+        top_p = llm_config["top_p"]
+    else:
+        top_p = {}
+
     if server_type == "openai":
         llm_config = ChatOpenAI(
             temperature=temperature,
@@ -220,6 +225,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
             max_retries=max_retries,
             verbose=True,
             openai_api_key=get_openai_key(),
+            top_p=top_p,
             model_kwargs=model_kwargs,
         )
 
@@ -229,6 +235,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
             model=model_id,
             max_retries=max_retries,
             verbose=True,
+            top_p=top_p,
             model_kwargs=model_kwargs,
         )
 
@@ -241,6 +248,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
             model=model_id,
             max_retries=max_retries,
             verbose=True,
+            top_p=top_p,
             model_kwargs=model_kwargs,
             auth=("username", "password"),
         )
@@ -255,6 +263,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
             verbose=True,
             base_url=base_url,
             api_key=get_ovh_key(),
+            top_p=top_p,
             model_kwargs=model_kwargs,
         )
 
@@ -265,6 +274,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
             max_new_tokens=512,
             do_sample=False,
             repetition_penalty=1.03,
+            top_p=top_p,
         )
 
         llm_config = ChatHuggingFace(llm=hfe, verbose=True)
@@ -276,6 +286,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
             max_retries=max_retries,
             api_key=get_google_key(),
             verbose=True,
+            top_p=top_p,
             model_kwargs=model_kwargs,
         )
 
@@ -288,6 +299,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
             verbose=True,
             openai_api_base=base_url,
             openai_api_key=get_deepseek_key(),
+            top_p=top_p,
             model_kwargs=model_kwargs,
         )
 
