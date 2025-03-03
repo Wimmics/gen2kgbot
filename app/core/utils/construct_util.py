@@ -10,7 +10,7 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 query_cls_rel = """
-SELECT DISTINCT ?property (SAMPLE(COALESCE(?type, STR(DATATYPE(?value)), "Untyped")) AS ?valueType) WHERE {
+SELECT DISTINCT ?property (SAMPLE(COALESCE(STR(?type), STR(DATATYPE(?value)), "Untyped")) AS ?valueType) WHERE {
     {
         SELECT ?instance WHERE {
             ?instance a <{class_uri}> . 
@@ -148,7 +148,7 @@ def get_class_properties_and_val_types(
         if "property" in result.keys() and "valueType" in result.keys():
             values.append((result["property"]["value"], result["valueType"]["value"]))
         else:
-            logger.warning(f"Unexpected SPARQL result format: {result}")
+            logger.warning(f"Unexpected SPARQL result format for properties/value_types of class {cls}: {result}")
 
     logger.debug(f"Retrieved {len(values)} (property,type) couples for class {cls}")
     return values
@@ -186,7 +186,7 @@ def get_class_properties_description(
                 )
             )
         else:
-            logger.warning(f"Unexpected SPARQL result format: {result}")
+            logger.warning(f"Unexpected SPARQL result format for description of properties of class {cls}:\n{result}")
 
     logger.debug(f"Retrieved {len(values)} property descriptions for class {cls}")
     return values

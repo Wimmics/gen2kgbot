@@ -190,7 +190,6 @@ def create_query_generation_prompt(
     # Manage the detailed context of selected classes
     has_merged_classes_context = "merged_classes_context" in template.input_variables
     if has_merged_classes_context:
-        merged_cls_context = ""
 
         if "merged_classes_context" in state.keys():
             # This is a retry, state["merged_classes_context"] has already been set during the previous attempt
@@ -198,16 +197,17 @@ def create_query_generation_prompt(
         else:
             # This is the first attempt, merge all class contexts together
             if config.get_class_context_format() == "turtle":
-                merged_cls_context = "```turtle\n"
                 # Load all the class contexts in a common graph
                 merged_graph = get_empty_graph_with_prefixes()
-                for cls_context in state["selected_classes"]:
+                for cls_context in state["selected_classes_context"]:
+                    logger.error(f"Class context: {cls_context}")
                     merged_graph = merged_graph + Graph().parse(data=cls_context)
                 # save_full_context(merged_graph)
-                merged_cls_context += merged_graph.serialize(format="turtle") + "```"
+                merged_cls_context = "```turtle\n" + merged_graph.serialize(format="turtle") + "```"
 
             elif config.get_class_context_format() == "tuple":
-                for cls_context in state["selected_classes"]:
+                merged_cls_context = ""
+                for cls_context in state["selected_classes_context"]:
                     if cls_context not in ["", "\n"]:
                         merged_cls_context += f"\n{fulliri_to_prefixed(cls_context)}"
 
