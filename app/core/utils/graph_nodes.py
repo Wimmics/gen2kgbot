@@ -146,7 +146,9 @@ def create_query_generation_prompt(
 ) -> OverallState:
     """
     Generate a prompt from a template using the inputs available in the current state.
-    Depending on the scenario and wether this is a 1st time generation or a retry,
+    This function does not assume the presence of input variable in the template,
+    and simply replaces them if they are present.
+    Depending on the scenario, and wether this is a 1st time generation or a retry,
     the inputs variables may not be the same.
 
     Args:
@@ -174,7 +176,7 @@ def create_query_generation_prompt(
     ):
         selected_classes_str = ""
         for item in state["selected_classes"]:
-            selected_classes_str = f"{selected_classes_str}\n{item}"
+            selected_classes_str += f"\n{item}"
         template = template.partial(
             selected_classes=fulliri_to_prefixed(selected_classes_str)
         )
@@ -185,41 +187,43 @@ def create_query_generation_prompt(
     ):
         template = template.partial(selected_queries=state["selected_queries"])
 
-    # Manage the context of selected classes
+    # Manage the detailed context of selected classes
     has_merged_classes_context = "merged_classes_context" in template.input_variables
     if has_merged_classes_context:
-        merged_str = ""
+        merged_cls_context = ""
+
         if "merged_classes_context" in state.keys():
             # This is a retry, state["merged_classes_context"] has already been set during the previous attempt
-            merged_str = state["merged_classes_context"]
+            merged_cls_context = state["merged_classes_context"]
         else:
             # This is the first attempt, merge all class contexts together
             if config.get_class_context_format() == "turtle":
+                merged_cls_context = "```turtle\n"
                 # Load all the class contexts in a common graph
                 merged_graph = get_empty_graph_with_prefixes()
-                for cls_context in state["selected_classes_context"]:
+                for cls_context in state["selected_classes"]:
                     merged_graph = merged_graph + Graph().parse(data=cls_context)
                 # save_full_context(merged_graph)
-                merged_str = merged_graph.serialize(format="turtle")
+                merged_cls_context += merged_graph.serialize(format="turtle") + "```"
 
             elif config.get_class_context_format() == "tuple":
-                for cls_context in state["selected_classes_context"]:
+                for cls_context in state["selected_classes"]:
                     if cls_context not in ["", "\n"]:
-                        merged_str = f"{merged_str}\n{fulliri_to_prefixed(cls_context)}"
+                        merged_cls_context += f"\n{fulliri_to_prefixed(cls_context)}"
+
             else:
                 raise ValueError(
                     f"Invalid requested format for class context: {format}"
                 )
 
-        template = template.partial(merged_classes_context=merged_str)
+        template = template.partial(merged_classes_context=merged_cls_context)
 
     # Manage the description of the properties used with the selected classes
-    has_merged_classes_props = "merged_classes_properties" in template.input_variables
-    if has_merged_classes_props:
-        merged_str = ""
+    has_merged_class_props = "merged_classes_properties" in template.input_variables
+    if has_merged_class_props:
         if "merged_classes_properties" in state.keys():
             # This is a retry, state["merged_classes_properties"] has already been set during the previous attempt
-            merged_str = state["merged_classes_properties"]
+            merged_cls_props = state["merged_classes_properties"]
         else:
             # This is the first attempt, merge all class properties together.
             # Each class has a list of properties, one per line. Therefore there may be duplicate properties throughout all the classes.
@@ -228,11 +232,13 @@ def create_query_generation_prompt(
             for props_str in state["selected_classes_properties"]:
                 props_list += fulliri_to_prefixed(props_str).split("\n")
             # Deduplicate and merge
-            merged_str = "\n".join(set(props_list))
+            merged_cls_props = "\n".join(set(props_list))
 
-        merged_str = merged_str.replace("'None'", "None")
-        template = template.partial(merged_classes_properties=merged_str)
+        merged_cls_props = merged_cls_props.replace("'None'", "None")
 
+        template = template.partial(merged_classes_properties=merged_cls_props)
+
+    # Keep track of wether this is a retry or a first attempt
     is_retry = (
         "last_answer" in template.input_variables
         or "last_answer_error_cause" in template.input_variables
@@ -255,16 +261,18 @@ def create_query_generation_prompt(
         )
 
     prompt = template.format()
-    result_state = {"query_generation_prompt": prompt}
+    result_state = {
+        "query_generation_prompt": prompt,
+        "messages": SystemMessage(prompt),
+    }
     if is_retry:
         logger.info(f"Retry query generation prompt created:\n{prompt}.")
     else:
-        logger.info(f"1st-time query generation prompt created:\n{prompt}.")
-        result_state["messages"] = SystemMessage(prompt)
-        if has_merged_classes_props:
-            result_state["merged_classes_context"] = merged_str
+        logger.info(f"First-time query generation prompt created:\n{prompt}.")
         if has_merged_classes_context:
-            result_state["merged_classes_properties"] = merged_str
+            result_state["merged_classes_context"] = merged_cls_context
+        if has_merged_class_props:
+            result_state["merged_classes_properties"] = merged_cls_props
 
     return result_state
 

@@ -25,9 +25,7 @@ Here is a list of properties relevant to the user's question, formatted as (prop
 {merged_classes_properties}
 
 Here is how the properties are used by instances of the classes, formatted as (subject's class uri, property uri, object type):
-```turtle
 {merged_classes_context}
-```
 
 These are example SPARQL queries that can help you generate the proper query:
 
@@ -57,9 +55,7 @@ The user's question is:
 {initial_question}
 
 Here are some classes, properties and data types that that can be relevant to the user's question:
-```turtle
 {merged_classes_context}
-```
 
 
 Example SPARQL queries:
