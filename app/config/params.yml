@@ -30,6 +30,8 @@ prefixes:
   snomedct:       "http://purl.bioontology.org/ontology/SNOMEDCT/"
   sio:            "http://semanticscience.org/resource/"
   xsd:            "http://www.w3.org/2001/XMLSchema#"
+  up:             "http://purl.uniprot.org/core/"
+  chebi:          "http://purl.obolibrary.org/obo/CHEBI_"
 
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"

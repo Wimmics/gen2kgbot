@@ -1,6 +1,7 @@
 import json
 from langchain_core.messages import AIMessageChunk
-from app.core.scenarios.scenario_6.scenario_6 import graph as scenario_6_app
+from app.core.utils.config_manager import get_scenario_module
+from langgraph.graph.state import CompiledStateGraph
 
 
 def serialize_aimessagechunk(chunk):
@@ -12,7 +13,9 @@ def serialize_aimessagechunk(chunk):
         )
 
 
-async def generate_stream_responses(question: str):
+async def generate_stream_responses(scenario_id: int, question: str):
+
+    graph: CompiledStateGraph = get_scenario_module(scenario_id).graph
 
     state_nodes_filter = [
         "init",
@@ -30,9 +33,10 @@ async def generate_stream_responses(question: str):
     chat_nodes_filter = [
         "generate_query",
         "interpret_results",
+        "ask_question",
     ]
 
-    async for event in scenario_6_app.astream_events(
+    async for event in graph.astream_events(
         {"initial_question": question}, version="v2"
     ):
         if event["event"] == "on_chat_model_stream":

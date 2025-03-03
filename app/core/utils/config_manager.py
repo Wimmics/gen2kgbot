@@ -1,3 +1,4 @@
+import importlib
 import os
 from typing import Literal
 from pathlib import Path
@@ -436,6 +437,14 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
     logger.info("SPARQL queries vector DB initialized.")
     globals()["queries_vector_db"][scenario_id] = db
     return db
+
+
+def get_scenario_module(scenario_id: int):
+    scenario_module = importlib.import_module(
+        f"app.core.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
+    )
+
+    return scenario_module
 
 
 async def main(graph: CompiledStateGraph):

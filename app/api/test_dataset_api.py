@@ -1,3 +1,4 @@
+import json
 import os
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -17,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.services.graph_mermaid_service import get_graph_schema
 from app.api.services.test_answer_dataset_service import judge_answer
+from app.core.utils.config_manager import get_configuration
 
 
 def get_env_variable(var_name: str) -> str:
@@ -109,7 +111,9 @@ def test_dataset_answer_question(
     """
 
     return StreamingResponse(
-        generate_stream_responses(question=test_request.question),
+        generate_stream_responses(
+            scenario_id=test_request.scenario_id, question=test_request.question
+        ),
         # media_type="text/event-stream",
         media_type="application/json",
     )
@@ -132,6 +136,21 @@ def test_dataset_scenario_schema(
     """
 
     return {"schema": get_graph_schema(scenario_id=test_request.scenario_id)}
+
+
+@app.get("/api/test_dataset/default_config")
+def test_dataset_default_config():
+    """
+    This endpoint is used to get the default configuration of the test dataset.
+
+    Returns:
+        dict:
+            A dictionary containing the default configuration of the test dataset.
+    """
+    
+    yaml_data = get_configuration()
+
+    return json.dumps(yaml_data, indent=4)
 
 
 if __name__ == "__main__":

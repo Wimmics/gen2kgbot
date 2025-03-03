@@ -9,4 +9,4 @@ class TestDatasetScenarioSchemaRequest(BaseModel):
     Attributes:
         scenario_id (str): The ID of the scenario.
     """
-    scenario_id: str
+    scenario_id: int

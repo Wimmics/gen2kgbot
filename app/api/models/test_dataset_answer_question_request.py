@@ -11,8 +11,10 @@ class TestDatasetAnswerQuestionRequest(BaseModel):
         model_name: str: The name of the model e.g. llama3.2:1b, o3-mini.
         base_uri: str: The base URI of the model if needed.
         question: str: The question to be answered.
+        scenario_id: int: The ID of the scenario to be used for the question generation.
     """
     model_provider: str
     model_name: str
     base_uri: str = ""
     question: str
+    scenario_id: int = 6
