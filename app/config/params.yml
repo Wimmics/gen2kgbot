@@ -37,7 +37,7 @@ prefixes:
 data_directory: "./data"
 
 # Format of the classes context: one of "turtle", "tuple"
-class_context_format: tuple
+class_context_format: turtle
 
 # Prefix of the file names for the pre-computed embeddings of classes context. Will be appended with "{model_id}_{vector_db}_index"
 # e.g. "v3_4_full_" will yield something like "v3_4_full_nomic-embed-text_faiss_index"
@@ -123,9 +123,14 @@ text_embedding_models:
     server_type: ollama-embeddings
     id: nomic-embed-text
     vector_db: faiss
+  
+  mxbai-embed-large_faiss@local:
+    server_type: ollama-embeddings
+    id: mxbai-embed-large
+    vector_db: faiss
 
   nomic-embed-text_chroma@local:
-    server_type: openai-embeddings
+    server_type: ollama-embeddings
     id: nomic-embed-text
     vector_db: chroma
   
