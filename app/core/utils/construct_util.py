@@ -66,7 +66,7 @@ SELECT DISTINCT ?class ?label (COALESCE(?comment, "None") as ?description) WHERE
   ?class rdfs:label ?label.
   OPTIONAL { ?class rdfs:comment ?comment. }
 }
-limit 100
+LIMIT 50
 """
 
 

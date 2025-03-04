@@ -37,15 +37,27 @@ prefixes:
   xsd:            "http://www.w3.org/2001/XMLSchema#"
   up:             "http://purl.uniprot.org/core/"
 
+  evs:            "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#"
+  ndfrt:          "http://purl.bioontology.org/ontology/NDFRT/"
+
+# Max numboer of classes similar to the user's question (found with similarity search)
+# Default: 10
+max_similar_classes: 10
+
 # Expand the initial list of classes similar to the question (found with similarity search) with additional classes connected to them.
 # Default: false
-expand_similar_classes: true
+expand_similar_classes: false
+
+# Format of the classes context: one of "turtle", "tuple"
+class_context_format: turtle
+
+# Optional list of classes and namespaces to be excluded from the similar classes
+excluded_classes_namespaces:
+  - "http://data.epo.org/linked-data/def/patent/Publication"
+  - "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#"
 
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"
-
-# Format of the classes context: one of "turtle", "tuple"
-class_context_format: tuple
 
 # Prefix of the file names for the pre-computed embeddings of classes context. Will be appended with "{model_id}_{vector_db}_index"
 # e.g. "v3_4_full_" will yield something like "v3_4_full_nomic-embed-text_faiss_index"
@@ -155,7 +167,7 @@ scenario_4:
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_5:
-  seq2seq_model: llama-3_1-70B@ovh
+  seq2seq_model: gpt-4o@openai
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_6:

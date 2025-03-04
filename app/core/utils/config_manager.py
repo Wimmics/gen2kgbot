@@ -117,6 +117,13 @@ def get_known_prefixes() -> dict:
     return config["prefixes"]
 
 
+def get_max_similar_classes() -> int:
+    if "max_similar_classes" in config.keys():
+        return config["max_similar_classes"]
+    else:
+        return 10
+
+
 def expand_similar_classes() -> bool:
     if "expand_similar_classes" in config.keys():
         return config["expand_similar_classes"]
@@ -129,6 +136,13 @@ def get_class_context_format() -> Literal["turtle", "tuple"]:
     if format != "turtle" and format != "tuple":
         raise ValueError(f"Invalid parameter class_context_format: {format}")
     return format
+
+
+def get_excluded_classes_namespaces() -> list[str]:
+    if "excluded_classes_namespaces" in config.keys():
+        return config["excluded_classes_namespaces"]
+    else:
+        return []
 
 
 def get_class_context_cache_directory() -> Path:

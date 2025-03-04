@@ -71,7 +71,9 @@ def select_similar_classes(state: OverallState) -> OverallState:
     logger.info("Looking for classes related to the question in the vector db...")
 
     # Retrieve the most similar text
-    documents = db.similarity_search(question_entities, k=10)
+    documents = db.similarity_search(
+        question_entities, k=config.get_max_similar_classes()
+    )
     classes_str = [item.page_content for item in documents]
     logger.info(f"Found {len(classes_str)} classes related to the question.")
 
@@ -83,10 +85,24 @@ def select_similar_classes(state: OverallState) -> OverallState:
                 descr = "None" if description == None else f"'{description}'"
                 classes_str.append(f"('{cls}', '{label}', {descr})")
 
+    # Filter out classes marked as to be excluded
+    classes_filtered_str = []
+    for cls in classes_str:
+        keep_cls = True
+        for excluded_class in config.get_excluded_classes_namespaces():
+            if cls.find(excluded_class) != -1:
+                keep_cls = False
+                break
+        if keep_cls:
+            classes_filtered_str.append(cls)
+
     logger.info(
-        f"Found {len(classes_str)} classes related to the question after including connected classes."
+        f"Found {len(classes_str)} classes related to the question, including connected classes."
     )
-    return {"selected_classes": classes_str}
+    logger.info(
+        f"Keeping {len(classes_filtered_str)} classes after excluding some classes."
+    )
+    return {"selected_classes": classes_filtered_str}
 
 
 def get_class_context_from_cache(cls_path: str) -> OverallState:
