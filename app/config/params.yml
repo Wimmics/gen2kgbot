@@ -1,6 +1,5 @@
 # KG full name (used in prompts)
 kg_full_name: PubChem knowledge graph
-#kg_full_name: Integrated Database of Small Molecules knowledge graph (IDSM)
 
 # KG short name (used to generate file paths)
 kg_short_name: idsm
@@ -10,6 +9,10 @@ kg_description: The IDSM SPARQL endpoint provides fast similarity and structural
 
 # SPARQL endpoint serving the KG
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
+
+# SPARQL endpoint serving the ontologies, if different from the KG SPARQL endpoint
+# Default: same as kg_sparql_endpoint_url
+ontologies_sparql_endpoint_url: "http://erebe-vm28.i3s.unice.fr/corese" 
 
 # Prefixes and namespaces to be used in the Turtle and SPARQL queries
 prefixes:
@@ -22,16 +25,21 @@ prefixes:
   enpkg_module:   "https://enpkg.commons-lab.org/module/"
   obo:            "http://purl.obolibrary.org/obo/"
   owl:            "http://www.w3.org/2002/07/owl#"
+  patent:         "http://data.epo.org/linked-data/def/patent/"
   pav:            "http://purl.org/pav/"
   pubchem:        "http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#"
   rdf:            "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   rdfs:           "http://www.w3.org/2000/01/rdf-schema#"
   schema:         "http://schema.org/"
-  snomedct:       "http://purl.bioontology.org/ontology/SNOMEDCT/"
+  skos:           "http://www.w3.org/2004/02/skos/core#"
   sio:            "http://semanticscience.org/resource/"
+  snomedct:       "http://purl.bioontology.org/ontology/SNOMEDCT/"
   xsd:            "http://www.w3.org/2001/XMLSchema#"
   up:             "http://purl.uniprot.org/core/"
-  chebi:          "http://purl.obolibrary.org/obo/CHEBI_"
+
+# Expand the initial list of classes similar to the question (found with similarity search) with additional classes connected to them.
+# Default: false
+expand_similar_classes: true
 
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"

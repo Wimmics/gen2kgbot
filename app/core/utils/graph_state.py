@@ -20,10 +20,11 @@ class OverallState(MessagesState, InputState):
         question_relevant_entities (list[str]): named entities extracted from the question by spacy
 
         selected_classes (list[str]):
-            classes that are similar to the question and can be relevant to generate a SPARQL query
+            classes that are similar to the question and can be relevant to generate a SPARQL query. 
+            Formatted as "(uri, label, comment)".
 
         selected_classes_context (list[str]):
-            context of the classes in in selected_classes, that is, for each class a serialization describing the properties and value types
+            context of the classes in selected_classes, that is, for each class, a serialization describing the properties and value types
 
         merged_classes_context (str): concatenation of the contexts in selected_classes_context
 

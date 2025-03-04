@@ -103,11 +103,25 @@ def get_kg_sparql_endpoint_url() -> str:
     return config["kg_sparql_endpoint_url"]
 
 
+def get_ontologies_sparql_endpoint_url() -> str:
+    if "ontologies_sparql_endpoint_url" in config.keys():
+        return config["ontologies_sparql_endpoint_url"]
+    else:
+        return config["kg_sparql_endpoint_url"]
+
+
 def get_known_prefixes() -> dict:
     """
     Get the prefixes and associated namespaces from configuration file
     """
     return config["prefixes"]
+
+
+def expand_similar_classes() -> bool:
+    if "expand_similar_classes" in config.keys():
+        return config["expand_similar_classes"]
+    else:
+        return False
 
 
 def get_class_context_format() -> Literal["turtle", "tuple"]:
@@ -459,11 +473,11 @@ async def main(graph: CompiledStateGraph):
     logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    logger.info("==============================================================")
-    for m in state["messages"]:
-        logger.info(m.pretty_repr())
+    # logger.info("==============================================================")
+    # for m in state["messages"]:
+    #     logger.info(m.pretty_repr())
 
-    if "last_generated_query" in state:
-        logger.info("==============================================================")
-        logger.info("last_generated_query: " + state["last_generated_query"])
-    logger.info("==============================================================")
+    # if "last_generated_query" in state:
+    #     logger.info("==============================================================")
+    #     logger.info("last_generated_query: " + state["last_generated_query"])
+    # logger.info("==============================================================")

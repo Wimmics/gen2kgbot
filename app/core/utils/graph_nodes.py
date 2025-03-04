@@ -2,6 +2,7 @@
 This module implements the Langgraph nodes that are common to multiple scenarios
 """
 
+import ast
 from datetime import timezone, datetime
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
@@ -11,7 +12,8 @@ from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
 import app.core.utils.config_manager as config
 from app.core.utils.construct_util import (
     get_class_context,
-    get_class_properties_context,
+    get_class_properties,
+    get_connected_classes,
     get_empty_graph_with_prefixes,
     add_known_prefixes_to_query,
     fulliri_to_prefixed,
@@ -69,11 +71,22 @@ def select_similar_classes(state: OverallState) -> OverallState:
     logger.info("Looking for classes related to the question in the vector db...")
 
     # Retrieve the most similar text
-    retrieved_documents = db.similarity_search(question_entities, k=10)
-    retrieved_classes = [item.page_content for item in retrieved_documents]
+    documents = db.similarity_search(question_entities, k=10)
+    classes_str = [item.page_content for item in documents]
+    logger.info(f"Found {len(classes_str)} classes related to the question.")
 
-    logger.info(f"Found {len(retrieved_classes)} classes related to the question.")
-    return {"selected_classes": retrieved_classes}
+    # Extend the initial list of similar classes with additional classes that are connected to the initial ones
+    if config.expand_similar_classes():
+        classes_uris = [ast.literal_eval(item)[0] for item in classes_str]
+        for cls, label, description in get_connected_classes(classes_uris):
+            if cls not in classes_uris:
+                descr = "None" if description == None else f"'{description}'"
+                classes_str.append(f"('{cls}', '{label}', {descr})")
+
+    logger.info(
+        f"Found {len(classes_str)} classes related to the question after including connected classes."
+    )
+    return {"selected_classes": classes_str}
 
 
 def get_class_context_from_cache(cls_path: str) -> OverallState:
@@ -87,8 +100,8 @@ def get_class_context_from_cache(cls_path: str) -> OverallState:
         dict: state with selected_classes_context and selected_classes_properties.
             This will be added to the current context.
     """
-    cls_f = open(cls_path)
-    cls_p = open(cls_path + "_properties")
+    cls_f = open(cls_path, "r")
+    cls_p = open(cls_path + "_properties", "r")
     return {
         "selected_classes_context": ["".join(cls_f.readlines())],
         "selected_classes_properties": ["".join(cls_p.readlines())],
@@ -111,7 +124,7 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
     """
     return {
         "selected_classes_context": [get_class_context(cls)],
-        "selected_classes_properties": [get_class_properties_context(cls)],
+        "selected_classes_properties": [get_class_properties(cls)],
     }
 
 
@@ -200,10 +213,11 @@ def create_query_generation_prompt(
                 # Load all the class contexts in a common graph
                 merged_graph = get_empty_graph_with_prefixes()
                 for cls_context in state["selected_classes_context"]:
-                    logger.error(f"Class context: {cls_context}")
                     merged_graph = merged_graph + Graph().parse(data=cls_context)
                 # save_full_context(merged_graph)
-                merged_cls_context = "```turtle\n" + merged_graph.serialize(format="turtle") + "```"
+                merged_cls_context = (
+                    "```turtle\n" + merged_graph.serialize(format="turtle") + "```"
+                )
 
             elif config.get_class_context_format() == "tuple":
                 merged_cls_context = ""
@@ -284,7 +298,7 @@ def generate_query(state: OverallState):
     result = config.get_seq2seq_model(state["scenario_id"]).invoke(
         state["query_generation_prompt"]
     )
-    logger.debug(f"Query generation response:\n{result.content}")
+    # logger.debug(f"Query generation response:\n{result.content}")
     return {"messages": result}
 
 
@@ -410,9 +424,8 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
 def save_full_context(graph: Graph):
     timestr = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S.%f")[:-3]
     graph_file = f"{config.get_temp_directory()}/context-{timestr}.ttl"
-    result = graph.serialize(
+    graph.serialize(
         destination=graph_file,
         format="turtle",
     )
     logger.info(f"Graph of selected classes context saved to {graph_file}")
-    return OverallState({"messages": result, "results_interpretation": result.content})
