@@ -16,16 +16,16 @@ class_properties_valuetypes_query = """
 SELECT DISTINCT ?property (SAMPLE(COALESCE(STR(?type), STR(DATATYPE(?value)), "Untyped")) AS ?valueType) WHERE {
     {
         SELECT ?instance WHERE {
-            ?instance a <{class_uri}> . 
-        } LIMIT 100
+            ?instance a <{class_uri}> .
+        } LIMIT 1000 # the limit assumes that this sample is representative of the class instances
     }
     {
-        ?instance ?property ?value . 
+        ?instance ?property ?value .
         OPTIONAL { ?value a ?type . }
-    }    
+    }
 }
-GROUP BY ?property ?type
-LIMIT 300
+GROUP BY ?property
+LIMIT 100
 """
 
 # SPARQL query to retrieve the label/description of properties used by the instances of a given class
@@ -156,8 +156,10 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
             for line in f.readlines():
                 results.append(eval(line))
             f.close()
+
         else:
             logger.debug(f"Connected classes not found in cache for class {class_uri}.")
+            results_one_class = []
             query = connected_classes_query.replace("{class_uri}", class_uri)
             for result in run_sparql_query(query, endpoint_url):
                 if (
@@ -166,7 +168,7 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
                     and "description" in result.keys()
                 ):
                     descr = result["description"]["value"]
-                    results.append(
+                    results_one_class.append(
                         (
                             result["class"]["value"],
                             result["label"]["value"],
@@ -178,13 +180,16 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
                         f"Unexpected SPARQL result format for classes connected to class {class_uri}:\n{result}"
                     )
 
-            # Save to cache
+            # Save the connected classes to cache
             with open(dest_file, "w", encoding="utf-8") as f:
-                for cls, label, description in results:
+                for cls, label, description in results_one_class:
                     descr = None if description == "None" else description
                     f.write(f"('{cls}', '{label}', {descr})\n")
                 f.close()
                 logger.debug(f"Saved connected classes into cache: {dest_file}.")
+
+            # Add the results for that class to the results for all classes
+            results += results_one_class
 
     # Remove duplicates
     results = list(set(results))
