@@ -18,7 +18,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.services.graph_mermaid_service import get_graph_schema
 from app.api.services.test_answer_dataset_service import judge_answer
-from app.core.utils.config_manager import get_configuration
+from app.core.utils.config_manager import (
+    get_configuration,
+    set_custom_scenario_configuration,
+)
 
 
 def get_env_variable(var_name: str) -> str:
@@ -109,7 +112,11 @@ def test_dataset_answer_question(
     Returns:
         StreamingResponse: the stream of the answer to the question.
     """
-
+    set_custom_scenario_configuration(
+        scenario_id=test_request.scenario_id,
+        seq2seq_model=test_request.seq2seq_model,
+        text_embedding_model=test_request.text_embedding_model,
+    )
     return StreamingResponse(
         generate_stream_responses(
             scenario_id=test_request.scenario_id, question=test_request.question
@@ -147,7 +154,7 @@ def test_dataset_default_config():
         dict:
             A dictionary containing the default configuration of the test dataset.
     """
-    
+
     yaml_data = get_configuration()
 
     return json.dumps(yaml_data, indent=4)

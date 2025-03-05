@@ -489,11 +489,26 @@ async def main(graph: CompiledStateGraph):
     logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    # logger.info("==============================================================")
-    # for m in state["messages"]:
-    #     logger.info(m.pretty_repr())
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")
 
-    # if "last_generated_query" in state:
-    #     logger.info("==============================================================")
-    #     logger.info("last_generated_query: " + state["last_generated_query"])
-    # logger.info("==============================================================")
+
+def set_custom_scenario_configuration(scenario_id: int, seq2seq_model: str, text_embedding_model: str):
+    """
+    Set a custom configuration to use in a scenario
+    """
+
+    config[f"scenario_{scenario_id}"]["seq2seq_model"] = seq2seq_model
+    globals()["current_llm"][f"scenario_{scenario_id}"] = None
+
+    if text_embedding_model is not None:
+        config[f"scenario_{scenario_id}"]["text_embedding_model"] = text_embedding_model
+        globals()["classes_vector_db"][f"scenario_{scenario_id}"] = None
+        globals()["queries_vector_db"][f"scenario_{scenario_id}"] = None
+
+    logger.info(f"Custom configuration set for scenario_{scenario_id}")

@@ -37,7 +37,6 @@ prefixes:
   snomedct:       "http://purl.bioontology.org/ontology/SNOMEDCT/"
   xsd:            "http://www.w3.org/2001/XMLSchema#"
   up:             "http://purl.uniprot.org/core/"
-  ndfrt:          "http://purl.bioontology.org/ontology/NDFRT/"
 
 # Max number of classes similar to the user's question (optional)
 # Default: 10
@@ -157,9 +156,14 @@ text_embedding_models:
     server_type: ollama-embeddings
     id: nomic-embed-text
     vector_db: faiss
+  
+  mxbai-embed-large_faiss@local:
+    server_type: ollama-embeddings
+    id: mxbai-embed-large
+    vector_db: faiss
 
   nomic-embed-text_chroma@local:
-    server_type: openai-embeddings
+    server_type: ollama-embeddings
     id: nomic-embed-text
     vector_db: chroma
   
