@@ -10,7 +10,7 @@ kg_description: The IDSM SPARQL endpoint provides fast similarity and structural
 # SPARQL endpoint serving the KG
 kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
 
-# SPARQL endpoint serving the ontologies, if different from the KG SPARQL endpoint
+# SPARQL endpoint serving the ontologies, if different from the KG SPARQL endpoint (optional)
 # Default: same as kg_sparql_endpoint_url
 ontologies_sparql_endpoint_url: "http://erebe-vm28.i3s.unice.fr/corese" 
 
@@ -23,6 +23,7 @@ prefixes:
   dcterms:        "http://purl.org/dc/terms/"
   enpkg:          "https://enpkg.commons-lab.org/kg/"
   enpkg_module:   "https://enpkg.commons-lab.org/module/"
+  ndfrt:          "http://purl.bioontology.org/ontology/NDFRT/"
   obo:            "http://purl.obolibrary.org/obo/"
   owl:            "http://www.w3.org/2002/07/owl#"
   patent:         "http://data.epo.org/linked-data/def/patent/"
@@ -36,22 +37,21 @@ prefixes:
   snomedct:       "http://purl.bioontology.org/ontology/SNOMEDCT/"
   xsd:            "http://www.w3.org/2001/XMLSchema#"
   up:             "http://purl.uniprot.org/core/"
-
-  evs:            "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#"
   ndfrt:          "http://purl.bioontology.org/ontology/NDFRT/"
 
-# Max numboer of classes similar to the user's question (found with similarity search)
+# Max number of classes similar to the user's question (optional)
 # Default: 10
-max_similar_classes: 10
+max_similar_classes: 30
 
-# Expand the initial list of classes similar to the question (found with similarity search) with additional classes connected to them.
+# Expand the initial list of classes similar to the question with additional classes connected to them (optional)
 # Default: false
 expand_similar_classes: false
 
-# Format of the classes context: one of "turtle", "tuple"
-class_context_format: turtle
+# Format of the classes context: one of "turtle", "tuple" (optional)
+# Default: "turtle"
+class_context_format: tuple
 
-# Optional list of classes and namespaces to be excluded from the similar classes
+# Optional list of classes and namespaces to be excluded from the similar classes (optional)
 excluded_classes_namespaces:
   - "http://data.epo.org/linked-data/def/patent/Publication"
   - "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#"
@@ -83,13 +83,21 @@ temp_directory: "./tmp"
 # LLM configurations
 
 seq2seq_models:
+# Each seq2seq model shall contain the following paramters:
+# - server_type (str): one of "openai", "ollama", "ollama-server", "ovh", "hugface", "google" "deepseek"
+# - id (str): the model identifier as defined by the provider
+# - base_url (str): server's URL. Mandatory if server_type is "ollama-server", "ovh" or "deepseek"
+# - temperature (decimal): the temperature parameter for the generation (optional)
+# - max_retries (int): the maximum number of retries in case of failure (optional)
+# - top_p (decimal): the top_p parameter for the generation (optional)
+# - model_kwargs (str): additional parameters for the model (optional)
 
   llama3_2-1b@local:
     server_type: ollama
     id: llama3.2:1b
     temperature: 0
     max_retries: 3
-    "top_p": 0.95
+    top_p: 0.95
   
   llama-3_1-70B@ovh:
     server_type: ovh
@@ -97,14 +105,14 @@ seq2seq_models:
     base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
     temperature: 0
     max_retries: 3
-    "top_p": 0.95
+    top_p: 0.95
 
   gpt-4o@openai:
     server_type: openai
     id: gpt-4o
     temperature: 0
     max_retries: 3
-    "top_p": 0.95
+    top_p: 0.95
     
   o3-mini@openai:
     server_type: openai
@@ -115,7 +123,7 @@ seq2seq_models:
     id: deepseek-r1:1.5b
     temperature: 0
     max_retries: 3 
-    "top_p": 0.95
+    top_p: 0.95
 
   deepseek-chat@deepseek:
     server_type: deepseek
@@ -123,7 +131,7 @@ seq2seq_models:
     base_url: https://api.deepseek.com
     temperature: 0
     max_retries: 3
-    "top_p": 0.95
+    top_p: 0.95
 
   deepseek-reasoner@deepseek:
     server_type: deepseek
@@ -131,13 +139,19 @@ seq2seq_models:
     base_url: https://api.deepseek.com
     temperature: 0
     max_retries: 3
-    "top_p": 0.95
+    top_p: 0.95
 
-  deepseek-reasoner@deepseek:
+  deepseek-reasoner@hf:
     server_type: hugface
-    id: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+    id: deepseek-ai/DeepSeek-R1
+    base_url: https://huggingface.co/api/inference-proxy/together
+
 
 text_embedding_models:
+# Each text embedding model shall contain the following paramters:
+# - server_type (str): one of "openai-embeddings", "ollama-embeddings"
+# - id (str): the model identifier as defined by the provider
+# - vector_db (str): the type of vector database, one of "faiss", "chroma"
 
   nomic-embed-text_faiss@local:
     server_type: ollama-embeddings

@@ -76,6 +76,9 @@ def select_similar_classes(state: OverallState) -> OverallState:
     )
     classes_str = [item.page_content for item in documents]
     logger.info(f"Found {len(classes_str)} classes related to the question.")
+    logger.debug(
+        f"Classes found:\n{"\n".join([item.page_content for item in documents])}"
+    )
 
     # Extend the initial list of similar classes with additional classes that are connected to the initial ones
     if config.expand_similar_classes():

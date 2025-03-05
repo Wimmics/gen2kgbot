@@ -132,9 +132,12 @@ def expand_similar_classes() -> bool:
 
 
 def get_class_context_format() -> Literal["turtle", "tuple"]:
-    format = config["class_context_format"]
-    if format != "turtle" and format != "tuple":
-        raise ValueError(f"Invalid parameter class_context_format: {format}")
+    if "class_context_format" in config.keys():
+        format = config["class_context_format"]
+        if format not in ["turtle", "tuple"]:
+            raise ValueError(f"Invalid parameter class_context_format: {format}")
+    else:
+        format = "turtle"
     return format
 
 
@@ -305,7 +308,6 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
             repetition_penalty=1.03,
             top_p=top_p,
         )
-
         llm_config = ChatHuggingFace(llm=hfe, verbose=True)
 
     elif server_type == "google":
