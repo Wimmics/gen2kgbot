@@ -12,7 +12,6 @@ from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
 import app.core.utils.config_manager as config
 from app.core.utils.construct_util import (
     get_class_context,
-    get_class_properties,
     get_connected_classes,
     get_empty_graph_with_prefixes,
     add_known_prefixes_to_query,
@@ -116,15 +115,11 @@ def get_class_context_from_cache(cls_path: str) -> OverallState:
         cls_path (str): path to the class context file
 
     Returns:
-        dict: state with selected_classes_context and selected_classes_properties.
+        dict: state with selected_classes_context .
             This will be added to the current context.
     """
     cls_f = open(cls_path, "r")
-    cls_p = open(cls_path + "_properties", "r")
-    return {
-        "selected_classes_context": ["".join(cls_f.readlines())],
-        "selected_classes_properties": ["".join(cls_p.readlines())],
-    }
+    return {"selected_classes_context": ["".join(cls_f.readlines())]}
 
 
 def get_class_context_from_kg(cls: tuple) -> OverallState:
@@ -138,13 +133,10 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
         cls (tuple): (class URI, label, description)
 
     Returns:
-        dict: state with selected_classes_context and selected_classes_properties.
+        dict: state with selected_classes_context.
             These will be added to the current context.
     """
-    return {
-        "selected_classes_context": [get_class_context(cls)],
-        "selected_classes_properties": [get_class_properties(cls)],
-    }
+    return {"selected_classes_context": [get_class_context(cls)]}
 
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
@@ -239,7 +231,7 @@ def create_query_generation_prompt(
                 )
 
             elif config.get_class_context_format() == "tuple":
-                merged_cls_context = ""
+                merged_cls_context = "Format is: ('class uri', 'property uri', 'property label', 'value type')\n"
                 for cls_context in state["selected_classes_context"]:
                     if cls_context not in ["", "\n"]:
                         merged_cls_context += f"\n{fulliri_to_prefixed(cls_context)}"
@@ -250,26 +242,6 @@ def create_query_generation_prompt(
                 )
 
         template = template.partial(merged_classes_context=merged_cls_context)
-
-    # Manage the description of the properties used with the selected classes
-    has_merged_class_props = "merged_classes_properties" in template.input_variables
-    if has_merged_class_props:
-        if "merged_classes_properties" in state.keys():
-            # This is a retry, state["merged_classes_properties"] has already been set during the previous attempt
-            merged_cls_props = state["merged_classes_properties"]
-        else:
-            # This is the first attempt, merge all class properties together.
-            # Each class has a list of properties, one per line. Therefore there may be duplicate properties throughout all the classes.
-            # So we split by lines to be able to remove duplicates.
-            props_list = []
-            for props_str in state["selected_classes_properties"]:
-                props_list += fulliri_to_prefixed(props_str).split("\n")
-            # Deduplicate and merge
-            merged_cls_props = "\n".join(set(props_list))
-
-        merged_cls_props = merged_cls_props.replace("'None'", "None")
-
-        template = template.partial(merged_classes_properties=merged_cls_props)
 
     # Keep track of wether this is a retry or a first attempt
     is_retry = (
@@ -304,8 +276,6 @@ def create_query_generation_prompt(
         logger.info(f"First-time query generation prompt created:\n{prompt}.")
         if has_merged_classes_context:
             result_state["merged_classes_context"] = merged_cls_context
-        if has_merged_class_props:
-            result_state["merged_classes_properties"] = merged_cls_props
 
     return result_state
 

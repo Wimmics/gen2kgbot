@@ -40,7 +40,7 @@ prefixes:
 
 # Max number of classes similar to the user's question (optional)
 # Default: 10
-max_similar_classes: 30
+max_similar_classes: 10
 
 # Expand the initial list of classes similar to the question with additional classes connected to them (optional)
 # Default: false
@@ -48,7 +48,7 @@ expand_similar_classes: false
 
 # Format of the classes context: one of "turtle", "tuple" (optional)
 # Default: "turtle"
-class_context_format: tuple
+class_context_format: turtle
 
 # Optional list of classes and namespaces to be excluded from the similar classes (optional)
 excluded_classes_namespaces:
@@ -88,7 +88,7 @@ seq2seq_models:
 # - base_url (str): server's URL. Mandatory if server_type is "ollama-server", "ovh" or "deepseek"
 # - temperature (decimal): the temperature parameter for the generation (optional)
 # - max_retries (int): the maximum number of retries in case of failure (optional)
-# - top_p (decimal): the top_p parameter for the generation (optional)
+# - top_p (decimal): the top_p parameter for the generation (optional), default: 0.95
 # - model_kwargs (str): additional parameters for the model (optional)
 
   llama3_2-1b@local:
@@ -144,6 +144,7 @@ seq2seq_models:
     server_type: hugface
     id: deepseek-ai/DeepSeek-R1
     base_url: https://huggingface.co/api/inference-proxy/together
+    top_p: 0.95
 
 
 text_embedding_models:

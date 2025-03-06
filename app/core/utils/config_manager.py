@@ -248,18 +248,28 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
     if "top_p" in llm_config.keys():
         top_p = llm_config["top_p"]
     else:
-        top_p = {}
+        top_p = 0.95
 
     if server_type == "openai":
-        llm_config = ChatOpenAI(
-            temperature=temperature,
-            model=model_id,
-            max_retries=max_retries,
-            verbose=True,
-            openai_api_key=get_openai_key(),
-            top_p=top_p,
-            model_kwargs=model_kwargs,
-        )
+        if model_id.startswith("o"): # o3* do not support parameter top_p 
+            llm_config = ChatOpenAI(
+                temperature=temperature,
+                model=model_id,
+                max_retries=max_retries,
+                verbose=True,
+                openai_api_key=get_openai_key(),
+                model_kwargs=model_kwargs,
+            )
+        else:
+            llm_config = ChatOpenAI(
+                temperature=temperature,
+                model=model_id,
+                max_retries=max_retries,
+                verbose=True,
+                openai_api_key=get_openai_key(),
+                model_kwargs=model_kwargs,
+                top_p=top_p,
+            )
 
     elif server_type == "ollama":
         llm_config = ChatOllama(
@@ -489,16 +499,18 @@ async def main(graph: CompiledStateGraph):
     logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    logger.info("==============================================================")
-    for m in state["messages"]:
-        logger.info(m.pretty_repr())
-    if "last_generated_query" in state:
-        logger.info("==============================================================")
-        logger.info("last_generated_query: " + state["last_generated_query"])
-    logger.info("==============================================================")
+    # logger.info("==============================================================")
+    # for m in state["messages"]:
+    #     logger.info(m.pretty_repr())
+    # if "last_generated_query" in state:
+    #     logger.info("==============================================================")
+    #     logger.info("last_generated_query: " + state["last_generated_query"])
+    # logger.info("==============================================================")
 
 
-def set_custom_scenario_configuration(scenario_id: int, seq2seq_model: str, text_embedding_model: str):
+def set_custom_scenario_configuration(
+    scenario_id: int, seq2seq_model: str, text_embedding_model: str
+):
     """
     Set a custom configuration to use in a scenario
     """

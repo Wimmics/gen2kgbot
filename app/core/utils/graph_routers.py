@@ -45,18 +45,12 @@ def get_class_context_router(
     for item in state["selected_classes"]:
         cls = ast.literal_eval(item)
         cls_path = generate_context_filename(cls[0])
-        cls_props_path = generate_context_filename(cls[0]) + "_properties"
 
         if os.path.exists(cls_path):
             logger.debug(f"Class context found in cache: {cls_path}.")
-            if os.path.exists(cls_props_path):
-                logger.debug(f"Class properties found in cache: {cls_props_path}.")
-                next_nodes.append(Send("get_context_class_from_cache", cls_path))
-            else:
-                logger.debug(f"Class properties not found in cache for class {cls}.")
-                next_nodes.append(Send("get_context_class_from_kg", cls))
+            next_nodes.append(Send("get_context_class_from_cache", cls_path))
         else:
-            logger.debug(f"Class context not found in cache for class {cls}.")
+            logger.debug(f"Class context not found in cache for class {cls[0]}.")
             next_nodes.append(Send("get_context_class_from_kg", cls))
 
     return next_nodes

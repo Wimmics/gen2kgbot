@@ -28,11 +28,6 @@ class OverallState(MessagesState, InputState):
 
         merged_classes_context (str): concatenation of the contexts in selected_classes_context
 
-        selected_classes_properties (list[str]):
-            label and description of the properties used with instances of the classes in selected_classes
-
-        merged_classes_context (str): concatenation of the contexts in selected_classes_properties after eliminating duplicates
-
         selected_queries (str):
             example SPARQL queries selected using the named entities extracted from the question
 
@@ -55,9 +50,6 @@ class OverallState(MessagesState, InputState):
 
     selected_classes_context: Annotated[list[str], operator.add]
     merged_classes_context: str
-
-    selected_classes_properties: Annotated[list[str], operator.add]
-    merged_classes_properties: str
 
     selected_queries: str
 

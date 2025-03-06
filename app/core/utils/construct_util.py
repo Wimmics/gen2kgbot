@@ -13,35 +13,23 @@ logger = setup_logger(__package__, __file__)
 # SPARQL query to retrieve the properties used by instances of a given class, with their value types.
 # The value type can be a class URI, a datatype URI, or "Untyped" if the value is unknown/unspecified
 class_properties_valuetypes_query = """
-SELECT DISTINCT ?property (SAMPLE(COALESCE(STR(?type), STR(DATATYPE(?value)), "Untyped")) AS ?valueType) WHERE {
+SELECT DISTINCT 
+    ?property
+    (COALESCE(?lbl, "None") as ?label)
+    (SAMPLE(COALESCE(STR(?type), STR(DATATYPE(?value)), "Untyped")) AS ?valueType)
+WHERE {
     {
         SELECT ?instance WHERE {
             ?instance a <{class_uri}> .
-        } LIMIT 1000 # the limit assumes that this sample is representative of the class instances
+        } LIMIT 100
     }
     {
         ?instance ?property ?value .
+        OPTIONAL { ?property rdfs:label ?lbl . }
         OPTIONAL { ?value a ?type . }
     }
 }
-GROUP BY ?property
-LIMIT 100
-"""
-
-# SPARQL query to retrieve the label/description of properties used by the instances of a given class
-class_properties_query = """
-SELECT DISTINCT ?property (COALESCE(?lbl, "None") as ?label) (COALESCE(?comment, "None") as ?description) WHERE {
-    {
-        SELECT ?instance WHERE {
-            ?instance a <{class_uri}> . 
-        } LIMIT 1000
-    }
-    {
-        ?instance ?property ?value . 
-        OPTIONAL { ?property rdfs:label ?lbl . }
-        OPTIONAL { ?property rdfs:comment ?comment . }
-    }    
-}
+GROUP BY ?property ?lbl
 LIMIT 100
 """
 
@@ -60,7 +48,7 @@ SELECT DISTINCT ?class ?label (COALESCE(?comment, "None") as ?description) WHERE
       { ?seed ?p ?other. } UNION { ?other ?p ?seed. }
 	  ?other a ?class.
       FILTER (?class != owl:Class && ?class != rdfs:Class)
-    }
+    } LIMIT 1000
   }
   
   ?class rdfs:label ?label.
@@ -86,7 +74,7 @@ def get_class_context(class_label_description: tuple) -> str:
 
     class_uri = class_label_description[0]
     endpoint_url = config.get_kg_sparql_endpoint_url()
-    properties_and_types = get_class_properties_and_val_types(class_uri, endpoint_url)
+    properties_results = get_class_properties_and_val_types(class_uri, endpoint_url)
 
     dest_file = generate_context_filename(class_uri)
     format = config.get_class_context_format()
@@ -94,20 +82,21 @@ def get_class_context(class_label_description: tuple) -> str:
     if format == "turtle":
         graph = get_empty_graph_with_prefixes()
         class_ref = URIRef(class_uri)
-        # -- commented out: label and description are already in the classes retreived from the vector db
-        # class_label = class_label_description[1]
-        # class_description = class_label_description[2]
-        # if class_label:
-        #     graph.add((class_ref, RDFS.label, term.Literal(class_label)))
-        # if class_description:
-        #     graph.add((class_ref, RDFS.comment, term.Literal(class_description)))
-        for property_uri, property_type in properties_and_types:
+
+        for property_uri, property_label, property_type in properties_results:
+            # Add a triple for the property and value type
             value_ref = (
                 BNode()
                 if (property_type == "Untyped" or property_type is None)
                 else URIRef(property_type)
             )
             graph.add((class_ref, URIRef(property_uri), value_ref))
+
+            # Add a separate triple for the property label
+            if property_label != "None":
+                graph.add(
+                    (URIRef(property_uri), RDFS.label, term.Literal(property_label))
+                )
 
         # Save the graph to the cache
         graph.serialize(format="turtle", destination=dest_file, encoding="utf-8")
@@ -116,8 +105,11 @@ def get_class_context(class_label_description: tuple) -> str:
 
     elif format == "tuple":
         result = ""
-        for property_uri, property_type in properties_and_types:
-            result += f"('{class_uri}', '{property_uri}', '{property_type}')\n"
+        for property_uri, property_label, property_type in properties_results:
+            label = None if property_label == "None" else property_label
+            result += (
+                f"('{class_uri}', '{property_uri}', '{label}', '{property_type}')\n"
+            )
         with open(dest_file, "w", encoding="utf-8") as f:
             f.write(result)
         logger.debug(f"Class context stored in: {dest_file}.")
@@ -161,7 +153,14 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
             logger.debug(f"Connected classes not found in cache for class {class_uri}.")
             results_one_class = []
             query = connected_classes_query.replace("{class_uri}", class_uri)
-            for result in run_sparql_query(query, endpoint_url):
+
+            _sparql_results = run_sparql_query(query, endpoint_url)
+            if _sparql_results is None:
+                logger.warning(
+                    f"Failed to retrieve connected classes for class {class_uri}"
+                )
+                continue
+            for result in _sparql_results:
                 if (
                     "class" in result.keys()
                     and "label" in result.keys()
@@ -198,102 +197,53 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
     return results
 
 
-def get_class_properties(class_label_description: tuple) -> str:
-    """
-    Retrieve from the KG the properties used by instances of the class with label and description,
-    and save them as tuples to a file in cache.
-
-    Args:
-        class_label_description (tuple): (class URI, label, description)
-
-    Returns:
-        str: serialization of the properties as tuples formatted as ('prop URI', 'label', 'description')
-    """
-
-    class_uri = class_label_description[0]
-    endpoint_url = config.get_kg_sparql_endpoint_url()
-    properties_tuples = get_class_properties_description(class_uri, endpoint_url)
-
-    result = ""
-    for pro_uri, label, description in properties_tuples:
-        result += f"('{pro_uri}', '{label}', '{description}')\n"
-
-    dest_file = generate_context_filename(class_uri) + "_properties"
-    with open(dest_file, "w", encoding="utf-8") as f:
-        f.write(result)
-    logger.debug(f"Class properties stored in: {dest_file}.")
-    return result
-
-
 def get_class_properties_and_val_types(
-    cls: str, endpoint_url: str
-) -> List[Tuple[str, str]]:
+    class_uri: str, endpoint_url: str
+) -> List[Tuple[str, str, str]]:
     """
     Retrieve what properties are used with instances of a given class, and the types of their values.
 
     Args:
-        cls (str): class URI
+        class_uri (str): class URI
         endpoint_url (str): SPARQL endpoint URL
 
     Returns:
-        List[Tuple[str, str]]: property URIs with associated value types.
+        List[Tuple[str, str, str]]: property URIs with associated label and value type.
             Types may be a URI, datatype, or "Untyped"
     """
 
-    query = class_properties_valuetypes_query.replace("{class_uri}", cls)
+    query = class_properties_valuetypes_query.replace("{class_uri}", class_uri)
     # logger.debug(f"SPARQL query to retrieve class properties and types:\n{query}")
 
-    values = []
-    for result in run_sparql_query(query, endpoint_url):
-        if "property" in result.keys() and "valueType" in result.keys():
-            values.append((result["property"]["value"], result["valueType"]["value"]))
-        else:
-            logger.warning(
-                f"Unexpected SPARQL result format for properties/value_types of class {cls}: {result}"
-            )
-
-    logger.debug(f"Retrieved {len(values)} (property,type) couples for class {cls}")
-    return values
-
-
-def get_class_properties_description(
-    cls: str, endpoint_url: str
-) -> List[Tuple[str, str, str]]:
-    """
-    Retrieve the label and description of properties used with instances of a given class
-
-    Args:
-        cls (str): class URI
-        endpoint_url (str): SPARQL endpoint URL
-
-    Returns:
-        List[Tuple[str, str,str ]]: property URI, label, description
-    """
-
-    query = class_properties_query.replace("{class_uri}", cls)
-    # logger.debug(f"SPARQL query to retrieve class properties and types:\n{query}")
-
-    values = []
-    for result in run_sparql_query(query, endpoint_url):
-        if (
-            "property" in result.keys()
-            and "label" in result.keys()
-            and "description" in result.keys()
-        ):
-            values.append(
-                (
-                    result["property"]["value"],
-                    result["label"]["value"],
-                    result["description"]["value"],
+    results = []
+    _sparql_results = run_sparql_query(query, endpoint_url)
+    if _sparql_results is None:
+        logger.warning(
+            f"Failed to retrieve the properties and value types for class {class_uri}"
+        )
+    else:
+        for result in _sparql_results:
+            if (
+                "property" in result.keys()
+                and "label" in result.keys()
+                and "valueType" in result.keys()
+            ):
+                results.append(
+                    (
+                        result["property"]["value"],
+                        result["label"]["value"],
+                        result["valueType"]["value"],
+                    )
                 )
-            )
-        else:
-            logger.warning(
-                f"Unexpected SPARQL result format for description of properties of class {cls}:\n{result}"
-            )
+            else:
+                logger.warning(
+                    f"Unexpected SPARQL result format for properties/value_types of class {class_uri}: {result}"
+                )
 
-    logger.debug(f"Retrieved {len(values)} property descriptions for class {cls}")
-    return values
+        logger.debug(
+            f"Retrieved {len(results)} (property,label,type) tuples for class {class_uri}"
+        )
+    return results
 
 
 def run_sparql_query(query, endpoint_url) -> list:
@@ -303,7 +253,7 @@ def run_sparql_query(query, endpoint_url) -> list:
 
     Invocation uses the HTTP POST method.
 
-    In case of failure, the function logger an warning and returns [].
+    In case of failure, the function logs an error and returns None.
     """
     sparql = SPARQLWrapper(endpoint_url)
     sparql.setMethod(POST)
@@ -314,8 +264,8 @@ def run_sparql_query(query, endpoint_url) -> list:
         results = sparql.queryAndConvert()
         return results["results"]["bindings"]
     except Exception as e:
-        logger.warning(f"Error while executing SPARQL query: {e}")
-        return []
+        logger.error(f"Error while executing SPARQL query: {e}")
+        return None
 
 
 def run_sparql_construct(query, filename, endpoint_url):
