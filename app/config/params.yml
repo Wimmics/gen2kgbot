@@ -70,8 +70,6 @@ queries_embeddings_prefix: "query_v1_"
 temp_directory: "./tmp"
 
 # embedding_generation:
-  # Utilitary endpoint to store the ontologies (if not present in the endpoint to be queried) 
-  # work_sparql_endpoint_url: ""
   # text_embedding_llm:
     # server_type: ollama-embeddings
     # id: mxbai-embed-large

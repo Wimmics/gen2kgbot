@@ -170,6 +170,25 @@ def get_class_context_cache_directory() -> Path:
     return path
 
 
+def get_classes_preprocessing_directory() -> Path:
+    """
+    Generate the path for the directory where to store the classes pkls, and
+    create the directory structure if it does not exist.
+    """
+    str_path = (
+        config["data_directory"]
+        + f"/{get_kg_short_name().lower()}/preprocessing"
+    )
+    if os.path.isabs(str_path):
+        path = Path(str_path)
+    else:
+        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
 def get_temp_directory() -> Path:
     str_path = config["temp_directory"]
     if os.path.isabs(str_path):
@@ -251,7 +270,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
         top_p = 0.95
 
     if server_type == "openai":
-        if model_id.startswith("o"): # o3* do not support parameter top_p 
+        if model_id.startswith("o"):  # o3* do not support parameter top_p
             llm_config = ChatOpenAI(
                 temperature=temperature,
                 model=model_id,

@@ -246,20 +246,25 @@ def get_class_properties_and_val_types(
     return results
 
 
-def run_sparql_query(query, endpoint_url) -> list:
+def run_sparql_query(query, endpoint_url, timeout=600) -> list:
     """
-    Execute a SPARQL query and return the results the list of bindings from
+    Execute a SPARQL query and return the list of bindings from
     the SPARQL Results JSON Format (https://www.w3.org/TR/sparql11-results-json/).
 
     Invocation uses the HTTP POST method.
 
     In case of failure, the function logs an error and returns None.
+
+    Args:
+        query (str): SPARQL query
+        endpoint_url (str): SPARQL endpoint URL
+        timeout (int): timeout in seconds, default is 600
     """
     sparql = SPARQLWrapper(endpoint_url)
     sparql.setMethod(POST)
     sparql.setQuery(query)
     sparql.setReturnFormat(JSON)
-    sparql.setTimeout(600)
+    sparql.setTimeout(timeout)
     try:
         results = sparql.queryAndConvert()
         return results["results"]["bindings"]
@@ -327,7 +332,7 @@ def get_empty_graph_with_prefixes() -> Graph:
 
 def fulliri_to_prefixed(uri: str) -> str:
     """
-    Transform a full IRI into its equivalent prefixed name
+    Transform a string containing full IRIs into their equivalent prefixed names
     """
     for prefix, namespace in config.get_known_prefixes().items():
         uri = uri.replace(namespace, f"{prefix}:")
