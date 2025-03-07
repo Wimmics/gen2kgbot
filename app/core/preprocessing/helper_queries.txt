@@ -1,0 +1,40 @@
+# Find all the properties with a literal object, used with classes of a given ontology.
+# This helps identifiy the properties to consider to get labels and descriptions.
+
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX obo: <http://purl.obolibrary.org/obo/>
+
+SELECT distinct ?p
+WHERE {
+  { select distinct ?s where {
+      ?s ?p ?o.
+      filter (strstarts(str(?s), "http://www.bioassayontology.org/bao#"))
+    } limit 1000
+  }
+  
+  ?s ?p ?o.
+  filter (isLiteral(?o))
+} 
+
+
+
+
+
+# ====================================================
+=== Labels
+rdfs:label
+skos:prefLabel
+skos:altLabel
+schema:name
+schema:alternateName
+obo:IAO_0000118 # alt label
+obo:OBI_0001847 # ISA alternative term
+obo:OBI_9991118 # IEDB alternative term
+
+=== Description
+rdfs:comment
+dc:description
+dcterms:description
+skos:definition
+schema:description
+obo:IAO_0000115 # definition
