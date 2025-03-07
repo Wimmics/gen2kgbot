@@ -58,15 +58,46 @@ WHERE {
 } GROUP BY ?class
 """
 
+get_classes_with_instances_query = """
+SELECT distinct ?class WHERE { ?s a ?class. } LIMIT 100
+"""
 
-def collect_classes() -> None:
+
+def save_to_txt_pkl(filename: str, data: list):
+    """
+    Utilitary function to save a list to a text file and a pickle file.
+    """
+    # Saving to text file
+    txt_file = os.path.join(
+        config.get_classes_preprocessing_directory(), f"{filename}.txt"
+    )
+    with open(txt_file, "w", encoding="utf-8") as f:
+        for result in data:
+            f.write(f"{result}\n")
+        f.close()
+
+    # Saving to pickle file
+    pkl_file = os.path.join(
+        config.get_classes_preprocessing_directory(), f"{filename}.pkl"
+    )
+    with open(pkl_file, "wb") as f:
+        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+        f.close()
+
+    logger.info(f"Saved data to {txt_file} and {pkl_file}")
+
+
+def make_classes_description() -> list[tuple]:
     """
     Collect all classes from the ontologies as tuples (class, label, description),
     and save them in a pickle file.
 
-    Args:
-        query (str): SPARQL query that must return 3 variables: class, label, description
-        filename (str): pickle file where to save the class tuples
+    The query is done against the SPARQL endpoint that contains the ontologies
+    (ontologies_sparql_endpoint_url), which may be the same as the one that hosts
+    the KG itself (kg_sparql_endpoint_url), or not.
+
+    Returns:
+        list[tuple]: list of tuples (class, label, description)
     """
     results = []
     _sparql_results = run_sparql_query(
@@ -97,36 +128,86 @@ def collect_classes() -> None:
                     )
                 )
             else:
-                logger.warning(
-                    f"Unexpected SPARQL result format for properties/value_types of class: {result}"
-                )
+                logger.warning(f"Unexpected SPARQL result format: {result}")
+    return results
+
+
+def get_classes_with_instances() -> list[str]:
+    """
+    Retrieve all classes that have at least one instance in the KG.
+    The class URIs are returned as prefixed URIs based on the prefixes in the config file.
+
+    Returns:
+        list[str]: list of the class URIS (with prefixed)
+    """
+    results = []
+    _sparql_results = run_sparql_query(
+        get_classes_with_instances_query,
+        config.get_kg_sparql_endpoint_url(),
+        timeout=3600,
+    )
+    if _sparql_results is not None:
+        for result in _sparql_results:
+            if "class" in result.keys():
+                results.append(fulliri_to_prefixed(result["class"]["value"]))
+            else:
+                logger.warning(f"Unexpected SPARQL result format: {result}")
     return results
 
 
 if __name__ == "__main__":
 
     # Collect the description of the classes of interest and save them
-    results = collect_classes()
-    logger.info(f"Retrieved {len(results)} (class,label,description) tuples.")
-    logger.debug(f"Here are the first results:")
-    for result in results[:10]:
-        logger.debug(f"{result}")
-
-    # Save the classes in a pickle for later use
-    class_descr_pkl = os.path.join(
-        config.get_classes_preprocessing_directory(), "classes.pkl"
+    class_descr_txt_file = os.path.join(
+        config.get_classes_preprocessing_directory(), "classes_description.txt"
     )
-    with open(f"{class_descr_pkl}", "wb") as f:
-        pickle.dump(results, f, protocol=pickle.HIGHEST_PROTOCOL)
+    classes_description = []
+    if os.path.exists(class_descr_txt_file):
+        logger.info(f"Reading classes description from {class_descr_txt_file}")
+        f = open(class_descr_txt_file, "r", encoding="utf8")
+        classes_description = [eval(line) for line in f.readlines()]
         f.close()
+    else:
+        logger.info(f"Retrieving classes description from the SPARQL endpoint")
+        classes_description = make_classes_description()
+        save_to_txt_pkl("classes_description", classes_description)
 
-    # Save the classes in a text file
-    class_descr_txt = os.path.join(
-        config.get_classes_preprocessing_directory(), "classes.txt"
+    logger.info(
+        f"Retrieved {len(classes_description)} (class,label,description) tuples."
     )
-    with open(f"{class_descr_txt}", "w", encoding="utf-8") as f:
-        for result in results:
-            f.write(f"{result}\n")
-        f.close()
 
-    logger.info(f"Tuples saved to {class_descr_txt} and {class_descr_pkl}.")
+    # Retrieve the classes with at least 1 instance in the KG
+    classes_with_instances_file = os.path.join(
+        config.get_classes_preprocessing_directory(), "classes_with_instances.txt"
+    )
+    classes_with_instances = []
+    if os.path.exists(classes_with_instances_file):
+        logger.info(
+            f"Reading classes with instances from {classes_with_instances_file}."
+        )
+        f = open(classes_with_instances_file, "r", encoding="utf8")
+        classes_with_instances = [line.strip() for line in f.readlines()]
+        f.close()
+    else:
+        logger.info(f"Retrieving classes with instances from the SPARQL endpoint")
+        classes_with_instances = get_classes_with_instances()
+        with open(classes_with_instances_file, "w", encoding="utf-8") as f:
+            for result in classes_with_instances:
+                f.write(f"{result}\n")
+            f.close()
+        logger.info(f"Saved classes with instances to {classes_with_instances_file}.")
+    logger.info(f"Retrieved {len(classes_with_instances)} classes with instances.")
+
+    # Filter classes_description to keep only the classes with instances
+    classes_description_filtered = []
+    for c in classes_description:
+        logger.debug(f"Checking class {c[0]}")
+        if c[0] in classes_with_instances:
+            classes_description_filtered.append(c)
+        else:
+            logger.debug(f"Ignoring class {c[0]}")
+
+    logger.info(
+        f"Keeping {len(classes_description_filtered)} classes after removing those with no instance."
+    )
+    save_to_txt_pkl("classes_with_instances_description", classes_description_filtered)

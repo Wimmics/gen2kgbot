@@ -118,7 +118,7 @@ def get_class_context_from_cache(cls_path: str) -> OverallState:
         dict: state with selected_classes_context .
             This will be added to the current context.
     """
-    cls_f = open(cls_path, "r")
+    cls_f = open(cls_path, "r", encoding="utf8")
     return {"selected_classes_context": ["".join(cls_f.readlines())]}
 
 

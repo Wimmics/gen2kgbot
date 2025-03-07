@@ -79,7 +79,7 @@ def get_configuration() -> dict:
     logger.info(f"Using configuration file: {config_path}")
 
     # Configure logging
-    with open(config_path, "rt") as f:
+    with open(config_path, "rt", encoding="utf8") as f:
         return yaml.safe_load(f.read())
 
 

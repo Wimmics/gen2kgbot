@@ -144,7 +144,7 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
         dest_file = generate_context_filename(class_uri) + "_conntected_classes"
         if os.path.exists(dest_file):
             logger.debug(f"Connected classes found in cache: {dest_file}.")
-            f = open(dest_file, "r")
+            f = open(dest_file, "r", encoding="utf8")
             for line in f.readlines():
                 results.append(eval(line))
             f.close()
