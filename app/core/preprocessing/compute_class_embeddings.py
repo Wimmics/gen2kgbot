@@ -12,6 +12,7 @@ import os
 from tqdm import tqdm
 from langchain_community.vectorstores import FAISS
 from langchain_community.docstore import InMemoryDocstore
+from langchain_chroma import Chroma
 
 
 def setup_cli():
@@ -74,6 +75,7 @@ if __name__ == "__main__":
 
     # Create the vector store
     vector_db_name = embed_config["vector_db"]
+    embeddings_dir = f"{config.get_embeddings_directory(vector_db_name)}/{config.get_class_embeddings_subdir()}"
     embedding_model = config.get_embedding_model_by_embed_name(embed_name)
     if vector_db_name == "faiss":
         vectorstore = FAISS(
@@ -81,6 +83,10 @@ if __name__ == "__main__":
             docstore=InMemoryDocstore(),
             index=faiss.IndexFlatL2(len(embedding_model.embed_query("hello world"))),
             index_to_docstore_id={},
+        )
+    elif vector_db_name == "chroma":
+        vectorstore = Chroma(
+            persist_directory=embeddings_dir, embedding_function=embedding_model
         )
     else:
         logger.error(f"Unsupported type of vector DB: {vector_db_name}")
@@ -93,6 +99,5 @@ if __name__ == "__main__":
             pbar.update(len(sublist))
 
     # Saving the embeddings
-    embeddings_dir = f"{config.get_embeddings_directory(vector_db_name)}/{config.get_class_embeddings_subdir()}"
     logger.info(f"Saving embeddings to directory: {embeddings_dir}")
     vectorstore.save_local(embeddings_dir)
