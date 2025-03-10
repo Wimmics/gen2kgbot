@@ -11,12 +11,14 @@ from app.core.utils.graph_nodes import (
     get_class_context_from_kg,
     create_query_generation_prompt,
     generate_query,
+    validate_question,
     verify_query,
     run_query,
     interpret_csv_query_results,
 )
 from app.core.utils.graph_routers import (
     get_class_context_router,
+    validate_question_router,
     verify_query_router,
     run_query_router,
 )
@@ -45,6 +47,7 @@ def create_retry_prompt(state: OverallState) -> OverallState:
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 builder.add_node("init", init)
+builder.add_node("validate_question", validate_question)
 builder.add_node("preprocess_question", preprocess_question)
 builder.add_node("select_similar_classes", select_similar_classes)
 builder.add_node("get_context_class_from_cache", get_class_context_from_cache)
@@ -57,7 +60,8 @@ builder.add_node("create_retry_prompt", create_retry_prompt)
 builder.add_node("interpret_results", interpret_csv_query_results)
 
 builder.add_edge(START, "init")
-builder.add_edge("init", "preprocess_question")
+builder.add_edge("init", "validate_question")
+builder.add_conditional_edges("validate_question", validate_question_router)
 builder.add_edge("preprocess_question", "select_similar_classes")
 builder.add_conditional_edges("select_similar_classes", get_class_context_router)
 builder.add_edge("get_context_class_from_cache", "create_prompt")

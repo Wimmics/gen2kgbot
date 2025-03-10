@@ -1,6 +1,6 @@
 import asyncio
 from langgraph.graph import StateGraph, START, END
-from app.core.scenarios.scenario_6.prompt import (
+from app.core.scenarios.scenario_7.prompt import (
     system_prompt_template,
     retry_system_prompt_template,
 )
@@ -30,7 +30,7 @@ from app.core.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
-SCENARIO = "scenario_6"
+SCENARIO = "scenario_7"
 
 
 def init(state: OverallState) -> OverallState:

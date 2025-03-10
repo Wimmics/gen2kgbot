@@ -1,6 +1,8 @@
 import asyncio
+from typing import Literal
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
+from app.core.utils.graph_nodes import validate_question
 from app.core.utils.graph_state import InputState, OverallState
 import app.core.utils.config_manager as config
 from app.core.utils.logger_manager import setup_logger
@@ -26,13 +28,34 @@ async def ask_question(state: OverallState):
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 
 
+def validate_question_router(state: OverallState) -> Literal["ask_question", "__end__"]:
+    """
+    Check the question validation results and decide whether to continue the process or stop.
+
+    Args:
+        state (OverallState): current state of the conversation
+
+    Returns:
+        Literal["ask_question", END]: next step in the conversation
+    """
+    results = state["question_validation_results"]
+    if results.find("true") != -1 and results.find("false") == -1:
+        logger.info("Question validation passed.")
+        return "ask_question"
+    else:
+        logger.warning("Question validation failed.")
+        return END
+
+
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 builder.add_node("init", init)
+builder.add_node("validate_question", validate_question)
 builder.add_node("ask_question", ask_question)
 
 builder.add_edge(START, "init")
-builder.add_edge("init", "ask_question")
+builder.add_edge("init", "validate_question")
+builder.add_conditional_edges("validate_question", validate_question_router)
 builder.add_edge("ask_question", END)
 
 graph = builder.compile()

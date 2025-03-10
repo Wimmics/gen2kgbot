@@ -10,11 +10,13 @@ from app.core.utils.graph_nodes import (
     generate_query,
     run_query,
     interpret_csv_query_results,
+    validate_question,
 )
 from app.core.utils.graph_routers import (
     get_class_context_router,
     generate_query_router,
     run_query_router,
+    validate_question_router,
 )
 from app.core.utils.graph_state import InputState, OverallState
 import app.core.utils.config_manager as config
@@ -37,6 +39,7 @@ def create_prompt(state: OverallState) -> OverallState:
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 builder.add_node("init", init)
+builder.add_node("validate_question", validate_question)
 builder.add_node("preprocess_question", preprocess_question)
 builder.add_node("select_similar_classes", select_similar_classes)
 builder.add_node("get_context_class_from_cache", get_class_context_from_cache)
@@ -48,7 +51,8 @@ builder.add_node("run_query", run_query)
 builder.add_node("interpret_results", interpret_csv_query_results)
 
 builder.add_edge(START, "init")
-builder.add_edge("init", "preprocess_question")
+builder.add_edge("init", "validate_question")
+builder.add_conditional_edges("validate_question", validate_question_router)
 builder.add_edge("preprocess_question", "select_similar_classes")
 builder.add_conditional_edges("select_similar_classes", get_class_context_router)
 builder.add_edge("get_context_class_from_cache", "create_prompt")
