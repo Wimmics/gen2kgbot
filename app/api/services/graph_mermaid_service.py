@@ -20,4 +20,4 @@ def get_scenarios_schema():
 
 def get_graph_schema(scenario_id: int) -> str:
     scenario_module = get_scenario_module(scenario_id)
-    return scenario_module.graph.get_graph().draw_mermaid()
+    return scenario_module.graph.get_graph(xray=1).draw_mermaid()
