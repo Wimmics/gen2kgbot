@@ -59,7 +59,7 @@ def setup_cli():
     parser.add_argument(
         "--prod",
         action="store_true",
-        help="Use this flag to load the production configuration file",
+        help="Load the production configuration file",
     )
     globals()["args"] = parser.parse_args()
 
@@ -197,6 +197,10 @@ def get_classes_preprocessing_directory() -> Path:
     return path
 
 
+def get_class_embeddings_subdir() -> str:
+    return config["class_embeddings_subdir"]
+
+
 def get_temp_directory() -> Path:
     str_path = config["temp_directory"]
     if os.path.isabs(str_path):
@@ -209,24 +213,22 @@ def get_temp_directory() -> Path:
     return path
 
 
-def get_vector_db_name_by_embed_name(embed_name: str) -> str:
-    embed_config = config["text_embedding_models"][embed_name]
-    return embed_config["vector_db"]
+def get_embedding_model_config_by_name(embed_name: str) -> dict:
+    """
+    Return the configuration of a text embedding model given by its name
+    """
+    if embed_name not in config["text_embedding_models"]:
+        raise ValueError(f"Unknown text embedding model name: {embed_name}")
+    else:
+        return config["text_embedding_models"][embed_name]
 
 
-def get_vector_db_name_by_scenario(scenario_id: str) -> str:
+def get_embedding_model_config_by_scenario(scenario_id: str) -> dict:
+    """
+    Return the configuration of the text embedding model of a given scenario
+    """
     embed_name = config[scenario_id]["text_embedding_model"]
-    return get_vector_db_name_by_embed_name(embed_name)
-
-
-def get_embeddings_model_id_by_embed_name(embed_name: str) -> str:
-    embed_config = config["text_embedding_models"][embed_name]
-    return embed_config["id"]
-
-
-def get_embeddings_model_id_by_scenario(scenario_id: str) -> str:
-    embed_name = config[scenario_id]["text_embedding_model"]
-    return get_embeddings_model_id_by_embed_name(embed_name)
+    return get_embedding_model_config_by_name(embed_name)
 
 
 def get_embeddings_directory(vector_db_name: str) -> Path:
@@ -399,7 +401,7 @@ def get_embedding_model_by_embed_name(embed_name: str) -> Embeddings:
         Embeddings: text embedding model
     """
 
-    embed_config = config["text_embedding_models"][embed_name]
+    embed_config = get_embedding_model_config_by_name(embed_name)
     server_type = embed_config["server_type"]
     model_id = embed_config["id"]
 
@@ -427,9 +429,8 @@ def get_embedding_model_by_scenario(scenario_id: str) -> Embeddings:
     Returns:
         Embeddings: text embedding model
     """
-    return get_embedding_model_by_embed_name(
-        config[scenario_id]["text_embedding_model"]
-    )
+    embed_name = config[scenario_id]["text_embedding_model"]
+    return get_embedding_model_by_embed_name(embed_name)
 
 
 def create_vector_db(
@@ -465,7 +466,7 @@ def create_vector_db(
     return db
 
 
-def create_vector_db_by_scenario(scenario_id: str, directory_prefix) -> VectorStore:
+def create_vector_db_by_scenario(scenario_id: str, embeddings_dir_name) -> VectorStore:
     """
     Create a vector db based on the configuration,
     and load the pre-computed embeddings from the given directory
@@ -473,16 +474,17 @@ def create_vector_db_by_scenario(scenario_id: str, directory_prefix) -> VectorSt
     Args:
         scenario_id (str): scenario ID
         vector_db_name (str): type of vector db (currently supported: "faiss", "chroma")
-        directory_prefix (str): prefix of the directory name that containd the pre-computed embeddings
+        embeddings_directory_name (str): name of the subdirectory that contains the pre-computed embeddings
 
     Returns:
         VectorStore: vector db
     """
 
-    model_id = get_embeddings_model_id_by_scenario(scenario_id)
-    vector_db_name = get_vector_db_name_by_scenario(scenario_id)
+    vector_db_name = get_embedding_model_config_by_scenario(scenario_id)["vector_db"]
 
-    embeddings_directory = f"{get_embeddings_directory(vector_db_name)}/{directory_prefix}{model_id}_{vector_db_name}_index"
+    embeddings_directory = (
+        f"{get_embeddings_directory(vector_db_name)}/{embeddings_dir_name}"
+    )
     logger.debug(f"Embeddings directory: {embeddings_directory}")
 
     embeddings = get_embedding_model_by_scenario(scenario_id)
@@ -509,7 +511,9 @@ def get_class_context_vector_db(scenario_id: str) -> VectorStore:
     ):
         return classes_vector_db[scenario_id]
 
-    db = create_vector_db_by_scenario(scenario_id, config["class_context_embeddings_prefix"])
+    db = create_vector_db_by_scenario(
+        scenario_id, config["class_embeddings_subdir"]
+    )
     logger.info("Classes context vector DB initialized.")
     globals()["classes_vector_db"][scenario_id] = db
     return db
@@ -534,7 +538,7 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
     ):
         return queries_vector_db[scenario_id]
 
-    db = create_vector_db_by_scenario(scenario_id, config["queries_embeddings_prefix"])
+    db = create_vector_db_by_scenario(scenario_id, config["queries_embeddings_subdir"])
     logger.info("SPARQL queries vector DB initialized.")
     globals()["queries_vector_db"][scenario_id] = db
     return db

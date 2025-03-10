@@ -27,7 +27,7 @@ def run_sparql_query(
     """
 
     try:
-        #logger.debug(f"Submiting SPARQL query:\n{query}")
+        logger.debug(f"Submiting SPARQL query:\n{query}")
         logger.debug(f"Submiting to SPARQL endpoint: {endpoint_url}")
 
         _store = sparqlstore.SPARQLStore()

@@ -58,23 +58,19 @@ excluded_classes_namespaces:
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"
 
-# Prefix of the file names for the pre-computed embeddings of classes context. Will be appended with "{model_id}_{vector_db}_index"
-# e.g. "v3_4_full_" will yield something like "v3_4_full_nomic-embed-text_faiss_index"
-class_context_embeddings_prefix: "v3_4_full_" 
+# Name of the subdirectory that contains the pre-computed embeddings of classes context.
+# Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
+# ./data/idsm/faiss_embeddings/
+class_embeddings_subdir: "classes_nomic"
 
-# Prefix of the file names for the pre-computed embeddings of SPARQL queries. Will be appended with "{model_id}_{vector_db}_index"
-# e.g. "query_v1_" will yield something like "query_v1_nomic-embed-text_faiss_index"
-queries_embeddings_prefix: "query_v1_" 
+# Name of the subdirectory that contains the pre-computed embeddings of of SPARQL queries.
+# Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
+# ./data/idsm/faiss_embeddings/
+queries_embeddings_subdir: "sparql_queries_nomic"
 
 # Path to a usable temporary directory
 temp_directory: "./tmp"
 
-# embedding_generation:
-  # text_embedding_llm:
-    # server_type: ollama-embeddings
-    # id: mxbai-embed-large
-    # vector_db: faiss
-    # output_directory: "data/"
 
 # -----------------------------------------------------------
 # LLM configurations

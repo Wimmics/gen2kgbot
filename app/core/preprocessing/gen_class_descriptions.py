@@ -1,5 +1,21 @@
+"""
+This module generates a textual description of the classes from the ontologies in the form of tuples: (class, label, description).
+These descriptions will be used later on to compute per-class text embeddings.
+
+The ontology classes are retrieved from the KG SPARQL endpoint (param: kg_sparql_endpoint_url),
+or from a dedicated SPARQL endpoint if defined (param: ontologies_sparql_endpoint_url).
+
+Several files are generated in directory `{data_directory}/{KG short name}/preprocessing`:
+- `classes_description.txt`: descriptions of all the classes found in the ontologies
+- `classes_with_instances.txt`: list of classes that have at least one instance in the KG
+- `classes_with_instances_description.txt`: descriptions of the classes that have at least one instance in the KG
+
+If files `classes_description.txt` or `classes_with_instances.txt` already exist, they are simply reloaded.
+
+Either `classes_description.txt` or `classes_with_instances_description.txt` shall be used to compute the embeddings of the classes.
+"""
+
 import os
-import pickle
 import app.core.utils.config_manager as config
 from app.core.utils.construct_util import run_sparql_query, fulliri_to_prefixed
 
@@ -75,8 +91,10 @@ def save_to_txt(filename: str, data: list):
 
 def make_classes_description() -> list[tuple]:
     """
-    Collect all classes from the ontologies as tuples (class, label, description),
-    and save them in a pickle file.
+    Get a description of all the classes from the ontologies as tuples (class, label, description).
+    The class URIs are prefixed based on the prefixes defined in the config file.
+
+    Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
 
     The query is done against the SPARQL endpoint that contains the ontologies
     (ontologies_sparql_endpoint_url), which may be the same as the one that hosts
@@ -120,8 +138,10 @@ def make_classes_description() -> list[tuple]:
 
 def get_classes_with_instances() -> list[str]:
     """
-    Retrieve all classes that have at least one instance in the KG.
-    The class URIs are returned as prefixed URIs based on the prefixes in the config file.
+    Retrieve the list of classes that have at least one instance in the KG.
+    The class URIs are prefixed based on the prefixes defined in the config file.
+
+    Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
 
     Returns:
         list[str]: list of the class URIS (with prefixed)
