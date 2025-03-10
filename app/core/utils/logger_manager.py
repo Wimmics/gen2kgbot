@@ -32,7 +32,7 @@ def setup_logger(package: str = __package__, file: str = __file__) -> logging.Lo
     config_path = parent_dir / "config" / "logging.yml"
 
     # Configure logging
-    with open(config_path, "rt") as f:
+    with open(config_path, "rt", encoding="utf8") as f:
         log_config = yaml.safe_load(f.read())
         # Create log folder if it not exists
         log_file_handler = (

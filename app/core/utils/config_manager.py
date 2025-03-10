@@ -88,7 +88,7 @@ def get_configuration() -> dict:
     logger.info(f"Using configuration file: {config_path}")
 
     # Configure logging
-    with open(config_path, "rt") as f:
+    with open(config_path, "rt", encoding="utf8") as f:
         return yaml.safe_load(f.read())
 
 
@@ -168,6 +168,24 @@ def get_class_context_cache_directory() -> Path:
     str_path = (
         config["data_directory"]
         + f"/{get_kg_short_name().lower()}/classes_context/{get_class_context_format()}"
+    )
+    if os.path.isabs(str_path):
+        path = Path(str_path)
+    else:
+        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
+def get_classes_preprocessing_directory() -> Path:
+    """
+    Generate the path for the directory where to store the classes pkls, and
+    create the directory structure if it does not exist.
+    """
+    str_path = (
+        config["data_directory"] + f"/{get_kg_short_name().lower()}/preprocessing"
     )
     if os.path.isabs(str_path):
         path = Path(str_path)
@@ -362,20 +380,18 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
     return llm_config
 
 
-def get_embedding_model(scenario_id: str) -> Embeddings:
+def get_embedding_model_by_name(model_name: str) -> Embeddings:
     """
-    Instantiate a text embedding model based on the scenario configuration
+    Instantiate a text embedding model based on the model name in the configuration
 
     Args:
-        scenario_id (str): scenario ID
+        embed_model_ref (str): model name from section text_embedding_models of the configuration file
 
     Returns:
         Embeddings: text embedding model
     """
 
-    embed_id = config[scenario_id]["text_embedding_model"]
-    embed_config = config["text_embedding_models"][embed_id]
-
+    embed_config = config["text_embedding_models"][model_name]
     server_type = embed_config["server_type"]
     model_id = embed_config["id"]
 
@@ -391,6 +407,19 @@ def get_embedding_model(scenario_id: str) -> Embeddings:
 
     logger.info(f"Text embedding model initialized: {server_type} - {model_id} ")
     return embeddings
+
+
+def get_embedding_model(scenario_id: str) -> Embeddings:
+    """
+    Instantiate a text embedding model based on the scenario configuration
+
+    Args:
+        scenario_id (str): scenario ID
+
+    Returns:
+        Embeddings: text embedding model
+    """
+    return get_embedding_model_by_name(config[scenario_id]["text_embedding_model"])
 
 
 def create_vector_db(

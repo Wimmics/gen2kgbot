@@ -1,0 +1,213 @@
+import os
+import pickle
+import app.core.utils.config_manager as config
+from app.core.utils.construct_util import run_sparql_query, fulliri_to_prefixed
+
+
+logger = config.setup_logger(__package__, __file__)
+
+
+get_classes_query = """
+SELECT DISTINCT
+    ?class
+    (group_concat(distinct ?lbl_str, "--") as ?label)
+    (group_concat(distinct ?comment_str, "--") as ?description)
+    
+WHERE {
+    ?class a owl:Class .
+    FILTER(isIRI(?class))   # Ignore anonymous classes that are mostly owl constructs
+
+    OPTIONAL {
+    	{ SELECT DISTINCT ?class ?lbl WHERE {
+          { ?class rdfs:label ?lbl }
+          UNION 
+          { ?class skos:prefLabel ?lbl }
+          UNION 
+          { ?class skos:altLabel ?lbl }
+          UNION 
+          { ?class schema:name ?lbl }
+          UNION 
+          { ?class schema:alternateName ?lbl }
+          UNION 
+          { ?class obo:IAO_0000118 ?lbl }       # alt label
+          UNION 
+          { ?class obo:OBI_9991118 ?lbl }       # IEDB alternative term
+          UNION 
+          { ?class obo:OBI_0001847 ?lbl }       # ISA alternative term
+		}}
+	}
+	BIND(COALESCE(str(?lbl), "None") as ?lbl_str)
+
+    OPTIONAL {
+    	{ SELECT DISTINCT ?class ?comment WHERE {
+          { ?class rdfs:commentX ?comment }
+          UNION 
+          { ?class skos:definition ?comment }
+          UNION 
+          { ?class dc:description ?comment }
+          UNION 
+          { ?class dcterms:description ?comment }
+          UNION 
+          { ?class schema:description ?comment }
+          UNION 
+          { ?class obo:IAO_0000115 ?comment }   # definition
+		}}
+	}
+ 	BIND(COALESCE(str(?comment), "None") as ?comment_str)
+    
+} GROUP BY ?class
+"""
+
+get_classes_with_instances_query = """
+SELECT distinct ?class WHERE { ?s a ?class. } LIMIT 100
+"""
+
+
+def save_to_txt_pkl(filename: str, data: list):
+    """
+    Utilitary function to save a list to a text file and a pickle file.
+    """
+    # Saving to text file
+    txt_file = os.path.join(
+        config.get_classes_preprocessing_directory(), f"{filename}.txt"
+    )
+    with open(txt_file, "w", encoding="utf-8") as f:
+        for result in data:
+            f.write(f"{result}\n")
+        f.close()
+
+    # Saving to pickle file
+    pkl_file = os.path.join(
+        config.get_classes_preprocessing_directory(), f"{filename}.pkl"
+    )
+    with open(pkl_file, "wb") as f:
+        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+        f.close()
+
+    logger.info(f"Saved data to {txt_file} and {pkl_file}")
+
+
+def make_classes_description() -> list[tuple]:
+    """
+    Collect all classes from the ontologies as tuples (class, label, description),
+    and save them in a pickle file.
+
+    The query is done against the SPARQL endpoint that contains the ontologies
+    (ontologies_sparql_endpoint_url), which may be the same as the one that hosts
+    the KG itself (kg_sparql_endpoint_url), or not.
+
+    Returns:
+        list[tuple]: list of tuples (class, label, description)
+    """
+    results = []
+    _sparql_results = run_sparql_query(
+        get_classes_query, config.get_ontologies_sparql_endpoint_url(), timeout=3600
+    )
+    if _sparql_results is not None:
+        for result in _sparql_results:
+            if (
+                "class" in result.keys()
+                and "label" in result.keys()
+                and "description" in result.keys()
+            ):
+                label = (
+                    None
+                    if result["label"]["value"] == "None"
+                    else result["label"]["value"]
+                )
+                descr = (
+                    None
+                    if result["description"]["value"] == "None"
+                    else result["description"]["value"]
+                )
+                results.append(
+                    (
+                        fulliri_to_prefixed(result["class"]["value"]),
+                        label,
+                        descr,
+                    )
+                )
+            else:
+                logger.warning(f"Unexpected SPARQL result format: {result}")
+    return results
+
+
+def get_classes_with_instances() -> list[str]:
+    """
+    Retrieve all classes that have at least one instance in the KG.
+    The class URIs are returned as prefixed URIs based on the prefixes in the config file.
+
+    Returns:
+        list[str]: list of the class URIS (with prefixed)
+    """
+    results = []
+    _sparql_results = run_sparql_query(
+        get_classes_with_instances_query,
+        config.get_kg_sparql_endpoint_url(),
+        timeout=3600,
+    )
+    if _sparql_results is not None:
+        for result in _sparql_results:
+            if "class" in result.keys():
+                results.append(fulliri_to_prefixed(result["class"]["value"]))
+            else:
+                logger.warning(f"Unexpected SPARQL result format: {result}")
+    return results
+
+
+if __name__ == "__main__":
+
+    # Collect the description of the classes of interest and save them
+    class_descr_txt_file = os.path.join(
+        config.get_classes_preprocessing_directory(), "classes_description.txt"
+    )
+    classes_description = []
+    if os.path.exists(class_descr_txt_file):
+        logger.info(f"Reading classes description from {class_descr_txt_file}")
+        f = open(class_descr_txt_file, "r", encoding="utf8")
+        classes_description = [eval(line) for line in f.readlines()]
+        f.close()
+    else:
+        logger.info(f"Retrieving classes description from the SPARQL endpoint")
+        classes_description = make_classes_description()
+        save_to_txt_pkl("classes_description", classes_description)
+
+    logger.info(
+        f"Retrieved {len(classes_description)} (class,label,description) tuples."
+    )
+
+    # Retrieve the classes with at least 1 instance in the KG
+    classes_with_instances_file = os.path.join(
+        config.get_classes_preprocessing_directory(), "classes_with_instances.txt"
+    )
+    classes_with_instances = []
+    if os.path.exists(classes_with_instances_file):
+        logger.info(
+            f"Reading classes with instances from {classes_with_instances_file}."
+        )
+        f = open(classes_with_instances_file, "r", encoding="utf8")
+        classes_with_instances = [line.strip() for line in f.readlines()]
+        f.close()
+    else:
+        logger.info(f"Retrieving classes with instances from the SPARQL endpoint")
+        classes_with_instances = get_classes_with_instances()
+        with open(classes_with_instances_file, "w", encoding="utf-8") as f:
+            for result in classes_with_instances:
+                f.write(f"{result}\n")
+            f.close()
+        logger.info(f"Saved classes with instances to {classes_with_instances_file}.")
+    logger.info(f"Retrieved {len(classes_with_instances)} classes with instances.")
+
+    # Filter classes_description to keep only the classes with instances
+    classes_description_filtered = []
+    for c in classes_description:
+        logger.debug(f"Checking class {c[0]}")
+        if c[0] in classes_with_instances:
+            classes_description_filtered.append(c)
+        else:
+            logger.debug(f"Ignoring class {c[0]}")
+
+    logger.info(
+        f"Keeping {len(classes_description_filtered)} classes after removing those with no instance."
+    )
+    save_to_txt_pkl("classes_with_instances_description", classes_description_filtered)
