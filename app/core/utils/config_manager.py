@@ -200,16 +200,24 @@ def get_temp_directory() -> Path:
     return path
 
 
-def get_vector_db_name(scenario_id: str) -> str:
-    embed_id = config[scenario_id]["text_embedding_model"]
-    embed_config = config["text_embedding_models"][embed_id]
+def get_vector_db_name_by_embed_name(embed_name: str) -> str:
+    embed_config = config["text_embedding_models"][embed_name]
     return embed_config["vector_db"]
 
 
-def get_embeddings_model_id(scenario_id: str) -> str:
-    embed_id = config[scenario_id]["text_embedding_model"]
-    embed_config = config["text_embedding_models"][embed_id]
+def get_vector_db_name_by_scenario(scenario_id: str) -> str:
+    embed_name = config[scenario_id]["text_embedding_model"]
+    return get_vector_db_name_by_embed_name(embed_name)
+
+
+def get_embeddings_model_id_by_embed_name(embed_name: str) -> str:
+    embed_config = config["text_embedding_models"][embed_name]
     return embed_config["id"]
+
+
+def get_embeddings_model_id_by_scenario(scenario_id: str) -> str:
+    embed_name = config[scenario_id]["text_embedding_model"]
+    return get_embeddings_model_id_by_embed_name(embed_name)
 
 
 def get_embeddings_directory(vector_db_name: str) -> Path:
@@ -371,18 +379,18 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
     return llm_config
 
 
-def get_embedding_model_by_name(model_name: str) -> Embeddings:
+def get_embedding_model_by_embed_name(embed_name: str) -> Embeddings:
     """
     Instantiate a text embedding model based on the model name in the configuration
 
     Args:
-        embed_model_ref (str): model name from section text_embedding_models of the configuration file
+        embed_name (str): name of the config in section text_embedding_models of the configuration file
 
     Returns:
         Embeddings: text embedding model
     """
 
-    embed_config = config["text_embedding_models"][model_name]
+    embed_config = config["text_embedding_models"][embed_name]
     server_type = embed_config["server_type"]
     model_id = embed_config["id"]
 
@@ -400,7 +408,7 @@ def get_embedding_model_by_name(model_name: str) -> Embeddings:
     return embeddings
 
 
-def get_embedding_model(scenario_id: str) -> Embeddings:
+def get_embedding_model_by_scenario(scenario_id: str) -> Embeddings:
     """
     Instantiate a text embedding model based on the scenario configuration
 
@@ -410,26 +418,26 @@ def get_embedding_model(scenario_id: str) -> Embeddings:
     Returns:
         Embeddings: text embedding model
     """
-    return get_embedding_model_by_name(config[scenario_id]["text_embedding_model"])
+    return get_embedding_model_by_embed_name(
+        config[scenario_id]["text_embedding_model"]
+    )
 
 
 def create_vector_db(
-    scenario_id: str, vector_db_name: str, embeddings_directory: str
+    embeddings: Embeddings, vector_db_name: str, embeddings_directory: str
 ) -> VectorStore:
     """
     Create a vector db based on the configuration,
     and load the pre-computed embeddings from the given directory
 
     Args:
-        scenario_id (str): scenario ID
+        embeddings (Embeddings): instantiated embeddings model
         vector_db_name (str): type of vector db (currently supported: "faiss", "chroma")
         embeddings_directory (str): directory containing the pre-computed embeddings
 
     Returns:
         VectorStore: vector db
     """
-
-    embeddings = get_embedding_model(scenario_id)
 
     if vector_db_name == "faiss":
         db = FAISS.load_local(
@@ -446,6 +454,31 @@ def create_vector_db(
         raise Exception(f"Unsupported type of vector DB: {vector_db_name}")
 
     return db
+
+
+def create_vector_db_by_scenario(scenario_id: str, directory_prefix) -> VectorStore:
+    """
+    Create a vector db based on the configuration,
+    and load the pre-computed embeddings from the given directory
+
+    Args:
+        scenario_id (str): scenario ID
+        vector_db_name (str): type of vector db (currently supported: "faiss", "chroma")
+        directory_prefix (str): prefix of the directory name that containd the pre-computed embeddings
+
+    Returns:
+        VectorStore: vector db
+    """
+
+    model_id = get_embeddings_model_id_by_scenario(scenario_id)
+    vector_db_name = get_vector_db_name_by_scenario(scenario_id)
+
+    embeddings_directory = f"{get_embeddings_directory(vector_db_name)}/{directory_prefix}{model_id}_{vector_db_name}_index"
+    logger.debug(f"Embeddings directory: {embeddings_directory}")
+
+    embeddings = get_embedding_model_by_scenario(scenario_id)
+
+    return create_vector_db(embeddings, vector_db_name, embeddings_directory)
 
 
 def get_class_context_vector_db(scenario_id: str) -> VectorStore:
@@ -467,12 +500,7 @@ def get_class_context_vector_db(scenario_id: str) -> VectorStore:
     ):
         return classes_vector_db[scenario_id]
 
-    model_id = get_embeddings_model_id(scenario_id)
-    vector_db_name = get_vector_db_name(scenario_id)
-    embeddings_directory = f"{get_embeddings_directory(vector_db_name)}/{config["class_context_embeddings_prefix"]}{model_id}_{vector_db_name}_index"
-    logger.debug(f"Classes context embeddings directory: {embeddings_directory}")
-
-    db = create_vector_db(scenario_id, vector_db_name, embeddings_directory)
+    db = create_vector_db_by_scenario(scenario_id, config["class_context_embeddings_prefix"])
     logger.info("Classes context vector DB initialized.")
     globals()["classes_vector_db"][scenario_id] = db
     return db
@@ -497,12 +525,7 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
     ):
         return queries_vector_db[scenario_id]
 
-    model_id = get_embeddings_model_id(scenario_id)
-    vector_db_name = get_vector_db_name(scenario_id)
-    embeddings_directory = f"{get_embeddings_directory(vector_db_name)}/{config["queries_embeddings_prefix"]}{model_id}_{vector_db_name}_index"
-    logger.debug(f"SPARQL queries embeddings directory: {embeddings_directory}")
-
-    db = create_vector_db(scenario_id, vector_db_name, embeddings_directory)
+    db = create_vector_db_by_scenario(scenario_id, config["queries_embeddings_prefix"])
     logger.info("SPARQL queries vector DB initialized.")
     globals()["queries_vector_db"][scenario_id] = db
     return db
@@ -512,7 +535,6 @@ def get_scenario_module(scenario_id: int):
     scenario_module = importlib.import_module(
         f"app.core.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
     )
-
     return scenario_module
 
 
