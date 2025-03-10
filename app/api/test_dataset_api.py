@@ -9,14 +9,12 @@ from app.api.models.test_dataset_generate_question_request import (
     TestDatasetGenerateQuestionRequest,
 )
 from app.api.models.test_dataset_query_request import TestDatasetQueryRequest
-from app.api.models.test_dataset_scenario_schema_request import (
-    TestDatasetScenarioSchemaRequest,
-)
+
 from app.api.services.answer_question_service import generate_stream_responses
 from app.api.services.generate_question_dataset_service import generate_questions
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.services.graph_mermaid_service import get_graph_schema
+from app.api.services.graph_mermaid_service import get_scenarios_schema
 from app.api.services.test_answer_dataset_service import judge_answer
 from app.core.utils.config_manager import (
     get_configuration,
@@ -126,23 +124,19 @@ def test_dataset_answer_question(
     )
 
 
-@app.post("/api/test_dataset/scenario_graph_schema")
-def test_dataset_scenario_schema(
-    test_request: TestDatasetScenarioSchemaRequest,
-):
+@app.get("/api/test_dataset/scenarios_graph_schema")
+def test_dataset_scenario_schema():
     """
     This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
 
-    Args:
-        test_request (TestDatasetGenerateQuestionRequest): The request object containing the necessary information to generate questions.
-
     Returns:
-        dict:
-            A dictionary containing the the scenario schema following keys:
+        list:
+            A list containing the different scenarios schemas following keys:
+            - `scenario_id` (int): the id of the scenario
             - `schema` (str): the mermaid schema of the scenario.
     """
 
-    return {"schema": get_graph_schema(scenario_id=test_request.scenario_id)}
+    return get_scenarios_schema()
 
 
 @app.get("/api/test_dataset/default_config")

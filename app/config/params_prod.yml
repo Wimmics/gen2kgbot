@@ -1,0 +1,180 @@
+# KG full name (used in prompts)
+kg_full_name: PubChem knowledge graph
+
+# KG short name (used to generate file paths)
+kg_short_name: idsm
+
+# KG textual description (used in prompts)
+kg_description: The IDSM SPARQL endpoint provides fast similarity and structural search functionality in knowledge graph such as ChEMBL, ChEBI or PubChem.
+
+# SPARQL endpoint serving the KG
+kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm" 
+
+# SPARQL endpoint serving the ontologies, if different from the KG SPARQL endpoint (optional)
+# Default: same as kg_sparql_endpoint_url
+ontologies_sparql_endpoint_url: "http://erebe-vm28.i3s.unice.fr/corese" 
+
+# Prefixes and namespaces to be used in the Turtle and SPARQL queries
+prefixes:
+  bao:            "http://www.bioassayontology.org/bao#"
+  cito:           "http://purl.org/spar/cito/"
+  chembl:         "http://rdf.ebi.ac.uk/terms/chembl#"
+  dc:             "http://purl.org/dc/elements/1.1/"
+  dcterms:        "http://purl.org/dc/terms/"
+  enpkg:          "https://enpkg.commons-lab.org/kg/"
+  enpkg_module:   "https://enpkg.commons-lab.org/module/"
+  ndfrt:          "http://purl.bioontology.org/ontology/NDFRT/"
+  obo:            "http://purl.obolibrary.org/obo/"
+  owl:            "http://www.w3.org/2002/07/owl#"
+  patent:         "http://data.epo.org/linked-data/def/patent/"
+  pav:            "http://purl.org/pav/"
+  pubchem:        "http://rdf.ncbi.nlm.nih.gov/pubchem/vocabulary#"
+  rdf:            "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  rdfs:           "http://www.w3.org/2000/01/rdf-schema#"
+  schema:         "http://schema.org/"
+  skos:           "http://www.w3.org/2004/02/skos/core#"
+  sio:            "http://semanticscience.org/resource/"
+  snomedct:       "http://purl.bioontology.org/ontology/SNOMEDCT/"
+  xsd:            "http://www.w3.org/2001/XMLSchema#"
+  up:             "http://purl.uniprot.org/core/"
+
+# Max number of classes similar to the user's question (optional)
+# Default: 10
+max_similar_classes: 10
+
+# Expand the initial list of classes similar to the question with additional classes connected to them (optional)
+# Default: false
+expand_similar_classes: false
+
+# Format of the classes context: one of "turtle", "tuple" (optional)
+# Default: "turtle"
+class_context_format: turtle
+
+# Optional list of classes and namespaces to be excluded from the similar classes (optional)
+excluded_classes_namespaces:
+  - "http://data.epo.org/linked-data/def/patent/Publication"
+  - "http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#"
+
+# Root path for the cache of classes context and pre-computed embeddings
+data_directory: "./data"
+
+# Prefix of the file names for the pre-computed embeddings of classes context. Will be appended with "{model_id}_{vector_db}_index"
+# e.g. "v3_4_full_" will yield something like "v3_4_full_nomic-embed-text_faiss_index"
+class_context_embeddings_prefix: "v3_4_full_" 
+
+# Prefix of the file names for the pre-computed embeddings of SPARQL queries. Will be appended with "{model_id}_{vector_db}_index"
+# e.g. "query_v1_" will yield something like "query_v1_nomic-embed-text_faiss_index"
+queries_embeddings_prefix: "query_v1_" 
+
+# Path to a usable temporary directory
+temp_directory: "./tmp"
+
+# embedding_generation:
+  # Utilitary endpoint to store the ontologies (if not present in the endpoint to be queried) 
+  # work_sparql_endpoint_url: ""
+  # text_embedding_llm:
+    # server_type: ollama-embeddings
+    # id: mxbai-embed-large
+    # vector_db: faiss
+    # output_directory: "data/"
+
+# -----------------------------------------------------------
+# LLM configurations
+
+seq2seq_models:
+# Each seq2seq model shall contain the following paramters:
+# - server_type (str): one of "openai", "ollama", "ollama-server", "ovh", "hugface", "google" "deepseek"
+# - id (str): the model identifier as defined by the provider
+# - base_url (str): server's URL. Mandatory if server_type is "ollama-server", "ovh" or "deepseek"
+# - temperature (decimal): the temperature parameter for the generation (optional)
+# - max_retries (int): the maximum number of retries in case of failure (optional)
+# - top_p (decimal): the top_p parameter for the generation (optional), default: 0.95
+# - model_kwargs (str): additional parameters for the model (optional)
+  
+  llama-3_1-70B@ovh:
+    server_type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  gpt-4o@openai:
+    server_type: openai
+    id: gpt-4o
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+    
+  o3-mini@openai:
+    server_type: openai
+    id: o3-mini
+
+  deepseek-chat@deepseek:
+    server_type: deepseek
+    id: deepseek-chat
+    base_url: https://api.deepseek.com
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  deepseek-reasoner@deepseek:
+    server_type: deepseek
+    id: deepseek-reasoner
+    base_url: https://api.deepseek.com
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  deepseek-reasoner@hf:
+    server_type: hugface
+    id: deepseek-ai/DeepSeek-R1
+    base_url: https://huggingface.co/api/inference-proxy/together
+    top_p: 0.95
+
+
+text_embedding_models:
+# Each text embedding model shall contain the following paramters:
+# - server_type (str): one of "openai-embeddings", "ollama-embeddings"
+# - id (str): the model identifier as defined by the provider
+# - vector_db (str): the type of vector database, one of "faiss", "chroma"
+
+  nomic-embed-text_faiss@local:
+    server_type: ollama-embeddings
+    id: nomic-embed-text
+    vector_db: faiss
+  
+  mxbai-embed-large_faiss@local:
+    server_type: ollama-embeddings
+    id: mxbai-embed-large
+    vector_db: faiss
+
+  nomic-embed-text_chroma@local:
+    server_type: ollama-embeddings
+    id: nomic-embed-text
+    vector_db: chroma
+  
+# -----------------------------------------------------------
+# Scenarios
+      
+scenario_1:
+  seq2seq_model: llama-3_1-70B@ovh
+    
+scenario_2:
+  seq2seq_model: llama-3_1-70B@ovh
+
+scenario_3:
+  seq2seq_model: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_4:
+  seq2seq_model: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_5:
+  seq2seq_model: gpt-4o@openai
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_6:
+  seq2seq_model: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local

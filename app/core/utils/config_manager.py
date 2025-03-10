@@ -56,6 +56,11 @@ def setup_cli():
         type=str,
         help="Ignored. Fake argument to allow Langgraph Studio start with option dev",
     )
+    parser.add_argument(
+        "--prod",
+        action="store_true",
+        help="Use this flag to load the production configuration file",
+    )
     globals()["args"] = parser.parse_args()
 
 
@@ -70,6 +75,10 @@ def get_configuration() -> dict:
     """
     if args.params:
         config_path = args.params
+    elif args.prod:
+        config_path = (
+            Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
+        )
     else:
         # Resolve the path to the configuration file
         config_path = (
@@ -251,7 +260,7 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
         top_p = 0.95
 
     if server_type == "openai":
-        if model_id.startswith("o"): # o3* do not support parameter top_p 
+        if model_id.startswith("o"):  # o3* do not support parameter top_p
             llm_config = ChatOpenAI(
                 temperature=temperature,
                 model=model_id,
