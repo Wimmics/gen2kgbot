@@ -17,10 +17,12 @@ class OverallState(MessagesState, InputState):
     Attributes:
         scenario_id (str): identifier of the current scenario
 
+        question_validation_results (str): results of checking if the question is clear, answerable, and relevant to the knowledge graph
+
         question_relevant_entities (list[str]): named entities extracted from the question by spacy
 
         selected_classes (list[str]):
-            classes that are similar to the question and can be relevant to generate a SPARQL query. 
+            classes that are similar to the question and can be relevant to generate a SPARQL query.
             Formatted as "(uri, label, comment)".
 
         selected_classes_context (list[str]):
@@ -44,11 +46,14 @@ class OverallState(MessagesState, InputState):
 
     scenario_id: str
 
+    question_validation_results: str
+
     question_relevant_entities: list[str]
 
     selected_classes: list[str]
 
     selected_classes_context: Annotated[list[str], operator.add]
+
     merged_classes_context: str
 
     selected_queries: str
@@ -58,6 +63,7 @@ class OverallState(MessagesState, InputState):
     number_of_tries: int
 
     last_generated_query: str
+
     last_query_results: str
 
     results_interpretation: str

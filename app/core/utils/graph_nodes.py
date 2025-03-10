@@ -17,7 +17,10 @@ from app.core.utils.construct_util import (
     add_known_prefixes_to_query,
     fulliri_to_prefixed,
 )
-from app.core.utils.prompts import interpret_csv_query_results_prompt
+from app.core.utils.prompts import (
+    interpret_csv_query_results_prompt,
+    validate_question_prompt,
+)
 from rdflib import Graph
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.algebra import translateQuery
@@ -46,7 +49,6 @@ def preprocess_question(state: OverallState) -> OverallState:
 
     return {
         "messages": AIMessage(relevant_entities),
-        "initial_question": state["initial_question"],
         "question_relevant_entities": relevant_entities,
         "number_of_tries": 0,
     }
@@ -84,7 +86,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
         classes_uris = [ast.literal_eval(item)[0] for item in classes_str]
         for cls, label, description in get_connected_classes(classes_uris):
             if cls not in classes_uris:
-                descr = "None" if description == None else f"'{description}'"
+                descr = "None" if description is None else f"'{description}'"
                 classes_str.append(f"('{cls}', '{label}', {descr})")
 
     # Filter out classes marked as to be excluded
@@ -418,3 +420,45 @@ def save_full_context(graph: Graph):
         format="turtle",
     )
     logger.info(f"Graph of selected classes context saved to {graph_file}")
+
+
+def validate_question(state: OverallState) -> OverallState:
+    """
+    Check if a question fits the context of the current Knowledge Graph. Used in scenario 1 and 7.
+
+    TODO: add the validation to the other scenarios.
+
+    Args:
+        state (dict): current state of the conversation
+
+    Return:
+        dict: state updated with the validation result (question_validation_results)
+    """
+
+    logger.info("Validating the question ...")
+
+    template = validate_question_prompt
+
+    if "kg_full_name" in template.input_variables:
+        template = template.partial(kg_full_name=config.get_kg_full_name())
+
+    if "kg_description" in template.input_variables:
+        template = template.partial(kg_description=config.get_kg_description())
+
+    if "initial_question" in state.keys():
+        template = template.partial(initial_question=state["initial_question"])
+
+    # Make sure there are no more unset input variables
+    if template.input_variables:
+        raise Exception(
+            f"Template has unused input variables: {template.input_variables}"
+        )
+
+    prompt = template.format()
+
+    logger.debug(f"Validation quesiton prompt created:\n{prompt}.")
+    result = config.get_seq2seq_model(state["scenario_id"]).invoke(prompt)
+
+    logger.debug(f"Validation of the question results:\n{result.content}")
+
+    return OverallState({"messages": result, "question_validation_results": result.content})

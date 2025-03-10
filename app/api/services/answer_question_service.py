@@ -31,6 +31,7 @@ async def generate_stream_responses(scenario_id: int, question: str):
     ]
 
     chat_nodes_filter = [
+        "validate_question",
         "generate_query",
         "interpret_results",
         "ask_question",

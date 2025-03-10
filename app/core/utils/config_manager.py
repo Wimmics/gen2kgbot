@@ -563,13 +563,13 @@ async def main(graph: CompiledStateGraph):
     logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    # logger.info("==============================================================")
-    # for m in state["messages"]:
-    #     logger.info(m.pretty_repr())
-    # if "last_generated_query" in state:
-    #     logger.info("==============================================================")
-    #     logger.info("last_generated_query: " + state["last_generated_query"])
-    # logger.info("==============================================================")
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")
 
 
 def set_custom_scenario_configuration(

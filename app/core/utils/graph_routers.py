@@ -139,3 +139,39 @@ def run_query_router(state: OverallState) -> Literal["interpret_results", "__end
     else:
         logger.info("SPARQL query execution failed.")
         return END
+
+
+def validate_question_router(state: OverallState) -> Literal["preprocess_question", "__end__"]:
+    """
+    Check the question validation results and decide whether to continue the process or stop.
+
+    Args:
+        state (OverallState): current state of the conversation
+
+    Returns:
+        Literal["preprocess_question", END]: next step in the conversation
+    """
+    results = state["question_validation_results"]
+    if results.find("true") != -1 and results.find("false") == -1:
+        logger.info("Question validation passed.")
+        return "preprocess_question"
+    else:
+        logger.warning("Question validation failed.")
+        return END
+
+
+def preprocessing_subgraph_router(state: OverallState) -> Literal["create_prompt", "__end__"]:
+    """
+    Check the question validation results and decide whether to continue the process or stop.
+
+    Args:
+        state (OverallState): current state of the conversation
+
+    Returns:
+        Literal["create_prompt", END]: next step in the conversation
+    """
+    results = state["question_validation_results"]
+    if results.find("true") != -1 and results.find("false") == -1:
+        return "create_prompt"
+    else:
+        return END

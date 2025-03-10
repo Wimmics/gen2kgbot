@@ -172,3 +172,7 @@ scenario_5:
 scenario_6:
   seq2seq_model: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_7:
+  seq2seq_model: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
