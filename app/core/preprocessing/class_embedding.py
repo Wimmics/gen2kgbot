@@ -63,28 +63,14 @@ SELECT distinct ?class WHERE { ?s a ?class. } LIMIT 100
 """
 
 
-def save_to_txt_pkl(filename: str, data: list):
+def save_to_txt(filename: str, data: list):
     """
-    Utilitary function to save a list to a text file and a pickle file.
+    Utilitary function to save a list to a text file
     """
-    # Saving to text file
-    txt_file = os.path.join(
-        config.get_classes_preprocessing_directory(), f"{filename}.txt"
-    )
-    with open(txt_file, "w", encoding="utf-8") as f:
+    with open(filename, "w", encoding="utf-8") as f:
         for result in data:
             f.write(f"{result}\n")
         f.close()
-
-    # Saving to pickle file
-    pkl_file = os.path.join(
-        config.get_classes_preprocessing_directory(), f"{filename}.pkl"
-    )
-    with open(pkl_file, "wb") as f:
-        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-        f.close()
-
-    logger.info(f"Saved data to {txt_file} and {pkl_file}")
 
 
 def make_classes_description() -> list[tuple]:
@@ -170,7 +156,7 @@ if __name__ == "__main__":
     else:
         logger.info(f"Retrieving classes description from the SPARQL endpoint")
         classes_description = make_classes_description()
-        save_to_txt_pkl("classes_description", classes_description)
+        save_to_txt(class_descr_txt_file, classes_description)
 
     logger.info(
         f"Retrieved {len(classes_description)} (class,label,description) tuples."
@@ -191,6 +177,8 @@ if __name__ == "__main__":
     else:
         logger.info(f"Retrieving classes with instances from the SPARQL endpoint")
         classes_with_instances = get_classes_with_instances()
+        save_to_txt(classes_with_instances_file, classes_with_instances)
+
         with open(classes_with_instances_file, "w", encoding="utf-8") as f:
             for result in classes_with_instances:
                 f.write(f"{result}\n")
@@ -201,13 +189,16 @@ if __name__ == "__main__":
     # Filter classes_description to keep only the classes with instances
     classes_description_filtered = []
     for c in classes_description:
-        logger.debug(f"Checking class {c[0]}")
         if c[0] in classes_with_instances:
             classes_description_filtered.append(c)
         else:
-            logger.debug(f"Ignoring class {c[0]}")
+            logger.debug(f"Ignoring empty class {c[0]}")
 
     logger.info(
         f"Keeping {len(classes_description_filtered)} classes after removing those with no instance."
     )
-    save_to_txt_pkl("classes_with_instances_description", classes_description_filtered)
+    classes_with_instances_description_file = os.path.join(
+        config.get_classes_preprocessing_directory(),
+        "classes_with_instances_description.txt",
+    )
+    save_to_txt(classes_with_instances_description_file, classes_description_filtered)
