@@ -12,7 +12,7 @@ kg_sparql_endpoint_url: "https://idsm.elixir-czech.cz/sparql/endpoint/idsm"
 
 # SPARQL endpoint serving the ontologies, if different from the KG SPARQL endpoint (optional)
 # Default: same as kg_sparql_endpoint_url
-ontologies_sparql_endpoint_url: "http://erebe-vm28.i3s.unice.fr/corese" 
+ontologies_sparql_endpoint_url: "http://gen2kgbot.i3s.unice.fr/corese" 
 
 # Prefixes and namespaces to be used in the Turtle and SPARQL queries
 prefixes:
@@ -58,14 +58,12 @@ excluded_classes_namespaces:
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"
 
-# Name of the subdirectory that contains the pre-computed embeddings of classes context.
+# Name of the subdirectoties that contain the pre-computed embeddings of classes, properties and queries.
+# These names must be consistent with the chosen embedding model names in section text_embedding_models
 # Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
 # e.g. ./data/idsm/faiss_embeddings/
 class_embeddings_subdir: "classes_with_instance_nomic"
-
-# Name of the subdirectory that contains the pre-computed embeddings of SPARQL queries.
-# Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
-# e.g. ./data/idsm/faiss_embeddings/
+property_embeddings_subdir: "properties_nomic"
 queries_embeddings_subdir: "sparql_queries_nomic"
 
 # Path to a usable temporary directory

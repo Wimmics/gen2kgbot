@@ -189,10 +189,10 @@ def get_class_context_cache_directory() -> Path:
     return path
 
 
-def get_classes_preprocessing_directory() -> Path:
+def get_preprocessing_directory() -> Path:
     """
-    Generate the path for the directory where to store the classes pkls, and
-    create the directory structure if it does not exist.
+    Generate the path for the directory where to store the class and property textual descriptions.
+    Create the directory structure if it does not exist.
     """
     str_path = (
         config["data_directory"] + f"/{get_kg_short_name().lower()}/preprocessing"
@@ -209,6 +209,10 @@ def get_classes_preprocessing_directory() -> Path:
 
 def get_class_embeddings_subdir() -> str:
     return config["class_embeddings_subdir"]
+
+
+def get_property_embeddings_subdir() -> str:
+    return config["property_embeddings_subdir"]
 
 
 def get_temp_directory() -> Path:
