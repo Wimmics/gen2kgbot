@@ -25,7 +25,7 @@ from app.core.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
-# Global config
+# Global config. Shall be initialized by read_configuration()
 config = None
 
 # Selected seq2seq LLM. Dictionary with the scenario id as key
@@ -71,35 +71,48 @@ def setup_cli() -> Namespace:
 def read_configuration(args: Namespace = None):
     """
     Load the configuration file and set it in global variable 'config'
+
+    Args:
+        args (Namespace): command line arguments. Optional. If not provided,
+            the default configuration file is used.
     """
     if args is None:
         # Set the default configuration file
         config_path = (
             Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
+        logger.info(f"Loading default configuration file: {config_path}")
     elif args.params:
         config_path = args.params
+        logger.info(f"Loading custom configuration file: {config_path}")
     elif args.__contains__("prod") and args.prod:
         config_path = (
             Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
         )
+        logger.info(f"Loading configuration file: {config_path}")
     else:
         # Set the default configuration file
         config_path = (
             Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
+        logger.info(f"Loading default configuration file: {config_path}")
 
-    print(f"Using configuration file: {config_path}")
+    with open(config_path, "rt", encoding="utf8") as f:
+        config = yaml.safe_load(f.read())
+        f.close()
 
-    f = open(config_path, "rt", encoding="utf8")
-    config = yaml.safe_load(f.read())
+    # Make a deep copy of the configuration and assign it to the global variable
     cfg = {}
     for key in config.keys():
         cfg[key] = config[key]
     globals()["config"] = cfg
 
-# Load the default config in case of using Langragraph Studio
+
+# Load the default config file.
+# Necessary when using Langragraph Studio as it loads the scenarios without CLI arguments.
+# If calling from CLI, the default config will be overridden.
 read_configuration()
+
 
 def get_kg_full_name() -> str:
     return config["kg_full_name"]
@@ -624,7 +637,7 @@ async def main(graph: CompiledStateGraph):
     # Parse the command line arguments
     args = setup_cli()
 
-    # Load the configuration file
+    # Load the configuration file and assign to global variable 'config'
     read_configuration(args)
 
     question = args.question

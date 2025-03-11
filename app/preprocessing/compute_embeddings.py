@@ -35,13 +35,13 @@ def setup_cli() -> Namespace:
         "-c",
         "--classes",
         type=str,
-        help='File with the description of the classes. Must be in directory "{data_directory}/{KG short name}/preprocessing". Default: "classes_with_instances_description.txt"',
+        help='File with the description of the classes. Must be located in "{data_directory}/{KG short name}/preprocessing". Default: "classes_with_instances_description.txt"',
         default="classes_with_instances_description.txt",
     )
     parser.add_argument(
         "--properties",
         type=str,
-        help='File with the description of the properties. Must be in directory "{data_directory}/{KG short name}/preprocessing". Default: "properties_description.txt"',
+        help='File with the description of the properties. Must be located in "{data_directory}/{KG short name}/preprocessing". Default: "properties_description.txt"',
         default="properties_description.txt",
     )
     return parser.parse_args()
@@ -126,7 +126,7 @@ if __name__ == "__main__":
     # Load the configuration
     config.read_configuration(args)
 
-    # The name of the embedding model refers to the configuration file
+    # The name of the embedding model as described in the configuration file
     embed_name = args.model
     embed_config = config.get_embedding_model_config_by_name(embed_name)
     vector_db_name = embed_config["vector_db"]
