@@ -137,7 +137,7 @@ if __name__ == "__main__":
         args.classes,
     )
     embeddings_dir = f"{config.get_embeddings_directory(vector_db_name)}/{config.get_class_embeddings_subdir()}"
-    # compute_embeddings(embed_name, description_file, embeddings_dir)
+    compute_embeddings(embed_name, description_file, embeddings_dir)
 
     # Compute and save the embeddings of the property descriptions
     description_file = os.path.join(

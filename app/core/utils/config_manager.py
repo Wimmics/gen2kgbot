@@ -26,7 +26,7 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 # Global config
-config = {}
+config = None
 
 # Selected seq2seq LLM. Dictionary with the scenario id as key
 current_llm = {}
@@ -98,6 +98,8 @@ def read_configuration(args: Namespace = None):
         cfg[key] = config[key]
     globals()["config"] = cfg
 
+# Load the default config in case of using Langragraph Studio
+read_configuration()
 
 def get_kg_full_name() -> str:
     return config["kg_full_name"]
