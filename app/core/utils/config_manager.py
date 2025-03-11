@@ -68,6 +68,10 @@ def setup_cli() -> Namespace:
     return parser.parse_args()
 
 
+def get_configuration() -> dict:
+    return config
+
+
 def read_configuration(args: Namespace = None):
     """
     Load the configuration file and set it in global variable 'config'
