@@ -286,9 +286,9 @@ def generate_query(state: OverallState):
     """
     Invoke the LLM with the prompt asking to create a SPARQL query
     """
-    result = config.get_seq2seq_model(state["scenario_id"]).invoke(
-        state["query_generation_prompt"]
-    )
+    result = config.get_seq2seq_model(
+        scenario_id=state["scenario_id"], node_name="generate_query"
+    ).invoke(state["query_generation_prompt"])
     # logger.debug(f"Query generation response:\n{result.content}")
     return {"messages": result}
 
@@ -406,7 +406,9 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
 
     prompt = template.format()
     logger.info(f"Results interpretation prompt created:\n{prompt}.")
-    result = config.get_seq2seq_model(state["scenario_id"]).invoke(prompt)
+    result = config.get_seq2seq_model(
+        scenario_id=state["scenario_id"], node_name="interpret_csv_query_results"
+    ).invoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
     return OverallState({"messages": result, "results_interpretation": result})
@@ -424,9 +426,7 @@ def save_full_context(graph: Graph):
 
 def validate_question(state: OverallState) -> OverallState:
     """
-    Check if a question fits the context of the current Knowledge Graph. Used in scenario 1 and 7.
-
-    TODO: add the validation to the other scenarios.
+    Check if a question fits the context of the current Knowledge Graph. Used in all the scenarios.
 
     Args:
         state (dict): current state of the conversation
@@ -457,8 +457,12 @@ def validate_question(state: OverallState) -> OverallState:
     prompt = template.format()
 
     logger.debug(f"Validation quesiton prompt created:\n{prompt}.")
-    result = config.get_seq2seq_model(state["scenario_id"]).invoke(prompt)
+    result = config.get_seq2seq_model(
+        scenario_id=state["scenario_id"], node_name="validate_question"
+    ).invoke(prompt)
 
     logger.debug(f"Validation of the question results:\n{result.content}")
 
-    return OverallState({"messages": result, "question_validation_results": result.content})
+    return OverallState(
+        {"messages": result, "question_validation_results": result.content}
+    )

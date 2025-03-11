@@ -152,27 +152,40 @@ text_embedding_models:
 # Scenarios
       
 scenario_1:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama-3_1-70B@ovh
+  ask_question: llama-3_1-70B@ovh
     
 scenario_2:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama-3_1-70B@ovh
 
 scenario_3:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_4:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_5:
-  seq2seq_model: gpt-4o@openai
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_6:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_7:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local

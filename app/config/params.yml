@@ -166,27 +166,40 @@ text_embedding_models:
 # Scenarios
       
 scenario_1:
-  seq2seq_model: llama3_2-1b@local
+  validate_question: llama3_2-1b@local
+  ask_question: llama-3_1-70B@ovh
     
 scenario_2:
-  seq2seq_model: llama3_2-1b@local
+  validate_question: llama3_2-1b@local
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama3_2-1b@local
 
 scenario_3:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama3_2-1b@local
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_4:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama3_2-1b@local
+  interpret_csv_query_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_5:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama3_2-1b@local
+  generate_query: llama3_2-1b@local
+  interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_6:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: deepseek-r1_1_5b@local
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_7:
-  seq2seq_model: llama-3_1-70B@ovh
+  validate_question: llama3_2-1b@local
+  generate_query: llama3_2-1b@local
+  interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local

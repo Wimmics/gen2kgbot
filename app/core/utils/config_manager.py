@@ -253,15 +253,19 @@ def get_embeddings_directory(vector_db_name: str) -> Path:
     return path
 
 
-def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
+def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
     """
     Create a seq2seq LLM based on the scenario configuration
     """
 
-    if scenario_id in current_llm.keys() and current_llm[scenario_id] is not None:
-        return current_llm[scenario_id]
+    if (
+        scenario_id in current_llm.keys()
+        and node_name in dict(current_llm[scenario_id]).keys()
+        and current_llm[scenario_id][node_name] is not None
+    ):
+        return current_llm[scenario_id][node_name]
 
-    llm_id = config[scenario_id]["seq2seq_model"]
+    llm_id = config[scenario_id][node_name]
     llm_config = config["seq2seq_models"][llm_id]
 
     server_type = llm_config["server_type"]
@@ -385,8 +389,14 @@ def get_seq2seq_model(scenario_id: str) -> BaseChatModel:
         logger.error(f"Unsupported type of seq2seq model: {server_type}")
         raise Exception(f"Unsupported type of seq2seq model: {server_type}")
 
-    logger.info(f"Seq2seq model initialized: {server_type} - {model_id} ")
-    globals()["current_llm"][scenario_id] = llm_config
+    logger.info(
+        f"Seq2Seq model initialized for {scenario_id} and Node: {node_name} with: {server_type} - {model_id} "
+    )
+
+    globals()["current_llm"].setdefault(scenario_id, {}).update({node_name: llm_config})
+
+    logger.debug(f"Current LLM config used: {current_llm}")
+
     return llm_config
 
 
@@ -511,9 +521,7 @@ def get_class_context_vector_db(scenario_id: str) -> VectorStore:
     ):
         return classes_vector_db[scenario_id]
 
-    db = create_vector_db_by_scenario(
-        scenario_id, config["class_embeddings_subdir"]
-    )
+    db = create_vector_db_by_scenario(scenario_id, config["class_embeddings_subdir"])
     logger.info("Classes context vector DB initialized.")
     globals()["classes_vector_db"][scenario_id] = db
     return db
@@ -573,13 +581,30 @@ async def main(graph: CompiledStateGraph):
 
 
 def set_custom_scenario_configuration(
-    scenario_id: int, seq2seq_model: str, text_embedding_model: str
+    scenario_id: int,
+    validate_question_model: str,
+    ask_question_model: str,
+    generate_query_model: str,
+    interpret_csv_query_results_model: str,
+    text_embedding_model: str,
 ):
     """
     Set a custom configuration to use in a scenario
     """
 
-    config[f"scenario_{scenario_id}"]["seq2seq_model"] = seq2seq_model
+    config[f"scenario_{scenario_id}"]["validate_question"] = validate_question_model
+
+    if ask_question_model is not None:
+        config[f"scenario_{scenario_id}"]["ask_question"] = ask_question_model
+
+    if generate_query_model is not None:
+        config[f"scenario_{scenario_id}"][
+            "interpret_csv_query_results"
+        ] = interpret_csv_query_results_model
+
+    if ask_question_model is not None:
+        config[f"scenario_{scenario_id}"]["ask_question"] = ask_question_model
+
     globals()["current_llm"][f"scenario_{scenario_id}"] = None
 
     if text_embedding_model is not None:

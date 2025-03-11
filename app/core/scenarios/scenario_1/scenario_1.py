@@ -21,9 +21,9 @@ def init(state: OverallState) -> OverallState:
 
 async def ask_question(state: OverallState):
     logger.info(f"Question: {state["initial_question"]}")
-    result = await config.get_seq2seq_model(state["scenario_id"]).ainvoke(
-        system_prompt_template.format(initial_question=state["initial_question"])
-    )
+    result = await config.get_seq2seq_model(
+        scenario_id=state["scenario_id"], node_name="ask_question"
+    ).ainvoke(system_prompt_template.format(initial_question=state["initial_question"]))
     logger.info(f"Model's response:\n{result.content}")
     return {"messages": [HumanMessage(state["initial_question"]), result]}
 

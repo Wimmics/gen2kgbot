@@ -14,7 +14,10 @@ class TestDatasetAnswerQuestionRequest(BaseModel):
         scenario_id: int: The ID of the scenario to be used for the question generation.
     """
 
-    seq2seq_model: str
+    validate_question_model: str
+    ask_question_model: str
+    generate_query_model: str
+    interpret_csv_query_results_model: str
     text_embedding_model: Optional[str] = None
     question: str
     scenario_id: int = 6

@@ -18,7 +18,9 @@ logger = setup_logger(__package__, __file__)
 SCENARIO = "scenario_2"
 
 
-def validate_question_router(state: OverallState) -> Literal["generate_query", "__end__"]:
+def validate_question_router(
+    state: OverallState,
+) -> Literal["generate_query", "__end__"]:
     """
     Check the question validation results and decide whether to continue the process or stop.
 
@@ -59,7 +61,9 @@ async def generate_query(state: OverallState) -> OverallState:
     prompt = template.format()
     logger.debug(f"Prompt created:\n{prompt}")
 
-    result = await config.get_seq2seq_model(state["scenario_id"]).ainvoke(template.format())
+    result = await config.get_seq2seq_model(
+        scenario_id=state["scenario_id"], node_name="generate_query"
+    ).ainvoke(template.format())
     return OverallState({"messages": [HumanMessage(state["initial_question"]), result]})
 
 
