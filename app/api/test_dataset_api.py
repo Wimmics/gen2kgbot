@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.services.graph_mermaid_service import get_scenarios_schema
 from app.api.services.test_answer_dataset_service import judge_answer
 from app.core.utils.config_manager import (
-    get_configuration,
+    read_configuration,
     set_custom_scenario_configuration,
 )
 
@@ -152,7 +152,7 @@ def test_dataset_default_config():
             A dictionary containing the default configuration of the test dataset.
     """
 
-    yaml_data = get_configuration()
+    yaml_data = read_configuration()
 
     return json.dumps(yaml_data, indent=4)
 

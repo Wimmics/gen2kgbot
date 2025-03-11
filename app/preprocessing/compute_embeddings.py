@@ -6,19 +6,24 @@ It uses an embedding model defined in the configuration file.
 The output is saved to the directory defined in param "class_embeddings_subdir" in the configuration file.
 """
 
-from argparse import ArgumentParser
+from argparse import Namespace, ArgumentParser
 import faiss
 import os
 from tqdm import tqdm
 from langchain_community.vectorstores import FAISS, VectorStore
 from langchain_community.docstore import InMemoryDocstore
 from langchain_chroma import Chroma
+import app.core.utils.config_manager as config
+from app.core.utils.logger_manager import setup_logger
+
+logger = setup_logger(__package__, __file__)
 
 
-def setup_cli():
+def setup_cli() -> Namespace:
     parser = ArgumentParser(
         description="Compute the embeddings of the class descriptions previsouly generated."
     )
+    parser.add_argument("-p", "--params", type=str, help="Custom configuration file")
     parser.add_argument(
         "-m",
         "--model",
@@ -34,7 +39,6 @@ def setup_cli():
         default="classes_with_instances_description.txt",
     )
     parser.add_argument(
-        "-p",
         "--properties",
         type=str,
         help='File with the description of the properties. Must be in directory "{data_directory}/{KG short name}/preprocessing". Default: "properties_description.txt"',
@@ -43,19 +47,10 @@ def setup_cli():
     return parser.parse_args()
 
 
-arguments = setup_cli()
-
-# Import the config after initializing the argparse otherwise the one configured in config_manager takes over
-import app.core.utils.config_manager as config
-
-
 def chunks(lst: list, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
-
-
-logger = config.setup_logger(__package__, __file__)
 
 
 def get_vector_store(embed_name: str) -> VectorStore:
@@ -125,23 +120,29 @@ def compute_embeddings(embed_name: str, descriptions_file: str, output_dir: str)
 
 if __name__ == "__main__":
 
+    # Parse the command line arguments
+    args = setup_cli()
+
+    # Load the configuration
+    config.read_configuration(args)
+
     # The name of the embedding model refers to the configuration file
-    embed_name = arguments.model
+    embed_name = args.model
     embed_config = config.get_embedding_model_config_by_name(embed_name)
     vector_db_name = embed_config["vector_db"]
 
     # Compute the embeddings of the class descriptions
     description_file = os.path.join(
         config.get_preprocessing_directory(),
-        arguments.classes,
+        args.classes,
     )
     embeddings_dir = f"{config.get_embeddings_directory(vector_db_name)}/{config.get_class_embeddings_subdir()}"
-    #compute_embeddings(embed_name, description_file, embeddings_dir)
+    # compute_embeddings(embed_name, description_file, embeddings_dir)
 
     # Compute and save the embeddings of the property descriptions
     description_file = os.path.join(
         config.get_preprocessing_directory(),
-        arguments.properties,
+        args.properties,
     )
     embeddings_dir = f"{config.get_embeddings_directory(vector_db_name)}/{config.get_property_embeddings_subdir()}"
     compute_embeddings(embed_name, description_file, embeddings_dir)

@@ -1,8 +1,8 @@
-from app.core.utils.config_manager import get_configuration, get_scenario_module
+from app.core.utils.config_manager import read_configuration, get_scenario_module
 
 
 def get_scenarios_schema():
-    config = get_configuration()
+    config = read_configuration()
 
     scenario_ids = [
         int(id.split("_")[1]) for id in config.keys() if id.startswith("scenario_")

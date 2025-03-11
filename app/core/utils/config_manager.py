@@ -3,7 +3,7 @@ import os
 from typing import Literal
 from pathlib import Path
 import yaml
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -25,6 +25,9 @@ from app.core.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
+# Global config
+config = {}
+
 # Selected seq2seq LLM. Dictionary with the scenario id as key
 current_llm = {}
 
@@ -37,7 +40,7 @@ classes_vector_db = {}
 queries_vector_db = {}
 
 
-def setup_cli():
+def setup_cli() -> Namespace:
     parser = ArgumentParser(
         description="Process the scenario with the predifined or custom question and configuration."
     )
@@ -60,40 +63,40 @@ def setup_cli():
         "--prod",
         action="store_true",
         help="Load the production configuration file",
+        default=False,
     )
-    globals()["args"] = parser.parse_args()
+    return parser.parse_args()
 
 
-# Initialize the CLI
-args = None
-setup_cli()
-
-
-def get_configuration() -> dict:
+def read_configuration(args: Namespace = None):
     """
-    Load the configuration file
+    Load the configuration file and set it in global variable 'config'
     """
-    if args.params:
+    if args is None:
+        # Set the default configuration file
+        config_path = (
+            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+        )
+    elif args.params:
         config_path = args.params
-    elif args.prod:
+    elif args.__contains__("prod") and args.prod:
         config_path = (
             Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
         )
     else:
-        # Resolve the path to the configuration file
+        # Set the default configuration file
         config_path = (
             Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
 
-    logger.info(f"Using configuration file: {config_path}")
+    print(f"Using configuration file: {config_path}")
 
-    # Configure logging
-    with open(config_path, "rt", encoding="utf8") as f:
-        return yaml.safe_load(f.read())
-
-
-# Load the configuration
-config = get_configuration()
+    f = open(config_path, "rt", encoding="utf8")
+    config = yaml.safe_load(f.read())
+    cfg = {}
+    for key in config.keys():
+        cfg[key] = config[key]
+    globals()["config"] = cfg
 
 
 def get_kg_full_name() -> str:
@@ -573,27 +576,6 @@ def get_scenario_module(scenario_id: int):
     return scenario_module
 
 
-async def main(graph: CompiledStateGraph):
-    """
-    Entry point when invoked from the CLI
-
-    Args:
-        graph (CompiledStateGraph): Langraph compiled state graph
-    """
-
-    question = args.question
-    logger.info(f"Users' question: {question}")
-    state = await graph.ainvoke(input=InputState({"initial_question": question}))
-
-    logger.info("==============================================================")
-    for m in state["messages"]:
-        logger.info(m.pretty_repr())
-    if "last_generated_query" in state:
-        logger.info("==============================================================")
-        logger.info("last_generated_query: " + state["last_generated_query"])
-    logger.info("==============================================================")
-
-
 def set_custom_scenario_configuration(
     scenario_id: int,
     validate_question_model: str,
@@ -627,3 +609,30 @@ def set_custom_scenario_configuration(
         globals()["queries_vector_db"][f"scenario_{scenario_id}"] = None
 
     logger.info(f"Custom configuration set for scenario_{scenario_id}")
+
+
+async def main(graph: CompiledStateGraph):
+    """
+    Entry point when invoked from the CLI
+
+    Args:
+        graph (CompiledStateGraph): Langraph compiled state graph
+    """
+
+    # Parse the command line arguments
+    args = setup_cli()
+
+    # Load the configuration file
+    read_configuration(args)
+
+    question = args.question
+    logger.info(f"Users' question: {question}")
+    state = await graph.ainvoke(input=InputState({"initial_question": question}))
+
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")
