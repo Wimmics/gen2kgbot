@@ -1,5 +1,6 @@
 """
-This module generates a textual description of the classes from the ontologies in the form of tuples: (class, label, description).
+This module generates a textual description of the classes from the ontologies in the form (class, label, description),
+and of the properties .
 These descriptions will be used later on to compute per-class text embeddings.
 
 The ontology classes are retrieved from the KG SPARQL endpoint (param: kg_sparql_endpoint_url),
@@ -23,7 +24,9 @@ from app.core.utils.construct_util import run_sparql_query, fulliri_to_prefixed
 logger = config.setup_logger(__package__, __file__)
 
 
-get_classes_query = config.get_prefixes_as_sparql() + """
+get_classes_query = (
+    config.get_prefixes_as_sparql()
+    + """
 SELECT DISTINCT
     ?class
     (group_concat(distinct ?lbl_str, "--") as ?label)
@@ -75,10 +78,75 @@ WHERE {
 
 } GROUP BY ?class
 """
+)
 
 get_classes_with_instances_query = """
 SELECT distinct ?class WHERE { ?s a ?class. } LIMIT 100
 """
+
+get_properties_query = (
+    config.get_prefixes_as_sparql()
+    + """
+SELECT DISTINCT
+    ?prop
+	?domain ?range
+	(group_concat(distinct ?lbl_str) as ?label)
+    (group_concat(distinct ?comment_str) as ?description)
+WHERE {
+    {
+        { ?prop a owl:ObjectProperty. }
+        UNION
+        { ?prop a owl:DataTypeProperty. }
+        UNION
+        { ?prop rdfs:subPropertyOf []. }
+	}
+    
+  	OPTIONAL { ?prop rdfs:domain ?domain. FILTER(isIRI(?domain)) }
+    OPTIONAL { ?prop rdfs:range ?range. FILTER(isIRI(?range)) }
+
+    OPTIONAL {
+    	{ SELECT DISTINCT ?prop ?lbl WHERE {
+          { ?prop rdfs:label ?lbl }
+          UNION 
+          { ?prop skos:prefLabel ?lbl }
+          UNION 
+          { ?prop skos:altLabel ?lbl }
+          UNION 
+          { ?prop schema:name ?lbl }
+          UNION 
+          { ?prop schema:alternateName ?lbl }
+          UNION 
+          { ?prop obo:IAO_0000118 ?lbl }       # alt label
+          UNION 
+          { ?prop obo:OBI_9991118 ?lbl }       # IEDB alternative term
+          UNION 
+          { ?prop obo:OBI_0001847 ?lbl }       # ISA alternative term
+		}}
+	}
+	BIND(COALESCE(str(?lbl), "None") as ?lbl_str)
+
+    OPTIONAL {
+    	{ SELECT DISTINCT ?prop ?comment WHERE {
+          { ?prop rdfs:comment ?comment }
+          UNION 
+          { ?prop skos:definition ?comment }
+          UNION 
+          { ?prop dc:description ?comment }
+          UNION 
+          { ?prop dcterms:description ?comment }
+          UNION 
+          { ?prop schema:description ?comment }
+          UNION 
+          { ?prop obo:IAO_0000115 ?comment }   # definition
+		}}
+	}
+ 	BIND(COALESCE(str(?comment), "None") as ?comment_str)
+
+    #FILTER (?comment_str != "None" && ?lbl_str != "None")   # removes lots of deprecated classes, but is it a good idea?
+    
+} GROUP BY ?prop
+"""
+)
 
 
 def save_to_txt(filename: str, data: list):
@@ -94,7 +162,7 @@ def save_to_txt(filename: str, data: list):
 def make_classes_description() -> list[tuple]:
     """
     Get a description of all the classes from the ontologies as tuples (class, label, description).
-    The class URIs are prefixed based on the prefixes defined in the config file.
+    The URIs are prefixed based on the prefixes defined in the config file.
 
     Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
 
@@ -138,6 +206,66 @@ def make_classes_description() -> list[tuple]:
     return results
 
 
+def make_properties_description() -> list[tuple]:
+    """
+    Get a description of all the properties from the ontologies as tuples (prop, label, description).
+    The URIs are prefixed based on the prefixes defined in the config file.
+
+    Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
+
+    The query is done against the SPARQL endpoint that contains the ontologies
+    (ontologies_sparql_endpoint_url), which may be the same as the one that hosts
+    the KG itself (kg_sparql_endpoint_url), or not.
+
+    Returns:
+        list[tuple]: list of tuples (prop, label, description)
+    """
+    results = []
+    _sparql_results = run_sparql_query(
+        get_properties_query, config.get_ontologies_sparql_endpoint_url(), timeout=3600
+    )
+    if _sparql_results is not None:
+        for result in _sparql_results:
+            if (
+                "prop" in result.keys()
+                and "label" in result.keys()
+                and "description" in result.keys()
+            ):
+                label = (
+                    None
+                    if result["label"]["value"] == "None"
+                    else result["label"]["value"]
+                )
+
+                range = (
+                    None if "range" not in result.keys() else result["range"]["value"]
+                )
+                domain = (
+                    None if "domain" not in result.keys() else result["domain"]["value"]
+                )
+
+                descr = ""
+                if domain is not None:
+                    descr += f"Subject is of type {fulliri_to_prefixed(domain)}. "
+                if range is not None:
+                    descr += f"Object is of type {fulliri_to_prefixed(range)}. "
+                if result["description"]["value"] != "None":
+                    descr += result["description"]["value"]
+                if descr == "":
+                    descr = None
+
+                results.append(
+                    (
+                        fulliri_to_prefixed(result["prop"]["value"]),
+                        label,
+                        descr,
+                    )
+                )
+            else:
+                logger.warning(f"Unexpected SPARQL result format: {result}")
+    return results
+
+
 def get_classes_with_instances() -> list[str]:
     """
     Retrieve the list of classes that have at least one instance in the KG.
@@ -165,28 +293,43 @@ def get_classes_with_instances() -> list[str]:
 
 if __name__ == "__main__":
 
-    # Collect the description of the classes of interest and save them
-    class_descr_txt_file = os.path.join(
-        config.get_classes_preprocessing_directory(), "classes_description.txt"
+    # Collect the description of the properties and save them
+    descr_txt_file = os.path.join(
+        config.get_preprocessing_directory(), "properties_description.txt"
     )
-    classes_description = []
-    if os.path.exists(class_descr_txt_file):
-        logger.info(f"Reading class descriptions from {class_descr_txt_file}")
-        f = open(class_descr_txt_file, "r", encoding="utf8")
-        classes_description = [eval(line) for line in f.readlines()]
+    descriptions = []
+    if os.path.exists(descr_txt_file):
+        logger.info(f"Reading property descriptions from {descr_txt_file}")
+        f = open(descr_txt_file, "r", encoding="utf8")
+        descriptions = [eval(line) for line in f.readlines()]
+        f.close()
+    else:
+        logger.info(f"Retrieving property descriptions from the SPARQL endpoint")
+        descriptions = make_properties_description()
+        save_to_txt(descr_txt_file, descriptions)
+
+    logger.info(f"Retrieved {len(descriptions)} (property,label,description) tuples.")
+
+    # Collect the description of the classes and save them
+    descr_txt_file = os.path.join(
+        config.get_preprocessing_directory(), "classes_description.txt"
+    )
+    descriptions = []
+    if os.path.exists(descr_txt_file):
+        logger.info(f"Reading class descriptions from {descr_txt_file}")
+        f = open(descr_txt_file, "r", encoding="utf8")
+        descriptions = [eval(line) for line in f.readlines()]
         f.close()
     else:
         logger.info(f"Retrieving class descriptions from the SPARQL endpoint")
-        classes_description = make_classes_description()
-        save_to_txt(class_descr_txt_file, classes_description)
+        descriptions = make_classes_description()
+        save_to_txt(descr_txt_file, descriptions)
 
-    logger.info(
-        f"Retrieved {len(classes_description)} (class,label,description) tuples."
-    )
+    logger.info(f"Retrieved {len(descriptions)} (class,label,description) tuples.")
 
     # Retrieve the classes with at least 1 instance in the KG
     classes_with_instances_file = os.path.join(
-        config.get_classes_preprocessing_directory(), "classes_with_instances.txt"
+        config.get_preprocessing_directory(), "classes_with_instances.txt"
     )
     classes_with_instances = []
     if os.path.exists(classes_with_instances_file):
@@ -210,7 +353,7 @@ if __name__ == "__main__":
 
     # Filter classes_description to keep only the classes with instances
     classes_description_filtered = []
-    for c in classes_description:
+    for c in descriptions:
         if c[0] in classes_with_instances:
             classes_description_filtered.append(c)
         else:
@@ -220,7 +363,7 @@ if __name__ == "__main__":
         f"Keeping {len(classes_description_filtered)} classes after removing those with no instance."
     )
     classes_with_instances_description_file = os.path.join(
-        config.get_classes_preprocessing_directory(),
+        config.get_preprocessing_directory(),
         "classes_with_instances_description.txt",
     )
     save_to_txt(classes_with_instances_description_file, classes_description_filtered)

@@ -58,14 +58,11 @@ excluded_classes_namespaces:
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"
 
-# Name of the subdirectory that contains the pre-computed embeddings of classes context.
+# Name of the subdirectoties that contain the pre-computed embeddings of classes, properties and queries.
 # Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
 # e.g. ./data/idsm/faiss_embeddings/
-class_embeddings_subdir: "classes_nomic"
-
-# Name of the subdirectory that contains the pre-computed embeddings of SPARQL queries.
-# Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
-# e.g. ./data/idsm/faiss_embeddings/
+class_embeddings_subdir: "classes_with_instance_nomic"
+property_embeddings_subdir: "properties_nomic"
 queries_embeddings_subdir: "sparql_queries_nomic"
 
 # Path to a usable temporary directory
