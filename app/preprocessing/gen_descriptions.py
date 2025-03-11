@@ -89,7 +89,7 @@ get_properties_query = (
     + """
 SELECT DISTINCT
     ?prop
-	?domain ?range
+	?domain ?domain_lbl ?range ?range_lbl
 	(group_concat(distinct ?lbl_str) as ?label)
     (group_concat(distinct ?comment_str) as ?description)
 WHERE {
@@ -101,8 +101,14 @@ WHERE {
         { ?prop rdfs:subPropertyOf []. }
 	}
     
-  	OPTIONAL { ?prop rdfs:domain ?domain. FILTER(isIRI(?domain)) }
-    OPTIONAL { ?prop rdfs:range ?range. FILTER(isIRI(?range)) }
+  	OPTIONAL { 
+        ?prop rdfs:domain ?domain. FILTER(isIRI(?domain))
+        OPTIONAL { ?domain rdfs:label ?domain_lbl }
+    }
+    OPTIONAL { 
+        ?prop rdfs:range ?range. FILTER(isIRI(?range)) 
+        OPTIONAL { ?range rdfs:label ?range_lbl }
+    }
 
     OPTIONAL {
     	{ SELECT DISTINCT ?prop ?lbl WHERE {
@@ -231,28 +237,44 @@ def make_properties_description() -> list[tuple]:
                 and "label" in result.keys()
                 and "description" in result.keys()
             ):
-                label = (
+
+                domain_range = ""
+
+                domain = ""
+                if "domain_lbl" in result.keys():
+                    domain += result["domain_lbl"]["value"]
+                    if "domain" in result.keys():
+                        domain += f" ({result["domain"]["value"]})"
+                else:
+                    if "domain" in result.keys():
+                        domain += result["domain"]["value"]
+                if domain.strip() != "":
+                    domain_range += f"The subject of this property is a {fulliri_to_prefixed(domain.strip())}. "
+
+                range = ""
+                if "range_lbl" in result.keys():
+                    range += result["range_lbl"]["value"]
+                    if "range" in result.keys():
+                        range += f" ({result["range"]["value"]})"
+                else:
+                    if "range" in result.keys():
+                        range += result["range"]["value"]
+                if range.strip() != "":
+                    domain_range += f"The object of this property is a {fulliri_to_prefixed(range.strip())}."
+
+                label = ""
+                if result["label"]["value"] != "None":
+                    label = result["label"]["value"] + ". "
+                if domain_range != "":
+                    label += domain_range
+                if label.strip() == "":
+                    label = None
+
+                descr = (
                     None
-                    if result["label"]["value"] == "None"
-                    else result["label"]["value"]
+                    if result["description"]["value"] == "None"
+                    else result["description"]["value"]
                 )
-
-                range = (
-                    None if "range" not in result.keys() else result["range"]["value"]
-                )
-                domain = (
-                    None if "domain" not in result.keys() else result["domain"]["value"]
-                )
-
-                descr = ""
-                if domain is not None:
-                    descr += f"Subject is of type {fulliri_to_prefixed(domain)}. "
-                if range is not None:
-                    descr += f"Object is of type {fulliri_to_prefixed(range)}. "
-                if result["description"]["value"] != "None":
-                    descr += result["description"]["value"]
-                if descr == "":
-                    descr = None
 
                 results.append(
                     (
