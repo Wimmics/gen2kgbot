@@ -60,12 +60,12 @@ data_directory: "./data"
 
 # Name of the subdirectory that contains the pre-computed embeddings of classes context.
 # Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
-# ./data/idsm/faiss_embeddings/
-class_embeddings_subdir: "classes_nomic"
+# e.g. ./data/idsm/faiss_embeddings/
+class_embeddings_subdir: "classes_with_instance_nomic"
 
-# Name of the subdirectory that contains the pre-computed embeddings of of SPARQL queries.
+# Name of the subdirectory that contains the pre-computed embeddings of SPARQL queries.
 # Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
-# ./data/idsm/faiss_embeddings/
+# e.g. ./data/idsm/faiss_embeddings/
 queries_embeddings_subdir: "sparql_queries_nomic"
 
 # Path to a usable temporary directory

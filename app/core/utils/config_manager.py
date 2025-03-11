@@ -126,6 +126,16 @@ def get_known_prefixes() -> dict:
     return config["prefixes"]
 
 
+def get_prefixes_as_sparql() -> str:
+    """
+    Get the prefixes and associated namespaces as SPARQL prefix declarations
+    """
+    prefixes = ""
+    for prefix, ns in config["prefixes"].items():
+        prefixes += f"PREFIX {prefix}: <{ns}>\n"
+    return prefixes + "\n"
+
+
 def get_max_similar_classes() -> int:
     if "max_similar_classes" in config.keys():
         return config["max_similar_classes"]
@@ -511,9 +521,7 @@ def get_class_context_vector_db(scenario_id: str) -> VectorStore:
     ):
         return classes_vector_db[scenario_id]
 
-    db = create_vector_db_by_scenario(
-        scenario_id, config["class_embeddings_subdir"]
-    )
+    db = create_vector_db_by_scenario(scenario_id, config["class_embeddings_subdir"])
     logger.info("Classes context vector DB initialized.")
     globals()["classes_vector_db"][scenario_id] = db
     return db

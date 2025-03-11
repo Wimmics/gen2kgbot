@@ -6,9 +6,9 @@ The ontology classes are retrieved from the KG SPARQL endpoint (param: kg_sparql
 or from a dedicated SPARQL endpoint if defined (param: ontologies_sparql_endpoint_url).
 
 Several files are generated in directory `{data_directory}/{KG short name}/preprocessing`:
-- `classes_description.txt`: descriptions of all the classes found in the ontologies
+- `classes_description.txt`: description of all the classes found in the ontologies
 - `classes_with_instances.txt`: list of classes that have at least one instance in the KG
-- `classes_with_instances_description.txt`: descriptions of the classes that have at least one instance in the KG
+- `classes_with_instances_description.txt`: description of the classes that have at least one instance in the KG
 
 If files `classes_description.txt` or `classes_with_instances.txt` already exist, they are simply reloaded.
 
@@ -23,7 +23,7 @@ from app.core.utils.construct_util import run_sparql_query, fulliri_to_prefixed
 logger = config.setup_logger(__package__, __file__)
 
 
-get_classes_query = """
+get_classes_query = config.get_prefixes_as_sparql() + """
 SELECT DISTINCT
     ?class
     (group_concat(distinct ?lbl_str, "--") as ?label)
@@ -56,7 +56,7 @@ WHERE {
 
     OPTIONAL {
     	{ SELECT DISTINCT ?class ?comment WHERE {
-          { ?class rdfs:commentX ?comment }
+          { ?class rdfs:comment ?comment }
           UNION 
           { ?class skos:definition ?comment }
           UNION 
@@ -70,7 +70,9 @@ WHERE {
 		}}
 	}
  	BIND(COALESCE(str(?comment), "None") as ?comment_str)
-    
+
+    #FILTER (?comment_str != "None" && ?lbl_str != "None")   # removes lots of deprecated classes, but is it a good idea?
+
 } GROUP BY ?class
 """
 
@@ -169,12 +171,12 @@ if __name__ == "__main__":
     )
     classes_description = []
     if os.path.exists(class_descr_txt_file):
-        logger.info(f"Reading classes description from {class_descr_txt_file}")
+        logger.info(f"Reading class descriptions from {class_descr_txt_file}")
         f = open(class_descr_txt_file, "r", encoding="utf8")
         classes_description = [eval(line) for line in f.readlines()]
         f.close()
     else:
-        logger.info(f"Retrieving classes description from the SPARQL endpoint")
+        logger.info(f"Retrieving class descriptions from the SPARQL endpoint")
         classes_description = make_classes_description()
         save_to_txt(class_descr_txt_file, classes_description)
 
