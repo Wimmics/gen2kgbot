@@ -282,13 +282,13 @@ def create_query_generation_prompt(
     return result_state
 
 
-def generate_query(state: OverallState):
+async def generate_query(state: OverallState):
     """
     Invoke the LLM with the prompt asking to create a SPARQL query
     """
     result = config.get_seq2seq_model(
         scenario_id=state["scenario_id"], node_name="generate_query"
-    ).invoke(state["query_generation_prompt"])
+    ).ainvoke(state["query_generation_prompt"])
     # logger.debug(f"Query generation response:\n{result.content}")
     return {"messages": result}
 
@@ -371,7 +371,7 @@ def run_query(state: OverallState) -> OverallState:
         }
 
 
-def interpret_csv_query_results(state: OverallState) -> OverallState:
+async def interpret_csv_query_results(state: OverallState) -> OverallState:
     """
     Generate a prompt asking the interpret the SPARQL CSV results and invoke the LLM.
 
@@ -408,7 +408,7 @@ def interpret_csv_query_results(state: OverallState) -> OverallState:
     logger.info(f"Results interpretation prompt created:\n{prompt}.")
     result = config.get_seq2seq_model(
         scenario_id=state["scenario_id"], node_name="interpret_csv_query_results"
-    ).invoke(prompt)
+    ).ainvoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
     return OverallState({"messages": result, "results_interpretation": result})
@@ -424,7 +424,7 @@ def save_full_context(graph: Graph):
     logger.info(f"Graph of selected classes context saved to {graph_file}")
 
 
-def validate_question(state: OverallState) -> OverallState:
+async def validate_question(state: OverallState) -> OverallState:
     """
     Check if a question fits the context of the current Knowledge Graph. Used in all the scenarios.
 
@@ -459,7 +459,7 @@ def validate_question(state: OverallState) -> OverallState:
     logger.debug(f"Validation question prompt created:\n{prompt}.")
     result = config.get_seq2seq_model(
         scenario_id=state["scenario_id"], node_name="validate_question"
-    ).invoke(prompt)
+    ).ainvoke(prompt)
 
     logger.debug(f"Validation of the question results:\n{result.content}")
 
