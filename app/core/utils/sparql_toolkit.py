@@ -10,9 +10,7 @@ import app.core.utils.config_manager as config
 logger = setup_logger(__package__, __file__)
 
 
-def run_sparql_query(
-    query: str, endpoint_url: str = config.get_kg_sparql_endpoint_url()
-) -> str:
+def run_sparql_query(query: str, endpoint_url: str = None) -> str:
     """
     Submit a SPARQL query to the endpoint and return the result in CSV SPARQL Results format.
 
@@ -26,6 +24,8 @@ def run_sparql_query(
         ValueError: non parsable SPARQL query or any other error
     """
 
+    if endpoint_url is None:
+        endpoint_url = config.get_sparql_endpoint()
     try:
         logger.debug(f"Submiting SPARQL query:\n{query}")
         logger.debug(f"Submiting to SPARQL endpoint: {endpoint_url}")

@@ -3,7 +3,7 @@ import os
 from typing import Literal
 from pathlib import Path
 import yaml
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from langchain_huggingface import ChatHuggingFace, HuggingFaceEndpoint
 from langchain_ollama import ChatOllama, OllamaEmbeddings
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -25,6 +25,9 @@ from app.core.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
+# Global config. Shall be initialized by read_configuration()
+config = None
+
 # Selected seq2seq LLM. Dictionary with the scenario id as key
 current_llm = {}
 
@@ -37,7 +40,7 @@ classes_vector_db = {}
 queries_vector_db = {}
 
 
-def setup_cli():
+def setup_cli() -> Namespace:
     parser = ArgumentParser(
         description="Process the scenario with the predifined or custom question and configuration."
     )
@@ -60,40 +63,59 @@ def setup_cli():
         "--prod",
         action="store_true",
         help="Load the production configuration file",
+        default=False,
     )
-    globals()["args"] = parser.parse_args()
-
-
-# Initialize the CLI
-args = None
-setup_cli()
+    return parser.parse_args()
 
 
 def get_configuration() -> dict:
+    return config
+
+
+def read_configuration(args: Namespace = None):
     """
-    Load the configuration file
+    Load the configuration file and set it in global variable 'config'
+
+    Args:
+        args (Namespace): command line arguments. Optional. If not provided,
+            the default configuration file is used.
     """
-    if args.params:
-        config_path = args.params
-    elif args.prod:
-        config_path = (
-            Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
-        )
-    else:
-        # Resolve the path to the configuration file
+    if args is None:
+        # Set the default configuration file
         config_path = (
             Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
+        logger.info(f"Loading default configuration file: {config_path}")
+    elif args.params:
+        config_path = args.params
+        logger.info(f"Loading custom configuration file: {config_path}")
+    elif args.__contains__("prod") and args.prod:
+        config_path = (
+            Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
+        )
+        logger.info(f"Loading configuration file: {config_path}")
+    else:
+        # Set the default configuration file
+        config_path = (
+            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+        )
+        logger.info(f"Loading default configuration file: {config_path}")
 
-    logger.info(f"Using configuration file: {config_path}")
-
-    # Configure logging
     with open(config_path, "rt", encoding="utf8") as f:
-        return yaml.safe_load(f.read())
+        config = yaml.safe_load(f.read())
+        f.close()
+
+    # Make a deep copy of the configuration and assign it to the global variable
+    cfg = {}
+    for key in config.keys():
+        cfg[key] = config[key]
+    globals()["config"] = cfg
 
 
-# Load the configuration
-config = get_configuration()
+# Load the default config file.
+# Necessary when using Langragraph Studio as it loads the scenarios without CLI arguments.
+# If calling from CLI, the default config will be overridden.
+read_configuration()
 
 
 def get_kg_full_name() -> str:
@@ -189,10 +211,10 @@ def get_class_context_cache_directory() -> Path:
     return path
 
 
-def get_classes_preprocessing_directory() -> Path:
+def get_preprocessing_directory() -> Path:
     """
-    Generate the path for the directory where to store the classes pkls, and
-    create the directory structure if it does not exist.
+    Generate the path for the directory where to store the class and property textual descriptions.
+    Create the directory structure if it does not exist.
     """
     str_path = (
         config["data_directory"] + f"/{get_kg_short_name().lower()}/preprocessing"
@@ -209,6 +231,10 @@ def get_classes_preprocessing_directory() -> Path:
 
 def get_class_embeddings_subdir() -> str:
     return config["class_embeddings_subdir"]
+
+
+def get_property_embeddings_subdir() -> str:
+    return config["property_embeddings_subdir"]
 
 
 def get_temp_directory() -> Path:
@@ -569,27 +595,6 @@ def get_scenario_module(scenario_id: int):
     return scenario_module
 
 
-async def main(graph: CompiledStateGraph):
-    """
-    Entry point when invoked from the CLI
-
-    Args:
-        graph (CompiledStateGraph): Langraph compiled state graph
-    """
-
-    question = args.question
-    logger.info(f"Users' question: {question}")
-    state = await graph.ainvoke(input=InputState({"initial_question": question}))
-
-    logger.info("==============================================================")
-    for m in state["messages"]:
-        logger.info(m.pretty_repr())
-    if "last_generated_query" in state:
-        logger.info("==============================================================")
-        logger.info("last_generated_query: " + state["last_generated_query"])
-    logger.info("==============================================================")
-
-
 def set_custom_scenario_configuration(
     scenario_id: int,
     validate_question_model: str,
@@ -624,3 +629,30 @@ def set_custom_scenario_configuration(
 
     logger.info(f"Custom configuration set for scenario_{scenario_id}")
     logger.debug(f"The custom configuration for scenario_{scenario_id} is : {config[f"scenario_{scenario_id}"]}")
+
+
+async def main(graph: CompiledStateGraph):
+    """
+    Entry point when invoked from the CLI
+
+    Args:
+        graph (CompiledStateGraph): Langraph compiled state graph
+    """
+
+    # Parse the command line arguments
+    args = setup_cli()
+
+    # Load the configuration file and assign to global variable 'config'
+    read_configuration(args)
+
+    question = args.question
+    logger.info(f"Users' question: {question}")
+    state = await graph.ainvoke(input=InputState({"initial_question": question}))
+
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")

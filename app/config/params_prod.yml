@@ -17,12 +17,16 @@ ontologies_sparql_endpoint_url: "http://gen2kgbot.i3s.unice.fr/corese"
 # Prefixes and namespaces to be used in the Turtle and SPARQL queries
 prefixes:
   bao:            "http://www.bioassayontology.org/bao#"
+  biopax:         "http://www.biopax.org/release/biopax-level3.owl#"
   cito:           "http://purl.org/spar/cito/"
   chembl:         "http://rdf.ebi.ac.uk/terms/chembl#"
   dc:             "http://purl.org/dc/elements/1.1/"
   dcterms:        "http://purl.org/dc/terms/"
   enpkg:          "https://enpkg.commons-lab.org/kg/"
   enpkg_module:   "https://enpkg.commons-lab.org/module/"
+  fabio:          "http://purl.org/spar/fabio/"
+  foaf:           "http://xmlns.com/foaf/0.1/"
+  frbr:           "http://purl.org/vocab/frbr/core#"
   ndfrt:          "http://purl.bioontology.org/ontology/NDFRT/"
   obo:            "http://purl.obolibrary.org/obo/"
   owl:            "http://www.w3.org/2002/07/owl#"
@@ -58,14 +62,11 @@ excluded_classes_namespaces:
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"
 
-# Name of the subdirectory that contains the pre-computed embeddings of classes context.
+# Name of the subdirectoties that contain the pre-computed embeddings of classes, properties and queries.
 # Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
 # e.g. ./data/idsm/faiss_embeddings/
-class_embeddings_subdir: "classes_nomic"
-
-# Name of the subdirectory that contains the pre-computed embeddings of SPARQL queries.
-# Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
-# e.g. ./data/idsm/faiss_embeddings/
+class_embeddings_subdir: "classes_with_instance_nomic"
+property_embeddings_subdir: "properties_nomic"
 queries_embeddings_subdir: "sparql_queries_nomic"
 
 # Path to a usable temporary directory
