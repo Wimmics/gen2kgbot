@@ -66,7 +66,7 @@ data_directory: "./data"
 # These names must be consistent with the chosen embedding model names in section text_embedding_models
 # Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
 # e.g. ./data/idsm/faiss_embeddings/
-class_embeddings_subdir: "classes_with_instance_nomic"
+class_embeddings_subdir: "classes_nomic"
 property_embeddings_subdir: "properties_nomic"
 queries_embeddings_subdir: "sparql_queries_nomic"
 

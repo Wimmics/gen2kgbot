@@ -53,13 +53,6 @@ def setup_cli() -> Namespace:
     )
     parser.add_argument("-p", "--params", type=str, help="Custom configuration file")
     parser.add_argument(
-        "dev",
-        nargs="*",
-        default="",
-        type=str,
-        help="Ignored. Fake argument to allow Langgraph Studio start with option dev",
-    )
-    parser.add_argument(
         "--prod",
         action="store_true",
         help="Load the production configuration file",
@@ -81,7 +74,7 @@ def read_configuration(args: Namespace = None):
             the default configuration file is used.
     """
     if args is None:
-        # Set the default configuration file
+        # Set the default configuration file: used when starting from Langgraph Studio
         config_path = (
             Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
