@@ -293,13 +293,20 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
     """
     Create a seq2seq LLM based on the scenario configuration
     """
+    logger.debug(
+        f"Getting seq2seq model for scenario: {scenario_id} and Node: {node_name}"
+    )
 
     if (
         scenario_id in current_llm.keys()
+        and current_llm[scenario_id] is not None
         and node_name in dict(current_llm[scenario_id]).keys()
         and current_llm[scenario_id][node_name] is not None
     ):
+        logger.debug(f"Using cached current_llm for scenario: {current_llm}")
         return current_llm[scenario_id][node_name]
+
+    logger.debug(f"Current LLM config used: {current_llm}")
 
     llm_id = config[scenario_id][node_name]
     llm_config = config["seq2seq_models"][llm_id]
@@ -613,22 +620,29 @@ def set_custom_scenario_configuration(
         config[f"scenario_{scenario_id}"]["ask_question"] = ask_question_model
 
     if generate_query_model is not None:
+        config[f"scenario_{scenario_id}"]["generate_query"] = generate_query_model
+
+    if interpret_csv_query_results_model is not None:
         config[f"scenario_{scenario_id}"][
             "interpret_csv_query_results"
         ] = interpret_csv_query_results_model
 
-    if ask_question_model is not None:
-        config[f"scenario_{scenario_id}"]["ask_question"] = ask_question_model
-
-    globals()["current_llm"][f"scenario_{scenario_id}"] = None
+    if f"scenario_{scenario_id}" in globals()["current_llm"].keys():
+        del globals()["current_llm"][f"scenario_{scenario_id}"]
 
     if text_embedding_model is not None:
         config[f"scenario_{scenario_id}"]["text_embedding_model"] = text_embedding_model
-        globals()["classes_vector_db"][f"scenario_{scenario_id}"] = None
-        globals()["queries_vector_db"][f"scenario_{scenario_id}"] = None
+
+        if f"scenario_{scenario_id}" in globals()["classes_vector_db"].keys():
+            del globals()["classes_vector_db"][f"scenario_{scenario_id}"]
+
+        if f"scenario_{scenario_id}" in globals()["queries_vector_db"].keys():
+            globals()["queries_vector_db"][f"scenario_{scenario_id}"]
 
     logger.info(f"Custom configuration set for scenario_{scenario_id}")
-    logger.debug(f"The custom configuration for scenario_{scenario_id} is : {config[f"scenario_{scenario_id}"]}")
+    logger.debug(
+        f"The custom configuration for scenario_{scenario_id} is : {config[f"scenario_{scenario_id}"]}"
+    )
 
 
 async def main(graph: CompiledStateGraph):

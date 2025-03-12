@@ -286,7 +286,7 @@ async def generate_query(state: OverallState):
     """
     Invoke the LLM with the prompt asking to create a SPARQL query
     """
-    result = config.get_seq2seq_model(
+    result = await config.get_seq2seq_model(
         scenario_id=state["scenario_id"], node_name="generate_query"
     ).ainvoke(state["query_generation_prompt"])
     # logger.debug(f"Query generation response:\n{result.content}")
@@ -406,7 +406,7 @@ async def interpret_csv_query_results(state: OverallState) -> OverallState:
 
     prompt = template.format()
     logger.info(f"Results interpretation prompt created:\n{prompt}.")
-    result = config.get_seq2seq_model(
+    result = await config.get_seq2seq_model(
         scenario_id=state["scenario_id"], node_name="interpret_csv_query_results"
     ).ainvoke(prompt)
 
@@ -457,7 +457,7 @@ async def validate_question(state: OverallState) -> OverallState:
     prompt = template.format()
 
     logger.debug(f"Validation question prompt created:\n{prompt}.")
-    result = config.get_seq2seq_model(
+    result = await config.get_seq2seq_model(
         scenario_id=state["scenario_id"], node_name="validate_question"
     ).ainvoke(prompt)
 
