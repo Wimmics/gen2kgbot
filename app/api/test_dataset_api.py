@@ -18,7 +18,9 @@ from app.api.services.graph_mermaid_service import get_scenarios_schema
 from app.api.services.test_answer_dataset_service import judge_answer
 from app.core.utils.config_manager import (
     get_configuration,
+    read_configuration,
     set_custom_scenario_configuration,
+    setup_cli,
 )
 
 
@@ -151,7 +153,8 @@ def test_dataset_default_config():
         dict:
             A dictionary containing the default configuration of the test dataset.
     """
-
+    args = setup_cli()
+    read_configuration(args=args)
     yaml_data = get_configuration()
 
     return json.dumps(yaml_data, indent=4)
