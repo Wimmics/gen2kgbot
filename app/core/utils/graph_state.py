@@ -95,4 +95,4 @@ class OverallState(MessagesState, InputState):
 
     results_interpretation: str
 
-    selected_classes_context: Annotated[list[JudgeState], operator.add]
+    query_judgements: Annotated[list[JudgeState], operator.add]
