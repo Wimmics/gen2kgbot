@@ -112,10 +112,10 @@ def test_dataset_answer_question(
     """
     set_custom_scenario_configuration(
         scenario_id=test_request.scenario_id,
-        seq2seq_model=test_request.validate_question_model,
-        seq2seq_model=test_request.ask_question_model,
-        seq2seq_model=test_request.generate_query_model,
-        seq2seq_model=test_request.interpret_csv_query_results_model,
+        validate_question_model=test_request.validate_question_model,
+        ask_question_model=test_request.ask_question_model,
+        generate_query_model=test_request.generate_query_model,
+        interpret_csv_query_results_model=test_request.interpret_csv_query_results_model,
         text_embedding_model=test_request.text_embedding_model,
     )
     return StreamingResponse(

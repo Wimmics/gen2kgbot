@@ -456,7 +456,7 @@ def validate_question(state: OverallState) -> OverallState:
 
     prompt = template.format()
 
-    logger.debug(f"Validation quesiton prompt created:\n{prompt}.")
+    logger.debug(f"Validation question prompt created:\n{prompt}.")
     result = config.get_seq2seq_model(
         scenario_id=state["scenario_id"], node_name="validate_question"
     ).invoke(prompt)

@@ -15,9 +15,9 @@ class TestDatasetAnswerQuestionRequest(BaseModel):
     """
 
     validate_question_model: str
-    ask_question_model: str
-    generate_query_model: str
-    interpret_csv_query_results_model: str
+    ask_question_model: Optional[str] = None
+    generate_query_model: Optional[str] = None
+    interpret_csv_query_results_model: Optional[str] = None
     text_embedding_model: Optional[str] = None
     question: str
     scenario_id: int = 6

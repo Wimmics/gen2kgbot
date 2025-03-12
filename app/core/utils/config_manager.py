@@ -623,3 +623,4 @@ def set_custom_scenario_configuration(
         globals()["queries_vector_db"][f"scenario_{scenario_id}"] = None
 
     logger.info(f"Custom configuration set for scenario_{scenario_id}")
+    logger.debug(f"The custom configuration for scenario_{scenario_id} is : {config[f"scenario_{scenario_id}"]}")
