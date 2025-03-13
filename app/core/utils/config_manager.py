@@ -387,14 +387,18 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
         )
 
     elif server_type == "hugface":
+        base_url = llm_config["base_url"]
+
         hfe = HuggingFaceEndpoint(
-            repo_id=model_id,
+            model=model_id,
             task="text-generation",
             max_new_tokens=512,
             do_sample=False,
             repetition_penalty=1.03,
             top_p=top_p,
+            inference_server_url=base_url
         )
+
         llm_config = ChatHuggingFace(llm=hfe, verbose=True)
 
     elif server_type == "google":

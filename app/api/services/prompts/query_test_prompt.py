@@ -14,9 +14,8 @@ Your evaluation should be structured in two parts:
   - 10 = Fully correct and optimal.
 
 2. Justification:
-  - Provide a concise and direct explanation of your score.
+  - Provide a detailed explanation of your score.
   - Focus on accuracy, completeness, efficiency, and syntax correctness.
-  - Avoid unnecessary details—keep it clear and to the point.
 
 Question:
 {question}
