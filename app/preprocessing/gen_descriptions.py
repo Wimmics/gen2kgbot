@@ -1,21 +1,23 @@
 """
-This module generates a textual description of the classes from the ontologies in the form (class, label, description),
-and of the properties .
+This module generates a textual description of the classes in the form (class uri, label, description),
+and of the properties in the form (property uri, label, description).
 These descriptions will be used later on to compute per-class text embeddings.
 
-The ontology classes are retrieved from the KG SPARQL endpoint (param: kg_sparql_endpoint_url),
-or from a dedicated SPARQL endpoint if defined (param: ontologies_sparql_endpoint_url).
+The ontology classes and properties are retrieved from the KG SPARQL endpoint (param: kg_sparql_endpoint_url),
+or from a separate SPARQL endpoint if defined (param: ontologies_sparql_endpoint_url).
 
-Several files are generated in directory `{data_directory}/{KG short name}/preprocessing`:
-- `classes_description.txt`: description of all the classes found in the ontologies
-- `classes_with_instances.txt`: list of classes that have at least one instance in the KG
-- `classes_with_instances_description.txt`: description of the classes that have at least one instance in the KG
+Output files are generated in directory `{data_directory}/{KG short name}/preprocessing`. By default these are:
+- `properties_description.txt`: description of all the properties found in the ontologies;
+- `classes_description.txt`: description of all the classes found in the ontologies;
+- `classes_with_instances.txt`: list of classes that have at least one instance in the KG;
+- `classes_with_instances_description.txt`: subset of `classes_description.txt` with the classes
+that have at least one instance in the KG.
+If the output files already exist, they are simply reloaded.
 
-If files `classes_description.txt` or `classes_with_instances.txt` already exist, they are simply reloaded.
-
-Either `classes_description.txt` or `classes_with_instances_description.txt` shall be used to compute the embeddings of the classes.
+The configuration file (default: `app/config/params.yaml`) prodives the SPARQL endpoint(s) and known prefixes.
 """
 
+from argparse import Namespace, ArgumentParser
 import os
 import app.core.utils.config_manager as config
 from app.core.utils.construct_util import run_sparql_query, fulliri_to_prefixed
@@ -148,11 +150,42 @@ WHERE {
 	}
  	BIND(COALESCE(str(?comment), "None") as ?comment_str)
 
-    #FILTER (?comment_str != "None" && ?lbl_str != "None")   # removes lots of deprecated classes, but is it a good idea?
+    #FILTER (?comment_str != "None" && ?lbl_str != "None")
     
 } GROUP BY ?prop
 """
 )
+
+
+def setup_cli() -> Namespace:
+    parser = ArgumentParser(
+        description="Generate a textual description of the classes and properties found in the ontologies."
+    )
+    parser.add_argument(
+        "-p",
+        "--params",
+        type=str,
+        help="Custom configuration file. Default: to app/config/params.yaml.",
+    )
+    parser.add_argument(
+        "--classes",
+        type=str,
+        help='Output file for the description of the classes. Will be created in "{data_directory}/{KG short name}/preprocessing". Default: "classes_description.txt"',
+        default="classes_description.txt",
+    )
+    parser.add_argument(
+        "--classes_with_instances",
+        type=str,
+        help='Output file for the description of the classes that have at least one instance. Will be created in "{data_directory}/{KG short name}/preprocessing". Default: "classes_with_instances_description.txt"',
+        default="classes_with_instances_description.txt",
+    )
+    parser.add_argument(
+        "--properties",
+        type=str,
+        help='Output file for the description of the properties. Will be created in "{data_directory}/{KG short name}/preprocessing". Default: "properties_description.txt"',
+        default="properties_description.txt",
+    )
+    return parser.parse_args()
 
 
 def save_to_txt(filename: str, data: list):
@@ -167,7 +200,7 @@ def save_to_txt(filename: str, data: list):
 
 def make_classes_description() -> list[tuple]:
     """
-    Get a description of all the classes from the ontologies as tuples (class, label, description).
+    Get a description of all the classes from the ontologies as tuples (class uri, label, description).
     The URIs are prefixed based on the prefixes defined in the config file.
 
     Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
@@ -177,7 +210,7 @@ def make_classes_description() -> list[tuple]:
     the KG itself (kg_sparql_endpoint_url), or not.
 
     Returns:
-        list[tuple]: list of tuples (class, label, description)
+        list[tuple]: list of tuples (class uri, label, description)
     """
     results = []
     _sparql_results = run_sparql_query(
@@ -190,16 +223,14 @@ def make_classes_description() -> list[tuple]:
                 and "label" in result.keys()
                 and "description" in result.keys()
             ):
-                label = (
-                    None
-                    if result["label"]["value"] == "None"
-                    else result["label"]["value"]
-                )
-                descr = (
-                    None
-                    if result["description"]["value"] == "None"
-                    else result["description"]["value"]
-                )
+                label = result["label"]["value"]
+                if label == "None":
+                    label = None
+
+                descr = result["description"]["value"]
+                if descr == "None":
+                    descr = None
+
                 results.append(
                     (
                         fulliri_to_prefixed(result["class"]["value"]),
@@ -214,7 +245,7 @@ def make_classes_description() -> list[tuple]:
 
 def make_properties_description() -> list[tuple]:
     """
-    Get a description of all the properties from the ontologies as tuples (prop, label, description).
+    Get a description of all the properties from the ontologies as tuples (prop uri, label, description).
     The URIs are prefixed based on the prefixes defined in the config file.
 
     Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
@@ -224,7 +255,7 @@ def make_properties_description() -> list[tuple]:
     the KG itself (kg_sparql_endpoint_url), or not.
 
     Returns:
-        list[tuple]: list of tuples (prop, label, description)
+        list[tuple]: list of tuples (prop uri, label, description)
     """
     results = []
     _sparql_results = run_sparql_query(
@@ -270,11 +301,9 @@ def make_properties_description() -> list[tuple]:
                 if label.strip() == "":
                     label = None
 
-                descr = (
-                    None
-                    if result["description"]["value"] == "None"
-                    else result["description"]["value"]
-                )
+                descr = result["description"]["value"]
+                if descr == "None":
+                    descr = None
 
                 results.append(
                     (
@@ -293,7 +322,7 @@ def get_classes_with_instances() -> list[str]:
     Retrieve the list of classes that have at least one instance in the KG.
     The class URIs are prefixed based on the prefixes defined in the config file.
 
-    Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
+    Data is either read from an existing file if found, or from the SPARQL endpoint and saved in a file.
 
     Returns:
         list[str]: list of the class URIS (with prefixed)
@@ -315,10 +344,14 @@ def get_classes_with_instances() -> list[str]:
 
 if __name__ == "__main__":
 
+    # Parse the command line arguments
+    args = setup_cli()
+
+    # Load the configuration
+    config.read_configuration(args)
+
     # Collect the description of the properties and save them
-    descr_txt_file = os.path.join(
-        config.get_preprocessing_directory(), "properties_description.txt"
-    )
+    descr_txt_file = os.path.join(config.get_preprocessing_directory(), args.properties)
     descriptions = []
     if os.path.exists(descr_txt_file):
         logger.info(f"Reading property descriptions from {descr_txt_file}")
@@ -333,9 +366,7 @@ if __name__ == "__main__":
     logger.info(f"Retrieved {len(descriptions)} (property,label,description) tuples.")
 
     # Collect the description of the classes and save them
-    descr_txt_file = os.path.join(
-        config.get_preprocessing_directory(), "classes_description.txt"
-    )
+    descr_txt_file = os.path.join(config.get_preprocessing_directory(), args.classes)
     descriptions = []
     if os.path.exists(descr_txt_file):
         logger.info(f"Reading class descriptions from {descr_txt_file}")
@@ -349,9 +380,9 @@ if __name__ == "__main__":
 
     logger.info(f"Retrieved {len(descriptions)} (class,label,description) tuples.")
 
-    # Retrieve the classes with at least 1 instance in the KG
+    # Retrieve the URIs of the classes with at least 1 instance in the KG
     classes_with_instances_file = os.path.join(
-        config.get_preprocessing_directory(), "classes_with_instances.txt"
+        config.get_temp_directory(), "classes_with_instances.txt"
     )
     classes_with_instances = []
     if os.path.exists(classes_with_instances_file):
@@ -365,11 +396,6 @@ if __name__ == "__main__":
         logger.info(f"Retrieving classes with instances from the SPARQL endpoint")
         classes_with_instances = get_classes_with_instances()
         save_to_txt(classes_with_instances_file, classes_with_instances)
-
-        with open(classes_with_instances_file, "w", encoding="utf-8") as f:
-            for result in classes_with_instances:
-                f.write(f"{result}\n")
-            f.close()
         logger.info(f"Saved classes with instances to {classes_with_instances_file}.")
     logger.info(f"Retrieved {len(classes_with_instances)} classes with instances.")
 
@@ -386,6 +412,6 @@ if __name__ == "__main__":
     )
     classes_with_instances_description_file = os.path.join(
         config.get_preprocessing_directory(),
-        "classes_with_instances_description.txt",
+        args.classes_with_instances,
     )
     save_to_txt(classes_with_instances_description_file, classes_description_filtered)

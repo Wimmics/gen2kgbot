@@ -23,7 +23,7 @@ def setup_cli() -> Namespace:
     parser = ArgumentParser(
         description="Compute the embeddings of the class descriptions previsouly generated."
     )
-    parser.add_argument("-p", "--params", type=str, help="Custom configuration file")
+    parser.add_argument("-p", "--params", type=str, help="Custom configuration file. Default: to app/config/params.yaml")
     parser.add_argument(
         "-m",
         "--model",
@@ -32,7 +32,6 @@ def setup_cli() -> Namespace:
         default="nomic-embed-text_faiss@local",
     )
     parser.add_argument(
-        "-c",
         "--classes",
         type=str,
         help='File with the description of the classes. Must be located in "{data_directory}/{KG short name}/preprocessing". Default: "classes_with_instances_description.txt"',
