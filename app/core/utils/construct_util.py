@@ -3,7 +3,7 @@ import os
 import re
 from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper, POST
-from rdflib import Graph, URIRef, BNode, RDFS, term
+from rdflib import Graph, URIRef, BNode, RDF, RDFS, OWL, term
 import app.core.utils.config_manager as config
 from app.core.utils.logger_manager import setup_logger
 
@@ -12,7 +12,9 @@ logger = setup_logger(__package__, __file__)
 
 # SPARQL query to retrieve the properties used by instances of a given class, with their value types.
 # The value type can be a class URI, a datatype URI, or "Untyped" if the value is unknown/unspecified
-class_properties_valuetypes_query = """
+class_properties_valuetypes_query = (
+    config.get_prefixes_as_sparql()
+    + """
 SELECT DISTINCT 
     ?property
     (COALESCE(?lbl, "None") as ?label)
@@ -20,7 +22,7 @@ SELECT DISTINCT
 WHERE {
     {
         SELECT ?instance WHERE {
-            ?instance a <{class_uri}> .
+            ?instance a {class_uri} .
         } LIMIT 100
     }
     {
@@ -32,6 +34,7 @@ WHERE {
 GROUP BY ?property ?lbl
 LIMIT 100
 """
+)
 
 # SPARQL query to retrieve the label/description of classes "connected" to a given class.
 # Connected meaning: for class A, retrieve all classes B such that:
@@ -40,11 +43,13 @@ LIMIT 100
 #    ?a ?p ?b.
 # or
 #    ?b ?p ?a.
-connected_classes_query = """
+connected_classes_query = (
+    config.get_prefixes_as_sparql()
+    + """
 SELECT DISTINCT ?class ?label (COALESCE(?comment, "None") as ?description) WHERE {
   { 
   	SELECT DISTINCT ?class WHERE {
-      ?seed a <{class_uri}>.
+      ?seed a {class_uri}.
       { ?seed ?p ?other. } UNION { ?other ?p ?seed. }
 	  ?other a ?class.
       FILTER (?class != owl:Class && ?class != rdfs:Class)
@@ -54,8 +59,9 @@ SELECT DISTINCT ?class ?label (COALESCE(?comment, "None") as ?description) WHERE
   ?class rdfs:label ?label.
   OPTIONAL { ?class rdfs:comment ?comment. }
 }
-LIMIT 50
+LIMIT 20
 """
+)
 
 
 def get_class_context(class_label_description: tuple) -> str:
@@ -80,23 +86,28 @@ def get_class_context(class_label_description: tuple) -> str:
     format = config.get_class_context_format()
 
     if format == "turtle":
+        # Create a graph containing the class context
         graph = get_empty_graph_with_prefixes()
-        class_ref = URIRef(class_uri)
+
+        subj = BNode()
+        # URIRef takes a full IRI, so we need to convert a possible prefixed IRI to a full IRI
+        class_ref = URIRef(prefixed_to_fulliri(class_uri))
+        # First triple: [] rdf:type [ a <CLS> ]
+        graph.add((subj, RDF.type, class_ref))
 
         for property_uri, property_label, property_type in properties_results:
-            # Add a triple for the property and value type
-            value_ref = (
-                BNode()
-                if (property_type == "Untyped" or property_type is None)
-                else URIRef(property_type)
-            )
-            graph.add((class_ref, URIRef(property_uri), value_ref))
+            # do not add the triple: "[] rdf:type [ a owl:Class ]"
+            if URIRef(property_uri) != RDF.type and URIRef(property_type) != OWL.Class:
+                obj = BNode()
+                graph.add((subj, URIRef(property_uri), obj))
+                if property_type != "Untyped" and property_type is not None:
+                    graph.add((obj, RDF.type, URIRef(property_type)))
 
-            # Add a separate triple for the property label
-            if property_label != "None":
-                graph.add(
-                    (URIRef(property_uri), RDFS.label, term.Literal(property_label))
-                )
+                # Add a separate triple for the property label
+                if property_label != "None":
+                    graph.add(
+                        (URIRef(property_uri), RDFS.label, term.Literal(property_label))
+                    )
 
         # Save the graph to the cache
         graph.serialize(format="turtle", destination=dest_file, encoding="utf-8")
@@ -107,9 +118,7 @@ def get_class_context(class_label_description: tuple) -> str:
         result = ""
         for property_uri, property_label, property_type in properties_results:
             label = None if property_label == "None" else property_label
-            result += (
-                f"('{class_uri}', '{property_uri}', '{label}', '{property_type}')\n"
-            )
+            result += f"{(class_uri, property_uri, label, property_type)}\n"
         with open(dest_file, "w", encoding="utf-8") as f:
             f.write(result)
         logger.debug(f"Class context stored in: {dest_file}.")
@@ -117,84 +126,6 @@ def get_class_context(class_label_description: tuple) -> str:
 
     else:
         raise ValueError(f"Invalid requested format for class context: {format}")
-
-
-def get_connected_classes(class_uris: list[str]) -> list[tuple]:
-    """
-    Retrieve the classes connected to a list of "seed" classes, with their labels and descriptions.
-    The seed classes are those initially found because they are similar to the user's question.
-    The connected classes are those whose instances are connected to instances of the seed classes by at least one predicate.
-
-    This is used to expand the list of classes that can be relevant for generating the SPARQL query.
-
-    Args:
-        class_uris (list[str]): list of seed class URIs
-
-    Returns:
-        list[tuple]: list of tuples (class URI, label, description) gathering all the connected classes
-            for all the seed classes, after removing duplicates.
-    """
-
-    endpoint_url = config.get_kg_sparql_endpoint_url()
-    results = []
-
-    for class_uri in class_uris:
-        logger.debug(f"Retrieving classes connected to class {class_uri}")
-
-        dest_file = generate_context_filename(class_uri) + "_conntected_classes"
-        if os.path.exists(dest_file):
-            logger.debug(f"Connected classes found in cache: {dest_file}.")
-            f = open(dest_file, "r", encoding="utf8")
-            for line in f.readlines():
-                results.append(eval(line))
-            f.close()
-
-        else:
-            logger.debug(f"Connected classes not found in cache for class {class_uri}.")
-            results_one_class = []
-            query = connected_classes_query.replace("{class_uri}", class_uri)
-
-            _sparql_results = run_sparql_query(query, endpoint_url)
-            if _sparql_results is None:
-                logger.warning(
-                    f"Failed to retrieve connected classes for class {class_uri}"
-                )
-                continue
-            for result in _sparql_results:
-                if (
-                    "class" in result.keys()
-                    and "label" in result.keys()
-                    and "description" in result.keys()
-                ):
-                    descr = result["description"]["value"]
-                    results_one_class.append(
-                        (
-                            result["class"]["value"],
-                            result["label"]["value"],
-                            (None if descr == "None" else descr),
-                        )
-                    )
-                else:
-                    logger.warning(
-                        f"Unexpected SPARQL result format for classes connected to class {class_uri}:\n{result}"
-                    )
-
-            # Save the connected classes to cache
-            with open(dest_file, "w", encoding="utf-8") as f:
-                for cls, label, description in results_one_class:
-                    descr = None if description == "None" else description
-                    f.write(f"('{cls}', '{label}', {descr})\n")
-                f.close()
-                logger.debug(f"Saved connected classes into cache: {dest_file}.")
-
-            # Add the results for that class to the results for all classes
-            results += results_one_class
-
-    # Remove duplicates
-    results = list(set(results))
-    logger.info(f"Retrieved the descriptions of {len(results)} connected classes")
-
-    return results
 
 
 def get_class_properties_and_val_types(
@@ -212,7 +143,12 @@ def get_class_properties_and_val_types(
             Types may be a URI, datatype, or "Untyped"
     """
 
-    query = class_properties_valuetypes_query.replace("{class_uri}", class_uri)
+    if isPrefixed(class_uri):
+        query = class_properties_valuetypes_query.replace("{class_uri}", class_uri)
+    else:
+        query = class_properties_valuetypes_query.replace(
+            "{class_uri}", f"<{class_uri}>"
+        )
     # logger.debug(f"SPARQL query to retrieve class properties and types:\n{query}")
 
     results = []
@@ -228,10 +164,11 @@ def get_class_properties_and_val_types(
                 and "label" in result.keys()
                 and "valueType" in result.keys()
             ):
+                label = result["label"]["value"]
                 results.append(
                     (
                         result["property"]["value"],
-                        result["label"]["value"],
+                        (None if label == "None" else label),
                         result["valueType"]["value"],
                     )
                 )
@@ -243,6 +180,98 @@ def get_class_properties_and_val_types(
         logger.debug(
             f"Retrieved {len(results)} (property,label,type) tuples for class {class_uri}"
         )
+    return results
+
+
+def isPrefixed(uri: str) -> bool:
+    """
+    Check if a URI is prefixed or full.
+    """
+    return not uri.startswith("http:") and not uri.startswith("https:")
+
+
+def get_connected_classes(class_uris: list[str]) -> list[tuple]:
+    """
+    Retrieve the classes connected to a list of "seed" classes, with their labels and descriptions,
+    from the knowledge graph.
+    The seed classes are those initially found because they are similar to the user's question.
+    The connected classes are those whose instances are connected to instances of the seed classes by at least one predicate.
+
+    This is used to expand the list of classes that can be relevant for generating the SPARQL query.
+
+    Args:
+        class_uris (list[str]): list of seed class URIs
+
+    Returns:
+        list[tuple]: list of tuples (class URI, label, description) gathering all the connected classes
+            for all the seed classes, after removing duplicates.
+    """
+
+    endpoint_url = config.get_kg_sparql_endpoint_url()
+    results = []
+
+    for class_uri in class_uris:
+
+        logger.debug(f"Retrieving classes connected to class {class_uri}")
+        dest_file = generate_context_filename(class_uri) + "_conntected_classes"
+
+        if os.path.exists(dest_file):
+            logger.debug(f"Connected classes found in cache: {dest_file}.")
+            f = open(dest_file, "r", encoding="utf8")
+            for line in f.readlines():
+                results.append(eval(line))
+            f.close()
+
+        else:
+            logger.debug(f"Connected classes not found in cache for class {class_uri}.")
+            results_one_class = []
+            if isPrefixed(class_uri):
+                query = connected_classes_query.replace("{class_uri}", class_uri)
+            else:
+                query = connected_classes_query.replace("{class_uri}", f"<{class_uri}>")
+
+            _sparql_results = run_sparql_query(query, endpoint_url)
+            if _sparql_results is None:
+                logger.warning(
+                    f"Failed to retrieve connected classes for class {class_uri}"
+                )
+                continue
+
+            for result in _sparql_results:
+                if (
+                    "class" in result.keys()
+                    and "label" in result.keys()
+                    and "description" in result.keys()
+                ):
+                    label = result["label"]["value"]
+                    descr = result["description"]["value"]
+                    results_one_class.append(
+                        (
+                            result["class"]["value"],
+                            (None if label == "None" else label),
+                            (None if descr == "None" else descr),
+                        )
+                    )
+                else:
+                    logger.warning(
+                        f"Unexpected SPARQL result format for classes connected to class {class_uri}:\n{result}"
+                    )
+
+            # Save the connected classes to cache
+            with open(dest_file, "w", encoding="utf-8") as f:
+                for cls, label, description in results_one_class:
+                    descr = None if description == "None" else description
+                    f.write(f"{(cls, label, descr)}\n")
+                f.close()
+                logger.debug(f"Saved connected classes into cache: {dest_file}.")
+
+            # Add the results for that class to the results for all classes
+            results += results_one_class
+
+    # Remove duplicates
+    results = list(set(results))
+    logger.info(f"Retrieved the descriptions of {len(results)} connected classes")
+
     return results
 
 
@@ -336,4 +365,13 @@ def fulliri_to_prefixed(uri: str) -> str:
     """
     for prefix, namespace in config.get_known_prefixes().items():
         uri = uri.replace(namespace, f"{prefix}:")
+    return uri
+
+
+def prefixed_to_fulliri(uri: str) -> str:
+    """
+    Transform a string containing prefixed IRIs into their equivalent full IRIs
+    """
+    for prefix, namespace in config.get_known_prefixes().items():
+        uri = uri.replace(f"{prefix}:", namespace)
     return uri

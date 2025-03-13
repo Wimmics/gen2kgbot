@@ -73,7 +73,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
         f"Looking for classes related to the question's named entities: {", ".join(relevant_entities_list)}"
     )
 
-    # 1st, retrieve the top-1 similar class for each individual entity
+    # 1st, retrieve the top-1 similar class for each entity individually
     documents = []
     for entity in relevant_entities_list:
         documents += db.similarity_search(entity, k=1)
@@ -95,7 +95,11 @@ def select_similar_classes(state: OverallState) -> OverallState:
         for cls, label, description in get_connected_classes(classes_uris):
             if cls not in classes_uris:
                 descr = "None" if description is None else f"'{description}'"
-                classes_str.append(f"('{cls}', '{label}', {descr})")
+                classes_str.append(f"{(cls, label, descr)}")
+
+    logger.info(
+        f"Found {len(classes_str)} classes related to the question, including connected classes."
+    )
 
     # Filter out classes marked as to be excluded
     classes_filtered_str = []
@@ -108,9 +112,6 @@ def select_similar_classes(state: OverallState) -> OverallState:
         if keep_cls:
             classes_filtered_str.append(cls)
 
-    logger.info(
-        f"Found {len(classes_str)} classes related to the question, including connected classes."
-    )
     logger.info(
         f"Keeping {len(classes_filtered_str)} classes after excluding some classes."
     )
@@ -186,7 +187,11 @@ def class_description_tuple_to_nl(description: str) -> str:
     uri = descr_tuple[0]
     label = descr_tuple[1]
     descr = descr_tuple[2]
-    serialization = f"Class '{uri}':\nLabel: {label}\nDescription: {descr}\n"
+    serialization = f"Class '{uri}':\n"
+    if label is not None:
+        serialization += f"Label: {label}\n"
+    if descr is not None:
+        serialization += f"Description: {descr}\n"
     return serialization
 
 
