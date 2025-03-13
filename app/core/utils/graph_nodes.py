@@ -43,13 +43,13 @@ def preprocess_question(state: OverallState) -> OverallState:
     """
 
     logger.debug("Preprocessing the question...")
-    extracted_classes = extract_relevant_entities_spacy(state["initial_question"])
-    relevant_entities = f"{", ".join(extracted_classes)}"
-    logger.debug(f"Extracted following named entities: {relevant_entities}")
+    relevant_entities_list = extract_relevant_entities_spacy(state["initial_question"])
+    relevant_entities = f"{", ".join(relevant_entities_list)}"
+    logger.info(f"Extracted following named entities: {relevant_entities}")
 
     return {
         "messages": AIMessage(relevant_entities),
-        "question_relevant_entities": relevant_entities,
+        "question_relevant_entities": relevant_entities_list,
         "number_of_tries": 0,
     }
 
@@ -68,17 +68,25 @@ def select_similar_classes(state: OverallState) -> OverallState:
 
     db = config.get_class_context_vector_db(state["scenario_id"])
 
-    question_entities = state["question_relevant_entities"]
-    logger.info("Looking for classes related to the question in the vector db...")
+    relevant_entities_list = state["question_relevant_entities"]
+    logger.info(
+        f"Looking for classes related to the question's named entities: {", ".join(relevant_entities_list)}"
+    )
 
-    # Retrieve the most similar text
-    documents = db.similarity_search(
-        question_entities, k=config.get_max_similar_classes()
+    # 1st, retrieve the top-1 similar class for each individual entity
+    documents = []
+    for entity in relevant_entities_list:
+        documents += db.similarity_search(entity, k=1)
+
+    # Then, retrieve the most similar classes for all entites together
+    documents += db.similarity_search(
+        ", ".join(relevant_entities_list), k=config.get_max_similar_classes()
     )
     classes_str = [item.page_content for item in documents]
+    classes_str = list(set(classes_str))
     logger.info(f"Found {len(classes_str)} classes related to the question.")
     logger.debug(
-        f"Classes found:\n{"\n".join([item.page_content for item in documents])}"
+        f"Classes found:\n{"\n".join([class_str for class_str in classes_str])}"
     )
 
     # Extend the initial list of similar classes with additional classes that are connected to the initial ones
@@ -167,6 +175,35 @@ def select_similar_query_examples(state: OverallState) -> OverallState:
     return {"messages": AIMessage(result), "selected_queries": result}
 
 
+def class_description_tuple_to_nl(description: str) -> str:
+    """
+    Convert a class description formatted as a tuple into natural language
+
+    Args:
+        description (str): class description as a tuplr "(class uri, label, description)"
+    """
+    descr_tuple = eval(description)
+    uri = descr_tuple[0]
+    label = descr_tuple[1]
+    descr = descr_tuple[2]
+    serialization = f"Class '{uri}':\nLabel: {label}\nDescription: {descr}\n"
+    return serialization
+
+
+def class_context_tuple_to_nl(context: str) -> str:
+    """
+    Convert a class context formatted as a tuple into natural language
+
+    Args:
+        context (str): class context as a tuple "(class uri, property uri, property label, value type)"
+    """
+    serialization = ""
+    for c in context.splitlines():
+        uri, prop_uri, prop_label, value_type = eval(c)
+        serialization += f"Instances of class '{uri}' have property '{prop_uri}' ({prop_label}) with value type '{value_type}'.\n"
+    return serialization
+
+
 def create_query_generation_prompt(
     template: PromptTemplate, state: OverallState
 ) -> OverallState:
@@ -202,10 +239,10 @@ def create_query_generation_prompt(
     ):
         selected_classes_str = ""
         for item in state["selected_classes"]:
-            selected_classes_str += f"\n{item}"
-        template = template.partial(
-            selected_classes=fulliri_to_prefixed(selected_classes_str)
-        )
+            selected_classes_str += (
+                f"\n{class_description_tuple_to_nl(fulliri_to_prefixed(item))}"
+            )
+        template = template.partial(selected_classes=selected_classes_str)
 
     if (
         "selected_queries" in template.input_variables
@@ -233,10 +270,11 @@ def create_query_generation_prompt(
                 )
 
             elif config.get_class_context_format() == "tuple":
-                merged_cls_context = "Format is: ('class uri', 'property uri', 'property label', 'value type')\n"
+                merged_cls_context = ""
+                # merged_cls_context = "Format is: ('class uri', 'property uri', 'property label', 'value type')\n"
                 for cls_context in state["selected_classes_context"]:
                     if cls_context not in ["", "\n"]:
-                        merged_cls_context += f"\n{fulliri_to_prefixed(cls_context)}"
+                        merged_cls_context += f"\n{class_context_tuple_to_nl(fulliri_to_prefixed(cls_context))}"
 
             else:
                 raise ValueError(
@@ -461,7 +499,7 @@ async def validate_question(state: OverallState) -> OverallState:
         scenario_id=state["scenario_id"], node_name="validate_question"
     ).ainvoke(prompt)
 
-    logger.debug(f"Validation of the question results:\n{result.content}")
+    logger.debug(f"Validation of the question results: {result.content}")
 
     return OverallState(
         {"messages": result, "question_validation_results": result.content}
