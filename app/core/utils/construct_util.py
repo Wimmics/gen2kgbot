@@ -11,14 +11,14 @@ from app.core.utils.logger_manager import setup_logger
 logger = setup_logger(__package__, __file__)
 
 # SPARQL query to retrieve the properties used by instances of a given class, with their value types.
-# The value type can be a class URI, a datatype URI, or "Untyped" if the value is unknown/unspecified
+# The value type can be a class URI, a datatype URI, or "None" if the value is unknown/unspecified
 class_properties_valuetypes_query = (
     config.get_prefixes_as_sparql()
     + """
 SELECT DISTINCT 
     ?property
     (COALESCE(?lbl, "None") as ?label)
-    (SAMPLE(COALESCE(STR(?type), STR(DATATYPE(?value)), "Untyped")) AS ?valueType)
+    (SAMPLE(COALESCE(STR(?type), STR(DATATYPE(?value)), "None")) AS ?valueType)
 WHERE {
     {
         SELECT ?instance WHERE {
@@ -46,7 +46,7 @@ LIMIT 100
 connected_classes_query = (
     config.get_prefixes_as_sparql()
     + """
-SELECT DISTINCT ?class ?label (COALESCE(?comment, "None") as ?description) WHERE {
+SELECT DISTINCT ?class (COALESCE(?lbl, "None") as ?label) (COALESCE(?comment, "None") as ?description) WHERE {
   { 
   	SELECT DISTINCT ?class WHERE {
       ?seed a {class_uri}.
@@ -55,8 +55,8 @@ SELECT DISTINCT ?class ?label (COALESCE(?comment, "None") as ?description) WHERE
       FILTER (?class != owl:Class && ?class != rdfs:Class)
     } LIMIT 1000
   }
-  
-  ?class rdfs:label ?label.
+    
+  OPTIONAL { ?class rdfs:label ?lbl. }
   OPTIONAL { ?class rdfs:comment ?comment. }
 }
 LIMIT 20
@@ -68,8 +68,12 @@ def get_class_context(class_label_description: tuple) -> str:
     """
     Retrieve a class context from the KG, format it according to parameter class_context_format, and save it to the cache.
     The context contains the properties used by instances of the class and their value types:
-    In Turtle: `<class URI> <property> <property type>`, or as tuples: `('class URI', 'property', 'property type')`,
-    where `property type` maybe be a class URI, a datatype URI, or a blank node if untyped.
+    In Turtle: 
+        `[] a <class URI>; <property> []. <property>  rdfs:label "property label".` # if value type is None
+        `[] a <class URI>; <property> [ a <value type> ]. <property>  rdfs:label "property label".`
+    or as tuples: 
+        `('class URI', 'property', 'property label', 'value type')`,
+    where `value type` maybe be a class URI or a datatype URI.
 
     Args:
         class_label_description (tuple): (class URI, label, description)
@@ -100,11 +104,11 @@ def get_class_context(class_label_description: tuple) -> str:
             if URIRef(property_uri) != RDF.type and URIRef(property_type) != OWL.Class:
                 obj = BNode()
                 graph.add((subj, URIRef(property_uri), obj))
-                if property_type != "Untyped" and property_type is not None:
+                if property_type != None:
                     graph.add((obj, RDF.type, URIRef(property_type)))
 
                 # Add a separate triple for the property label
-                if property_label != "None":
+                if property_label != None:
                     graph.add(
                         (URIRef(property_uri), RDFS.label, term.Literal(property_label))
                     )
@@ -117,8 +121,7 @@ def get_class_context(class_label_description: tuple) -> str:
     elif format == "tuple":
         result = ""
         for property_uri, property_label, property_type in properties_results:
-            label = None if property_label == "None" else property_label
-            result += f"{(class_uri, property_uri, label, property_type)}\n"
+            result += f"{(class_uri, property_uri, property_label, property_type)}\n"
         with open(dest_file, "w", encoding="utf-8") as f:
             f.write(result)
         logger.debug(f"Class context stored in: {dest_file}.")
@@ -140,7 +143,7 @@ def get_class_properties_and_val_types(
 
     Returns:
         List[Tuple[str, str, str]]: property URIs with associated label and value type.
-            Types may be a URI, datatype, or "Untyped"
+            Value type may be a URI, a datatype, or None. Label may be None.
     """
 
     if isPrefixed(class_uri):
@@ -165,11 +168,12 @@ def get_class_properties_and_val_types(
                 and "valueType" in result.keys()
             ):
                 label = result["label"]["value"]
+                valueType = result["valueType"]["value"]
                 results.append(
                     (
                         result["property"]["value"],
                         (None if label == "None" else label),
-                        result["valueType"]["value"],
+                        (None if valueType == "None" else valueType),
                     )
                 )
             else:
@@ -192,8 +196,8 @@ def isPrefixed(uri: str) -> bool:
 
 def get_connected_classes(class_uris: list[str]) -> list[tuple]:
     """
-    Retrieve the classes connected to a list of "seed" classes, with their labels and descriptions,
-    from the knowledge graph.
+    Retrieve, from the KG, the classes connected to a list of "seed" classes, with their labels and descriptions,
+
     The seed classes are those initially found because they are similar to the user's question.
     The connected classes are those whose instances are connected to instances of the seed classes by at least one predicate.
 
@@ -205,6 +209,7 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
     Returns:
         list[tuple]: list of tuples (class URI, label, description) gathering all the connected classes
             for all the seed classes, after removing duplicates.
+            If label or description is "None" it is replaced by None.
     """
 
     endpoint_url = config.get_kg_sparql_endpoint_url()
@@ -260,8 +265,7 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
             # Save the connected classes to cache
             with open(dest_file, "w", encoding="utf-8") as f:
                 for cls, label, description in results_one_class:
-                    descr = None if description == "None" else description
-                    f.write(f"{(cls, label, descr)}\n")
+                    f.write(f"{(cls, label, description)}\n")
                 f.close()
                 logger.debug(f"Saved connected classes into cache: {dest_file}.")
 

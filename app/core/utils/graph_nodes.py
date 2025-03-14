@@ -73,32 +73,32 @@ def select_similar_classes(state: OverallState) -> OverallState:
         f"Looking for classes related to the question's named entities: {", ".join(relevant_entities_list)}"
     )
 
-    # 1st, retrieve the classes whose label is exactly the same as the entity
-    documents = []
+    # 1st, retrieve from the vector DB the classes whose label is exactly the same as one named entity
+    classes_str = []
     for entity in relevant_entities_list:
         matches = db.similarity_search(entity, k=1)
         if len(matches) > 0:
             if eval(matches[0].page_content)[1].lower() == entity.lower():
-                documents.append(matches[0])
+                classes_str.append(matches[0].page_content)
 
-    # Then, retrieve the most similar classes for all entites together
-    documents += db.similarity_search(
+    # Then, retrieve from the vector DB the classes similar to all the entites together
+    for doc in db.similarity_search(
         ", ".join(relevant_entities_list), k=config.get_max_similar_classes()
-    )
-    classes_str = [doc.page_content for doc in documents]
+    ):
+        classes_str.append(doc.page_content)
+
     classes_str = list(set(classes_str))
     logger.info(f"Found {len(classes_str)} classes related to the question.")
     logger.debug(
-        f"Classes found: {", ".join([f"{eval(class_str)[0]} ({eval(class_str)[1]})" for class_str in classes_str])}"
+        f"Classes found: {", ".join([f"{eval(cls)[0]} ({eval(cls)[1]})" for cls in classes_str])}"
     )
 
-    # Extend the initial list of similar classes with additional classes that are connected to the initial ones
+    # Extend the initial list o classes by retrieving, from the KG, additional classes connected to the initial ones
     if config.expand_similar_classes():
-        classes_uris = [ast.literal_eval(item)[0] for item in classes_str]
+        classes_uris = [eval(cls)[0] for cls in classes_str]
         for cls, label, description in get_connected_classes(classes_uris):
             if cls not in classes_uris:
-                descr = "None" if description is None else f"'{description}'"
-                classes_str.append(f"{(cls, label, descr)}")
+                classes_str.append(f"{(cls, label, description)}")
     logger.info(f"Expanded to {len(classes_str)} classes related to the question.")
 
     # Filter out classes marked as to be excluded
@@ -181,10 +181,7 @@ def class_description_tuple_to_nl(description: str) -> str:
     Args:
         description (str): class description as a tuplr "(class uri, label, description)"
     """
-    descr_tuple = eval(description)
-    uri = descr_tuple[0]
-    label = descr_tuple[1]
-    descr = descr_tuple[2]
+    uri, label, descr = eval(description)
     serialization = f"Class '{uri}':\n"
     if label is not None:
         serialization += f"Label: {label}\n"
