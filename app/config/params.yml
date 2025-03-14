@@ -87,13 +87,59 @@ seq2seq_models:
 # - top_p (decimal): the top_p parameter for the generation (optional), default: 0.95
 # - model_kwargs (str): additional parameters for the model (optional)
 
+# The local models
+
   llama3_2-1b@local:
     server_type: ollama
     id: llama3.2:1b
     temperature: 0
     max_retries: 3
     top_p: 0.95
+
+  llama3_2:3b@local:
+    server_type: ollama
+    id: llama3.2:latest
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  gemma-3_1b@local:
+    server_type: ollama
+    id: gemma3:1b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_4b@local:
+    server_type: ollama
+    id: gemma3:4b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_12b@local:
+    server_type: ollama
+    id: gemma3:12b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_27b@local:
+    server_type: ollama
+    id: gemma3:27b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  deepseek-r1_1_5b@local:
+    server_type: ollama
+    id: deepseek-r1:1.5b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
   
+# The ovh models
+
   llama-3_1-70B@ovh:
     server_type: ovh
     id: Meta-Llama-3_1-70B-Instruct
@@ -118,6 +164,8 @@ seq2seq_models:
     max_retries: 3
     top_p: 0.95
 
+# The OpenAI models
+
   gpt-4o@openai:
     server_type: openai
     id: gpt-4o
@@ -128,13 +176,8 @@ seq2seq_models:
   o3-mini@openai:
     server_type: openai
     id: o3-mini
-    
-  deepseek-r1_1_5b@local:
-    server_type: ollama
-    id: deepseek-r1:1.5b
-    temperature: 0
-    max_retries: 3 
-    top_p: 0.95
+
+# The DeepSeek models
 
   deepseek-chat@deepseek:
     server_type: deepseek
@@ -151,6 +194,8 @@ seq2seq_models:
     temperature: 0
     max_retries: 3
     top_p: 0.95
+
+# The HuggingFace models
 
   deepseek-reasoner@hf:
     server_type: hugface
@@ -214,7 +259,7 @@ scenario_6:
   validate_question: llama-3_1-70B@ovh
   generate_query: deepseek-r1_1_5b@local
   interpret_csv_query_results: llama3_2-1b@local
-  text_embedding_model: mxbai-embed-large_faiss@local
+  text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_7:
   validate_question: llama3_2-1b@local
