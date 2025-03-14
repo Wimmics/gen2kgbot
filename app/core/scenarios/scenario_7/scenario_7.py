@@ -39,7 +39,7 @@ SCENARIO = "scenario_7"
 # Routers
 
 
-def verify_query_router(
+def validate_sparql_syntax_router(
     state: OverallState,
 ) -> Literal["extract_query_qnames", "judge_regeneration_prompt", "__end__"]:
     """
@@ -132,7 +132,7 @@ def extract_query_qnames(state: OverallState):
     )
 
 
-def verify_query(state: OverallState) -> OverallState:
+def validate_sparql_syntax(state: OverallState) -> OverallState:
     """
     Check if a query was generated and if it is syntactically correct.
     If more than one query was produced, just log a warning and process the first one.
@@ -269,7 +269,7 @@ judge_builder = StateGraph(
 
 # Judging graph for verifying the generated query
 
-judge_builder.add_node("verify_query", verify_query)
+judge_builder.add_node("validate_sparql_syntax", validate_sparql_syntax)
 judge_builder.add_node("extract_query_qnames", extract_query_qnames)
 judge_builder.add_node("find_qnames_info", find_qnames_info)
 judge_builder.add_node("judge_query", judge_query)
@@ -277,13 +277,13 @@ judge_builder.add_node("judge_regeneration_prompt", judge_regeneration_prompt)
 judge_builder.add_node("judge_regenerate_query", judge_regenerate_query)
 
 
-judge_builder.add_edge(START, "verify_query")
-judge_builder.add_conditional_edges("verify_query", verify_query_router)
+judge_builder.add_edge(START, "validate_sparql_syntax")
+judge_builder.add_conditional_edges("validate_sparql_syntax", validate_sparql_syntax_router)
 judge_builder.add_edge("extract_query_qnames", "find_qnames_info")
 judge_builder.add_edge("find_qnames_info", "judge_query")
 judge_builder.add_conditional_edges("judge_query", judge_query_router)
 judge_builder.add_edge("judge_regeneration_prompt", "judge_regenerate_query")
-judge_builder.add_edge("judge_regenerate_query", "verify_query")
+judge_builder.add_edge("judge_regenerate_query", "validate_sparql_syntax")
 
 
 # Main graph for generating and executing the query
