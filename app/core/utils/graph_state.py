@@ -9,7 +9,34 @@ class InputState(TypedDict):
     Attributes:
         initial_question (str): the question to be answered by the Gen²KGBot workflow.
     """
+
     initial_question: str
+
+
+class JudgeState(TypedDict):
+    """
+    Attributes:
+
+        query (str): the query to be judged
+
+        query_qnames (list[str]): qnames extracted from the query to be judged
+
+        qnames_info (list[str]): information about the qnames extracted from the query to be judged
+
+        query_judgement (str): judgement of the generated query
+
+        query_regeneration_prompt (str): prompt to ask for the regeneration of the query
+    """
+
+    query: str
+
+    query_qnames: list[str]
+
+    qnames_info: list[str]
+
+    query_judgement: str
+
+    query_regeneration_prompt: str
 
 
 class OverallState(MessagesState, InputState):
@@ -67,3 +94,5 @@ class OverallState(MessagesState, InputState):
     last_query_results: str
 
     results_interpretation: str
+
+    query_judgements: Annotated[list[JudgeState], operator.add]
