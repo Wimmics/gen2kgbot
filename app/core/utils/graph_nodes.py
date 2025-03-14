@@ -73,20 +73,23 @@ def select_similar_classes(state: OverallState) -> OverallState:
         f"Looking for classes related to the question's named entities: {", ".join(relevant_entities_list)}"
     )
 
-    # 1st, retrieve the top-1 similar class for each entity individually
+    # 1st, retrieve the classes whose label is exactly the same as the entity
     documents = []
     for entity in relevant_entities_list:
-        documents += db.similarity_search(entity, k=1)
+        matches = db.similarity_search(entity, k=1)
+        if len(matches) > 0:
+            if eval(matches[0].page_content)[1].lower() == entity.lower():
+                documents.append(matches[0])
 
     # Then, retrieve the most similar classes for all entites together
     documents += db.similarity_search(
         ", ".join(relevant_entities_list), k=config.get_max_similar_classes()
     )
-    classes_str = [item.page_content for item in documents]
+    classes_str = [doc.page_content for doc in documents]
     classes_str = list(set(classes_str))
     logger.info(f"Found {len(classes_str)} classes related to the question.")
     logger.debug(
-        f"Classes found:\n{"\n".join([class_str for class_str in classes_str])}"
+        f"Classes found: {", ".join([f"{eval(class_str)[0]} ({eval(class_str)[1]})" for class_str in classes_str])}"
     )
 
     # Extend the initial list of similar classes with additional classes that are connected to the initial ones
@@ -96,10 +99,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
             if cls not in classes_uris:
                 descr = "None" if description is None else f"'{description}'"
                 classes_str.append(f"{(cls, label, descr)}")
-
-    logger.info(
-        f"Found {len(classes_str)} classes related to the question, including connected classes."
-    )
+    logger.info(f"Expanded to {len(classes_str)} classes related to the question.")
 
     # Filter out classes marked as to be excluded
     classes_filtered_str = []
@@ -112,9 +112,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
         if keep_cls:
             classes_filtered_str.append(cls)
 
-    logger.info(
-        f"Keeping {len(classes_filtered_str)} classes after excluding some classes."
-    )
+    logger.info(f"Keeping {len(classes_filtered_str)} classes after filtering.")
     return {"selected_classes": classes_filtered_str}
 
 
