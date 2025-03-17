@@ -328,7 +328,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
         top_p = 0.95
 
     if server_type == "openai":
-        if model_id.startswith("o"):  # o3* do not support parameter top_p
+        if model_id.startswith("o"):  # o1/o3 do not support parameter top_p
             llm_config = ChatOpenAI(
                 temperature=temperature,
                 model=model_id,
