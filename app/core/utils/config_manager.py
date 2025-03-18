@@ -134,6 +134,18 @@ def get_ontologies_sparql_endpoint_url() -> str:
         return config["kg_sparql_endpoint_url"]
 
 
+def get_properties_qnames_info() -> str:
+    return config["properties_qnames_info"]
+
+
+def get_judging_grade_threshold_retry() -> int:
+    return config["judging_grade_threshold_retry"]
+
+
+def get_judging_grade_threshold_run() -> int:
+    return config["judging_grade_threshold_run"]
+
+
 def get_known_prefixes() -> dict:
     """
     Get the prefixes and associated namespaces from configuration file

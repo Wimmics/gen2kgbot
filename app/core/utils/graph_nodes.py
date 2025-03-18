@@ -2,7 +2,6 @@
 This module implements the Langgraph nodes that are common to multiple scenarios
 """
 
-import ast
 from datetime import timezone, datetime
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
