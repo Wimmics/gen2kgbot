@@ -6,7 +6,8 @@
         "Scenario 4": "./app/core/scenarios/scenario_4/scenario_4.py:graph",
         "Scenario 5": "./app/core/scenarios/scenario_5/scenario_5.py:graph",
         "Scenario 6": "./app/core/scenarios/scenario_6/scenario_6.py:graph",
-        "Scenario 7": "./app/core/scenarios/scenario_7/scenario_7.py:graph"
+        "Scenario 7": "./app/core/scenarios/scenario_7/scenario_7.py:graph",
+        "Scenario 8": "./app/core/scenarios/scenario_8/scenario_8.py:graph"
     },
     "env": "./.env",
     "python_version": "3.12",

@@ -48,7 +48,7 @@ max_similar_classes: 10
 
 # Expand the initial list of classes similar to the question with additional classes connected to them (optional)
 # Default: false
-expand_similar_classes: true
+expand_similar_classes: false
 
 # Format of the classes context: one of "turtle", "tuple" (optional)
 # Default: "turtle"
@@ -66,7 +66,7 @@ data_directory: "./data"
 # These names must be consistent with the chosen embedding model names in section text_embedding_models
 # Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
 # e.g. ./data/idsm/faiss_embeddings/
-class_embeddings_subdir: "classes_with_instance_nomic"
+class_embeddings_subdir: "classes_nomic"
 property_embeddings_subdir: "properties_nomic"
 queries_embeddings_subdir: "sparql_queries_nomic"
 
@@ -87,59 +87,13 @@ seq2seq_models:
 # - top_p (decimal): the top_p parameter for the generation (optional), default: 0.95
 # - model_kwargs (str): additional parameters for the model (optional)
 
-# The local models
-
   llama3_2-1b@local:
     server_type: ollama
     id: llama3.2:1b
     temperature: 0
     max_retries: 3
     top_p: 0.95
-
-  llama3_2:3b@local:
-    server_type: ollama
-    id: llama3.2:latest
-    temperature: 0
-    max_retries: 3
-    top_p: 0.95
-
-  gemma-3_1b@local:
-    server_type: ollama
-    id: gemma3:1b
-    temperature: 0
-    max_retries: 3 
-    top_p: 0.95
-
-  gemma-3_4b@local:
-    server_type: ollama
-    id: gemma3:4b
-    temperature: 0
-    max_retries: 3 
-    top_p: 0.95
-
-  gemma-3_12b@local:
-    server_type: ollama
-    id: gemma3:12b
-    temperature: 0
-    max_retries: 3 
-    top_p: 0.95
-
-  gemma-3_27b@local:
-    server_type: ollama
-    id: gemma3:27b
-    temperature: 0
-    max_retries: 3 
-    top_p: 0.95
-
-  deepseek-r1_1_5b@local:
-    server_type: ollama
-    id: deepseek-r1:1.5b
-    temperature: 0
-    max_retries: 3 
-    top_p: 0.95
   
-# The ovh models
-
   llama-3_1-70B@ovh:
     server_type: ovh
     id: Meta-Llama-3_1-70B-Instruct
@@ -147,24 +101,6 @@ seq2seq_models:
     temperature: 0
     max_retries: 3
     top_p: 0.95
-
-  llama-3_3-70B@ovh:
-    server_type: ovh
-    id: Meta-Llama-3_3-70B-Instruct
-    base_url: https://llama-3-3-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-    temperature: 0
-    max_retries: 3
-    top_p: 0.95
-
-  deepseek-r1-70B@ovh:
-    server_type: ovh
-    id: DeepSeek-R1-Distill-Llama-70B
-    base_url: https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
-    temperature: 0
-    max_retries: 3
-    top_p: 0.95
-
-# The OpenAI models
 
   gpt-4o@openai:
     server_type: openai
@@ -176,8 +112,19 @@ seq2seq_models:
   o3-mini@openai:
     server_type: openai
     id: o3-mini
-
-# The DeepSeek models
+    
+  deepseek-r1_1_5b@local:
+    server_type: ollama
+    id: deepseek-r1:1.5b
+    temperature: 0
+    max_retries: 3
+    
+  deepseek-r1_8b@local:
+    server_type: ollama
+    id: deepseek-r1:8b
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
 
   deepseek-chat@deepseek:
     server_type: deepseek
@@ -194,8 +141,6 @@ seq2seq_models:
     temperature: 0
     max_retries: 3
     top_p: 0.95
-
-# The HuggingFace models
 
   deepseek-reasoner@hf:
     server_type: hugface
@@ -229,40 +174,47 @@ text_embedding_models:
 # Scenarios
       
 scenario_1:
-  validate_question: deepseek-reasoner@hf
-  ask_question: llama3_2-1b@local
+  validate_question: deepseek-r1_8b@local
+  ask_question: deepseek-r1_8b@local
     
 scenario_2:
-  validate_question: llama3_2-1b@local
-  generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama3_2-1b@local
+  validate_question: deepseek-r1_8b@local
+  generate_query: deepseek-r1_8b@local
+  interpret_csv_query_results: deepseek-r1_8b@local
 
 scenario_3:
-  validate_question: llama3_2-1b@local
-  generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama3_2-1b@local
+  validate_question: deepseek-r1_8b@local
+  generate_query: deepseek-r1_8b@local
+  interpret_csv_query_results: deepseek-r1_8b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_4:
-  validate_question: llama-3_1-70B@ovh
-  generate_query: llama3_2-1b@local
-  interpret_csv_query_results: llama3_2-1b@local
+  validate_question: deepseek-r1_8b@local
+  generate_query: deepseek-r1_8b@local
+  interpret_csv_query_results: deepseek-r1_8b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_5:
-  validate_question: llama3_2-1b@local
-  generate_query: llama3_2-1b@local
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  validate_question: deepseek-r1_8b@local
+  generate_query: deepseek-r1_8b@local
+  interpret_csv_query_results: deepseek-r1_8b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_6:
-  validate_question: llama-3_1-70B@ovh
-  generate_query: deepseek-r1_1_5b@local
-  interpret_csv_query_results: llama3_2-1b@local
-  text_embedding_model: nomic-embed-text_faiss@local
+  validate_question: deepseek-r1_8b@local
+  generate_query: deepseek-r1_8b@local
+  interpret_csv_query_results: deepseek-r1_8b@local
+  text_embedding_model: mxbai-embed-large_faiss@local
 
 scenario_7:
-  validate_question: llama3_2-1b@local
-  generate_query: llama3_2-1b@local
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  validate_question: deepseek-r1_8b@local
+  generate_query: deepseek-r1_8b@local
+  interpret_csv_query_results: deepseek-r1_8b@local
   text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_8:
+  validate_question: deepseek-r1_8b@local
+  generate_query: deepseek-r1_8b@local
+  interpret_csv_query_results: deepseek-r1_8b@local
+  text_embedding_model: nomic-embed-text_faiss@local
+  debate_rounds: 1  # Configurable number of debate rounds
