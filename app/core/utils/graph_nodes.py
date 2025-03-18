@@ -184,9 +184,9 @@ def class_description_tuple_to_nl(description: str) -> str:
     uri, label, descr = eval(description)
     serialization = f"Class '{uri}':\n"
     if label is not None:
-        serialization += f"Label: {label}\n"
+        serialization += f"  - Label: '{label}'\n"
     if descr is not None:
-        serialization += f"Description: {descr}\n"
+        serialization += f"  - Description: '{descr}'\n"
     return serialization
 
 
@@ -271,7 +271,13 @@ def create_query_generation_prompt(
 
             elif config.get_class_context_format() == "tuple":
                 merged_cls_context = ""
-                # merged_cls_context = "Format is: ('class uri', 'property uri', 'property label', 'value type')\n"
+                merged_cls_context = "Format is: ('class uri', 'property uri', 'property label', 'value type')\n"
+                for cls_context in state["selected_classes_context"]:
+                    if cls_context not in ["", "\n"]:
+                        merged_cls_context += f"\n{fulliri_to_prefixed(cls_context)}"
+
+            elif config.get_class_context_format() == "nl":
+                merged_cls_context = ""
                 for cls_context in state["selected_classes_context"]:
                     if cls_context not in ["", "\n"]:
                         merged_cls_context += f"\n{class_context_tuple_to_nl(fulliri_to_prefixed(cls_context))}"

@@ -121,7 +121,8 @@ def get_class_context(class_label_description: tuple) -> str:
         logger.debug(f"Class context stored in: {dest_file}.")
         return graph.serialize(format="turtle")
 
-    elif format == "tuple":
+    elif format == "tuple" or format == "nl":
+        # Format "nl" applies to serialization in prompts, but it is still stored as "tuple"
         result = ""
         for property_uri, property_label, property_type in properties_results:
             result += f"{(class_uri, property_uri, property_label, property_type)}\n"

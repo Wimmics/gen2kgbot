@@ -165,10 +165,10 @@ def expand_similar_classes() -> bool:
         return False
 
 
-def get_class_context_format() -> Literal["turtle", "tuple"]:
+def get_class_context_format() -> Literal["turtle", "tuple", "nl"]:
     if "class_context_format" in config.keys():
         format = config["class_context_format"]
-        if format not in ["turtle", "tuple"]:
+        if format not in ["turtle", "tuple", "nl"]:
             raise ValueError(f"Invalid parameter class_context_format: {format}")
     else:
         format = "turtle"
@@ -190,9 +190,15 @@ def get_class_context_cache_directory() -> Path:
     The path includes sub-dir: KG short name (e.g. "idsm"), "classes_context", the format (e.g. "turtle" or "tuple")
     E.g. "./data/idsm/classes_context/turtle" or "./data/idsm/classes_context/tuple"
     """
+
+    # Format "nl" applies to serialization in prompts but is still stored as "tuple"
+    format = get_class_context_format()
+    if format == "nl":
+        format = "tuple"
+
     str_path = (
         config["data_directory"]
-        + f"/{get_kg_short_name().lower()}/classes_context/{get_class_context_format()}"
+        + f"/{get_kg_short_name().lower()}/classes_context/{format}"
     )
     if os.path.isabs(str_path):
         path = Path(str_path)
@@ -396,7 +402,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
             do_sample=False,
             repetition_penalty=1.03,
             top_p=top_p,
-            inference_server_url=base_url
+            inference_server_url=base_url,
         )
 
         llm_config = ChatHuggingFace(llm=hfe, verbose=True)
@@ -660,10 +666,10 @@ async def main(graph: CompiledStateGraph):
     logger.info(f"Users' question: {question}")
     state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    logger.info("==============================================================")
-    for m in state["messages"]:
-        logger.info(m.pretty_repr())
-    if "last_generated_query" in state:
-        logger.info("==============================================================")
-        logger.info("last_generated_query: " + state["last_generated_query"])
-    logger.info("==============================================================")
+    # logger.info("==============================================================")
+    # for m in state["messages"]:
+    #     logger.info(m.pretty_repr())
+    # if "last_generated_query" in state:
+    #     logger.info("==============================================================")
+    #     logger.info("last_generated_query: " + state["last_generated_query"])
+    # logger.info("==============================================================")

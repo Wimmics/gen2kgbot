@@ -50,7 +50,7 @@ max_similar_classes: 10
 # Default: false
 expand_similar_classes: true
 
-# Format of the classes context: one of "turtle", "tuple" (optional)
+# Format of the classes context: one of "turtle", "tuple" or "nl" for natural language (optional)
 # Default: "turtle"
 class_context_format: turtle
 
@@ -87,7 +87,7 @@ seq2seq_models:
 # - top_p (decimal): the top_p parameter for the generation (optional), default: 0.95
 # - model_kwargs (str): additional parameters for the model (optional)
 
-# The local models
+# Locally-hosted models
 
   llama3_2-1b@local:
     server_type: ollama
@@ -138,7 +138,7 @@ seq2seq_models:
     max_retries: 3 
     top_p: 0.95
   
-# The ovh models
+# OVH-hosted models
 
   llama-3_1-70B@ovh:
     server_type: ovh
@@ -164,7 +164,7 @@ seq2seq_models:
     max_retries: 3
     top_p: 0.95
 
-# The OpenAI models
+  # OpenAI models
 
   gpt-4o@openai:
     server_type: openai
@@ -177,7 +177,11 @@ seq2seq_models:
     server_type: openai
     id: o3-mini
 
-# The DeepSeek models
+  o1@openai:
+    server_type: openai
+    id: o1
+
+  # DeepSeek models
 
   deepseek-chat@deepseek:
     server_type: deepseek
@@ -195,7 +199,7 @@ seq2seq_models:
     max_retries: 3
     top_p: 0.95
 
-# The HuggingFace models
+  # HuggingFace models
 
   deepseek-reasoner@hf:
     server_type: hugface
