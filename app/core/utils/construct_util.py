@@ -68,10 +68,10 @@ def get_class_context(class_label_description: tuple) -> str:
     """
     Retrieve a class context from the KG, format it according to parameter class_context_format, and save it to the cache.
     The context contains the properties used by instances of the class and their value types:
-    In Turtle: 
+    In Turtle:
         `[] a <class URI>; <property> []. <property>  rdfs:label "property label".` # if value type is None
         `[] a <class URI>; <property> [ a <value type> ]. <property>  rdfs:label "property label".`
-    or as tuples: 
+    or as tuples:
         `('class URI', 'property', 'property label', 'value type')`,
     where `value type` maybe be a class URI or a datatype URI.
 
@@ -101,7 +101,10 @@ def get_class_context(class_label_description: tuple) -> str:
 
         for property_uri, property_label, property_type in properties_results:
             # do not add the triple: "[] rdf:type [ a owl:Class ]"
-            if URIRef(property_uri) != RDF.type and URIRef(property_type) != OWL.Class:
+            if (
+                URIRef(property_uri) != RDF.type
+                and property_type != str(OWL.Class)
+            ):
                 obj = BNode()
                 graph.add((subj, URIRef(property_uri), obj))
                 if property_type != None:
@@ -118,7 +121,8 @@ def get_class_context(class_label_description: tuple) -> str:
         logger.debug(f"Class context stored in: {dest_file}.")
         return graph.serialize(format="turtle")
 
-    elif format == "tuple":
+    elif format == "tuple" or format == "nl":
+        # Format "nl" applies to serialization in prompts, but it is still stored as "tuple"
         result = ""
         for property_uri, property_label, property_type in properties_results:
             result += f"{(class_uri, property_uri, property_label, property_type)}\n"

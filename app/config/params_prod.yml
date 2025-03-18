@@ -67,7 +67,7 @@ max_similar_classes: 10
 # Default: false
 expand_similar_classes: false
 
-# Format of the classes context: one of "turtle", "tuple" (optional)
+# Format of the classes context: one of "turtle", "tuple" or "nl" for natural language (optional)
 # Default: "turtle"
 class_context_format: turtle
 
@@ -137,6 +137,10 @@ seq2seq_models:
   o3-mini@openai:
     server_type: openai
     id: o3-mini
+
+  o1@openai:
+    server_type: openai
+    id: o1
 
   deepseek-chat@deepseek:
     server_type: deepseek
