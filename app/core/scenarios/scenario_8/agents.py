@@ -37,9 +37,9 @@ class Agent:
         logger.info(f"Initializing {agent_type} with model: {model_node_name}")
         self.model = config.get_seq2seq_model(scenario_id="scenario_8", node_name=model_node_name)
     
-    async def generate_proposal(self, state: OverallState, round_number: int = 1) -> str:
-        """Generate a SPARQL query proposal based on the current state and round number."""
-        logger.info(f"{self.agent_type} generating proposal for round {round_number}")
+    async def generate_proposal_and_summary(self, state: OverallState, round_number: int = 1) -> tuple[str, str]:
+        """Generate a SPARQL query proposal and its summary in a single LLM call."""
+        logger.info(f"{self.agent_type} generating proposal and summary for round {round_number}")
         
         if round_number == 1:
             logger.info(f"{self.agent_type} using standard prompt for first round")
@@ -57,7 +57,7 @@ class Agent:
             # Subsequent rounds: use refinement prompt
             # Get previous proposal and other agents' summaries
             previous_proposal = state.get("agent_proposals_history", [[] for _ in range(3)])[state.get("agent_types", []).index(self.agent_type)][-1]
-            logger.debug(f"{self.agent_type}'s previous proposal: {previous_proposal[:100]}...")
+            logger.debug(f"{self.agent_type}'s previous proposal: {previous_proposal}")
             
             # Collect other agents' summaries
             other_summaries = []
@@ -66,7 +66,7 @@ class Agent:
                     other_summaries.append(f"{agent_type}: {state['agent_summaries_history'][i][-1]}")
             
             other_summaries_text = "\n\n".join(other_summaries)
-            logger.debug(f"Other agents' summaries: {other_summaries_text[:100]}...")
+            logger.debug(f"Other agents' summaries: {other_summaries_text}")
             
             # Use refinement prompt
             prompt = query_refinement_prompt.format(
@@ -82,31 +82,30 @@ class Agent:
         # Get response from the model
         logger.info(f"{self.agent_type} sending prompt to model")
         response = await self.model.ainvoke(prompt)
-        logger.debug(f"{self.agent_type}'s model response: {response.content[:100]}...")
+        logger.debug(f"{self.agent_type}'s complete model response:\n{response.content}")
         
-        # Extract SPARQL query from response
-        queries = find_sparql_queries(response.content)
-        if queries:
-            logger.info(f"{self.agent_type} successfully generated a valid SPARQL query")
-            return queries[0]  # Take the first query if multiple are found
+        # Extract proposal and summary from response
+        content = response.content
+        proposal_match = re.search(r"PROPOSAL:\s*(.*?)(?:\n\n|$)", content, re.DOTALL)
+        summary_match = re.search(r"SUMMARY:\s*(.*?)(?:\n\n|$)", content, re.DOTALL)
+        
+        if proposal_match and summary_match:
+            proposal = proposal_match.group(1).strip()
+            summary = summary_match.group(1).strip()
+            
+            # Verify the proposal is a valid SPARQL query
+            queries = find_sparql_queries(proposal)
+            if queries:
+                logger.info(f"{self.agent_type} successfully generated a valid SPARQL query and summary")
+                logger.debug(f"{self.agent_type}'s extracted proposal:\n{queries[0]}")
+                logger.debug(f"{self.agent_type}'s extracted summary:\n{summary}")
+                return queries[0], summary
+            else:
+                logger.warning(f"{self.agent_type} failed to generate a valid SPARQL query")
+                return "No valid SPARQL query was provided.", "Failed to generate a valid query."
         else:
-            logger.warning(f"{self.agent_type} failed to generate a valid SPARQL query")
-            return "No valid SPARQL query was provided."
-    
-    async def generate_summary(self, proposal: str) -> str:
-        """Generate a summary of the proposal."""
-        logger.info(f"{self.agent_type} generating summary for proposal")
-        logger.debug(f"Proposal to summarize: {proposal[:100]}...")
-        
-        # Prepare the summary prompt
-        prompt = agent_summary_prompt.format(agent_response=proposal)
-        
-        # Get summary from the model
-        logger.info(f"{self.agent_type} sending summary prompt to model")
-        response = await self.model.ainvoke(prompt)
-        logger.debug(f"{self.agent_type}'s summary: {response.content[:100]}...")
-        
-        return response.content
+            logger.warning(f"{self.agent_type} failed to generate properly formatted response")
+            return "Failed to generate proposal.", "Failed to generate summary."
 
 async def initialize_agents(state: OverallState) -> OverallState:
     """
@@ -163,7 +162,8 @@ async def initialize_agents(state: OverallState) -> OverallState:
         "agent_summaries_history": agent_summaries_history,  # History of summaries across rounds
         "debate_round": 1,  # Initialize debate round
         "agent_types": agent_types,
-        "merged_classes_context": merged_cls_context  # Add merged context
+        "merged_classes_context": merged_cls_context,  # Add merged context
+        "kg_description": state.get("kg_description", config.get_kg_description()),  # Get description from config if not in state
     })
     logger.info(f"Initialized agents state with keys: {list(result.keys())}")
     return result
@@ -187,14 +187,13 @@ async def debate(state: OverallState) -> OverallState:
     # Loop over debate rounds
     while current_round <= max_rounds:
         logger.info(f"Starting debate round {current_round}/{max_rounds}")
-        
+    
         # Generate proposals for each agent
         for i, agent in enumerate(state.get("agents", [])):
             logger.info(f"Generating proposal for agent {i}")
             try:
-                # Generate proposal with current round number
-                proposal = await agent.generate_proposal(state, current_round)
-                summary = await agent.generate_summary(proposal)
+                # Generate proposal and summary in a single call
+                proposal, summary = await agent.generate_proposal_and_summary(state, current_round)
                 
                 # Store in history
                 agent_proposals_history[i].append(proposal)
@@ -232,7 +231,8 @@ async def debate(state: OverallState) -> OverallState:
     # Final state update after all rounds - only pass final_proposals
     updated_state = OverallState({
         **state,
-        "final_proposals": agent_proposals  # Only pass the final proposals
+        "final_proposals": agent_proposals,  # Only pass the final proposals
+        "kg_full_name": config.get_kg_full_name()  # Add KG full name for moderator evaluation
     })
     
     logger.info(f"Debate complete after {current_round} rounds")
@@ -240,81 +240,66 @@ async def debate(state: OverallState) -> OverallState:
 
 
 async def moderator_evaluate(state: OverallState) -> OverallState:
-    """
-    Evaluate agent proposals and select the best query.
+    """Evaluate agent proposals and select the best one."""
+    logger.info("Starting moderator evaluation")
+    logger.info(f"Moderator evaluation state keys: {list(state.keys())}")
     
-    Args:
-        state (OverallState): Current state of the conversation
-        
-    Returns:
-        OverallState: Updated state with selected query
-    """
-    logger.info("Moderator evaluating final agent proposals...")
+    # Get proposals and summaries
+    proposals = state.get("final_proposals", [])
+    summaries = state.get("agent_summaries", [])
+    agent_types = state.get("agent_types", [])
     
-    # Get final proposals
-    final_proposals = state.get("final_proposals", [])
-    
-    if not final_proposals:
-        logger.warning("No proposals available for evaluation, checking agent_proposals")
-        final_proposals = state.get("agent_proposals", [])
-        
-    if not final_proposals:
-        logger.error("No proposals available for evaluation")
-        return OverallState({
-            **state,
-            "selected_query": "",
-            "error": "No proposals were generated during the debate process"
-        })
-    
-    # Ensure we have 3 proposals (pad with empty ones if needed)
-    while len(final_proposals) < 3:
-        logger.warning(f"Only {len(final_proposals)} proposals available, padding with empty ones")
-        final_proposals.append("# Empty proposal\nSELECT * WHERE { ?s ?p ?o } LIMIT 0")
+    # Ensure we have three proposals
+    if len(proposals) < 3:
+        logger.warning(f"Not enough proposals ({len(proposals)}), padding with empty proposals")
+        proposals.extend(["No proposal provided."] * (3 - len(proposals)))
+        summaries.extend(["No summary provided."] * (3 - len(summaries)))
+        agent_types.extend(["Unknown Agent"] * (3 - len(agent_types)))
     
     # Prepare moderator prompt
-    prompt = moderator_evaluation_prompt.format(
+    moderator_prompt = moderator_evaluation_prompt.format(
+        kg_full_name=config.get_kg_full_name(),  # Get directly from config instead of state
         initial_question=state.get("initial_question", ""),
         kg_description=state.get("kg_description", ""),
         merged_classes_context=state.get("merged_classes_context", ""),
-        agent_proposals=final_proposals
+        agent_proposals=proposals
     )
     
-    # Get evaluation from the model - use dedicated moderator_evaluate model
-    try:
-        logger.info("Using dedicated moderator_evaluate model")
-        model = config.get_seq2seq_model(scenario_id="scenario_8", node_name="moderator_evaluate")
-    except KeyError:
-        logger.warning("No specific moderator_evaluate model configured, falling back to generate_query")
-        model = config.get_seq2seq_model(scenario_id="scenario_8", node_name="generate_query")
+    # Get evaluation from the model
+    logger.info("Sending moderator prompt to model")
+    response = await config.get_seq2seq_model(scenario_id="scenario_8", node_name="moderator_evaluate").ainvoke(moderator_prompt)
+    logger.debug(f"Moderator's complete evaluation response:\n{response.content}")
+    
+    # Extract evaluation and selected proposal
+    content = response.content
+    evaluation_match = re.search(r"EVALUATION:\s*(.*?)(?:\n\n|$)", content, re.DOTALL)
+    selection_match = re.search(r"SELECTED_PROPOSAL:\s*(\d+)", content)
+    
+    if evaluation_match and selection_match:
+        evaluation = evaluation_match.group(1).strip()
+        selected_index = int(selection_match.group(1)) - 1  # Convert to 0-based index
         
-    response = await model.ainvoke(prompt)
-    
-    # Extract the selected query from the response
-    # The model should indicate which proposal it selected
-    selected_proposal_index = 0  # Default to first proposal
-    try:
-        # Try to find a proposal number in the response
-        match = re.search(r"proposal\s+(\d+)", response.content.lower())
-        if match:
-            selected_proposal_index = int(match.group(1)) - 1  # Convert to 0-based index
-            if selected_proposal_index >= len(final_proposals):
-                selected_proposal_index = 0  # Fallback to first proposal if index is invalid
-    except Exception as e:
-        logger.warning(f"Error parsing moderator response: {e}")
-    
-    # Select the query
-    selected_query = final_proposals[selected_proposal_index]
-    
-    # Log the selection
-    logger.info(f"Moderator selected proposal {selected_proposal_index + 1}")
-    logger.info(f"Selected query (first {min(50, len(selected_query))} chars): {selected_query[:50]}...")
-    
-    # Return state with selected query and evaluation
-    return OverallState({
-        **state,
-        "selected_query": selected_query,
-        "moderator_evaluation": response.content  # Store the evaluation reasoning
-    })
+        if 0 <= selected_index < len(proposals):
+            logger.info(f"Moderator selected proposal {selected_index + 1}")
+            logger.debug(f"Moderator's evaluation:\n{evaluation}")
+            logger.debug(f"Selected proposal:\n{proposals[selected_index]}")
+            
+            # Update state with evaluation results
+            updated_state = OverallState({
+                **state,
+                "moderator_evaluation": evaluation,
+                "selected_proposal": proposals[selected_index],
+                "selected_proposal_index": selected_index,
+                "selected_agent_type": agent_types[selected_index]
+            })
+            
+            return updated_state
+        else:
+            logger.warning(f"Invalid proposal selection: {selected_index + 1}")
+            return state
+    else:
+        logger.warning("Failed to extract evaluation or selection from moderator response")
+        return state
 
 
 async def format_selected_query(state: OverallState) -> OverallState:

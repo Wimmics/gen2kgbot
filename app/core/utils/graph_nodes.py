@@ -166,8 +166,21 @@ def select_similar_query_examples(state: OverallState) -> OverallState:
 
     # Show the retrieved document's content
     result = ""
-    for item in retrieved_documents:
-        result = f"{result}\n```sparql\n{item.page_content}\n```\n"
+    for i, item in enumerate(retrieved_documents):
+        # Clean up query content to ensure proper formatting
+        query_content = item.page_content.strip()
+        
+        # Ensure the query is properly terminated with a closing brace if needed
+        if query_content.count('{') > query_content.count('}'):
+            logger.warning(f"Query example {i+1} has unclosed braces, adding missing close brace")
+            query_content += "\n}"
+            
+        # Remove any trailing backticks that might be part of the stored content
+        query_content = query_content.rstrip('`')
+        
+        # Format with proper markdown code block
+        result += f"\n```sparql\n{query_content}\n```\n"
+    
     logger.info(
         f"Selected {len(retrieved_documents)} SPARQL queries similar to the named entities of the quesion."
     )

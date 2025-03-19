@@ -82,7 +82,7 @@ def init(state) -> OverallState:
         "initial_question": initial_question,
         "messages": [],  # Initialize empty messages list
         "kg_description": config.get_kg_description(),  # Add KG description
-        "max_debate_rounds": 3  # Set default max debate rounds
+        "max_debate_rounds": config.get_configuration().get("scenario_8", {}).get("debate_rounds", 3)  # Get debate_rounds from config
     })
     
     # Log output state structure

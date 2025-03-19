@@ -113,15 +113,16 @@ seq2seq_models:
     server_type: openai
     id: o3-mini
     
-  deepseek-r1_1_5b@local:
-    server_type: ollama
-    id: deepseek-r1:1.5b
-    temperature: 0
-    max_retries: 3
-    
   deepseek-r1_8b@local:
     server_type: ollama
     id: deepseek-r1:8b
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  deepseek-r1_1_5b@local:
+    server_type: ollama
+    id: deepseek-r1:1.5b
     temperature: 0
     max_retries: 3
     top_p: 0.95
@@ -213,14 +214,14 @@ scenario_7:
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_8:
-  validate_question: deepseek-r1_8b@local
-  generate_query: deepseek-r1_8b@local
-  interpret_csv_query_results: deepseek-r1_8b@local
+  validate_question: o3-mini@openai
+  generate_query: o3-mini@openai
+  interpret_csv_query_results: o3-mini@openai
   text_embedding_model: nomic-embed-text_faiss@local
-  debate_rounds: 2  # Configurable number of debate rounds
+  debate_rounds: 1  # Changed from 2 to 1
   
   # Multi-agent debate specific configuration
-  moderator_evaluate: deepseek-r1_8b@local
-  domain_kg_expert: deepseek-r1_8b@local
-  query_optimization_expert: deepseek-r1_8b@local
-  semantic_interpretation_expert: deepseek-r1_8b@local
+  moderator_evaluate: o3-mini@openai
+  domain_kg_expert: o3-mini@openai
+  query_optimization_expert: o3-mini@openai
+  semantic_interpretation_expert: o3-mini@openai

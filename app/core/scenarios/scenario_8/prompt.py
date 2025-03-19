@@ -3,103 +3,119 @@ from langchain_core.prompts import PromptTemplate
 # Domain KG Expert prompt
 domain_kg_expert_prompt = PromptTemplate.from_template(
     """
-You are a Domain Knowledge Graph Expert specializing in {kg_full_name}.
+You are a Domain Knowledge Graph Expert specializing in the {kg_full_name}.
+
+Your task is to generate a SPARQL query that accurately captures the domain-specific knowledge and relationships needed to answer the user's question.
+
+Knowledge Graph Description:
 {kg_description}
 
-Your task is to create a SPARQL query that answers the user's question by leveraging your deep understanding of knowledge graph structure, classes, and relationships.
-
-Focus on:
-- Correctly identifying and using the most relevant classes and properties
-- Creating well-structured relationships between entities
-- Ensuring the query properly reflects the ontology of the knowledge graph
-- Capturing all relevant aspects of the user's question
-
-The user's question is:
+User Question:
 {initial_question}
 
-Here is a list of classes relevant to the user's question, formatted as (class uri, label, description):
+Relevant Classes and Properties:
 {selected_classes}
 
-Here is how the properties are used by instances of the classes:
+Merged Classes Context:
 {merged_classes_context}
 
-These are example SPARQL queries that can help you generate the proper query:
+Similar Queries:
 {selected_queries}
 
-In your response:
-1. First, provide your reasoning process, explaining how you're approaching this query based on your knowledge of the KG structure.
-2. Then, place your SPARQL query inside a markdown codeblock with the ```sparql ``` tag.
+YOUR RESPONSE MUST FOLLOW THIS FORMAT EXACTLY:
 
-Focus on creating a query that accurately represents the structure of the knowledge graph.
-"""
+PROPOSAL:
+```sparql
+[Your SPARQL query here]
+```
+
+SUMMARY:
+[Your summary of the proposal here]
+
+The query should:
+1. Use the correct domain-specific classes and properties
+2. Consider domain-specific relationships and constraints
+3. Include relevant filters and conditions
+4. Handle edge cases and special requirements"""
 )
 
 # Query Optimization Expert prompt
 query_optimization_expert_prompt = PromptTemplate.from_template(
     """
-You are a SPARQL Query Optimization Expert with deep knowledge of efficient query patterns and performance considerations.
+You are a Query Optimization Expert specializing in creating efficient SPARQL queries for the {kg_full_name}.
 
-Your task is to create a SPARQL query that answers the user's question while ensuring optimal performance and efficiency.
+Your task is to generate a SPARQL query that efficiently retrieves the required information while minimizing computational overhead.
 
-Focus on:
-- Creating queries that minimize computational complexity
-- Using appropriate filters and constraints
-- Avoiding cartesian products and inefficient joins
-- Structuring the query for readability and maintainability
-- Ensuring the query returns precisely the data needed (no more, no less)
+Knowledge Graph Description:
+{kg_description}
 
-The user's question is:
+User Question:
 {initial_question}
 
-Here is a list of classes relevant to the user's question, formatted as (class uri, label, description):
+Relevant Classes and Properties:
 {selected_classes}
 
-Here is how the properties are used by instances of the classes:
+Merged Classes Context:
 {merged_classes_context}
 
-These are example SPARQL queries that can help you generate the proper query:
+Similar Queries:
 {selected_queries}
 
-In your response:
-1. First, provide your reasoning process, explaining how you're approaching this query with efficiency in mind.
-2. Then, place your SPARQL query inside a markdown codeblock with the ```sparql ``` tag.
+YOUR RESPONSE MUST FOLLOW THIS FORMAT EXACTLY:
 
-Focus on creating a query that is efficient, well-structured, and optimized for performance.
-"""
+PROPOSAL:
+```sparql
+[Your SPARQL query here]
+```
+
+SUMMARY:
+[Your summary of the proposal here]
+
+The query should:
+1. Use appropriate indexes and property paths
+2. Minimize the number of joins
+3. Apply filters early in the query
+4. Use DISTINCT only when necessary
+5. Consider the cardinality of relationships"""
 )
 
 # Semantic Interpretation Expert prompt
 semantic_interpretation_expert_prompt = PromptTemplate.from_template(
     """
-You are a Semantic Interpretation Expert skilled at translating natural language questions into structured queries.
+You are a Semantic Interpretation Expert specializing in translating natural language questions into structured SPARQL queries for the {kg_full_name}.
 
-Your task is to create a SPARQL query that precisely captures the semantic intent of the user's question.
+Your task is to generate a SPARQL query that accurately represents the user's question while considering the semantic meaning and relationships in the knowledge graph.
 
-Focus on:
-- Ensuring all aspects of the user's question are addressed in the query
-- Identifying implied relationships not explicitly stated
-- Handling ambiguities in the natural language appropriately
-- Translating complex semantic concepts into query patterns
-- Prioritizing completeness of the answer
+Knowledge Graph Description:
+{kg_description}
 
-The user's question is:
+User Question:
 {initial_question}
 
-Here is a list of classes relevant to the user's question, formatted as (class uri, label, description):
+Relevant Classes and Properties:
 {selected_classes}
 
-Here is how the properties are used by instances of the classes:
+Merged Classes Context:
 {merged_classes_context}
 
-These are example SPARQL queries that can help you generate the proper query:
+Similar Queries:
 {selected_queries}
 
-In your response:
-1. First, provide your reasoning process, explaining how you're interpreting the user's question and translating it to SPARQL.
-2. Then, place your SPARQL query inside a markdown codeblock with the ```sparql ``` tag.
+YOUR RESPONSE MUST FOLLOW THIS FORMAT EXACTLY:
 
-Focus on creating a query that fully captures the semantic intent of the user's question.
-"""
+PROPOSAL:
+```sparql
+[Your SPARQL query here]
+```
+
+SUMMARY:
+[Your summary of the proposal here]
+
+The query should:
+1. Focus on the specific entities and relationships mentioned in the question
+2. Use appropriate property paths and filters
+3. Consider the semantic meaning of the relationships
+4. Be efficient and well-structured"""
 )
 
 # Agent summary prompt
@@ -117,13 +133,27 @@ The original query and reasoning you provided:
 # Moderator evaluation prompt
 moderator_evaluation_prompt = PromptTemplate.from_template(
     """
-You are a Moderator evaluating SPARQL queries generated by specialist agents for the following user question:
+You are a moderator evaluating SPARQL query proposals for the {kg_full_name}.
+
+Your task is to evaluate the following proposals and select the best one based on:
+1. Accuracy in answering the user's question
+2. Query efficiency and performance
+3. Semantic correctness
+4. Completeness of the solution
+
+User Question:
 {initial_question}
 
-Knowledge Graph Context:
+Knowledge Graph Description:
 {kg_description}
 
-Please evaluate each proposed query across 6 factors on a scale of 1-5 (5 being best):
+Merged Classes Context:
+{merged_classes_context}
+
+Proposals:
+{agent_proposals}
+
+Please evaluate each proposal across 6 factors on a scale of 1-5 (5 being best):
 - Correctness (25%): Syntactic validity and proper use of ontology elements
 - Completeness (25%): Addresses all aspects of the user's question
 - Relevance (20%): Uses appropriate classes and properties from the KG
@@ -131,21 +161,12 @@ Please evaluate each proposed query across 6 factors on a scale of 1-5 (5 being 
 - Clarity (10%): Readability and maintainability of the query
 - Robustness (5%): Handling of potential edge cases
 
-Relevant classes and properties:
-{merged_classes_context}
+Please provide your response in the following format:
 
-Agent Proposal #1 (Domain KG Expert):
-{agent_proposals[0]}
+EVALUATION:
+[For each proposal, provide a detailed evaluation with scores and reasoning]
 
-Agent Proposal #2 (Query Optimization Expert):
-{agent_proposals[1]}
-
-Agent Proposal #3 (Semantic Interpretation Expert):
-{agent_proposals[2]}
-
-Evaluate each query using the following format:
-
-Query #1 (Domain KG Expert):
+Query #1:
 - Correctness: [SCORE]/5 - [BRIEF REASONING]
 - Completeness: [SCORE]/5 - [BRIEF REASONING]
 - Relevance: [SCORE]/5 - [BRIEF REASONING]
@@ -154,46 +175,55 @@ Query #1 (Domain KG Expert):
 - Robustness: [SCORE]/5 - [BRIEF REASONING]
 - Total Weighted Score: [CALCULATED SCORE]
 
-Query #2 (Query Optimization Expert):
-[SAME FORMAT]
+[Repeat for Query #2 and #3]
 
-Query #3 (Semantic Interpretation Expert):
-[SAME FORMAT]
+SELECTED_PROPOSAL:
+[The number of the best proposal (1, 2, or 3)]
 
-Final Selection: Query #[X] with a score of [SCORE]
-Justification: [OVERALL JUSTIFICATION FOR THE SELECTION]
-
-The selected query with any minor improvements you'd recommend:
-```sparql
-[SELECTED QUERY WITH POSSIBLE IMPROVEMENTS]
-```
+Justification:
+[Overall justification for the selection, including:
+1. Analysis of each proposal's strengths and weaknesses
+2. Consideration of the specific requirements of the question
+3. Evaluation of query efficiency and correctness
+4. Clear reasoning for the final selection]
 """
 )
 
 # Additional rounds prompt to refine queries
 query_refinement_prompt = PromptTemplate.from_template(
     """
-You are a {agent_type} working to refine your SPARQL query based on insights from other experts.
+You are a {agent_type} for the {kg_full_name}. Your task is to refine your previous proposal based on feedback from other experts.
 
-The user's question is:
-{initial_question}
-
-Here is your previous query and reasoning:
+Previous Proposal:
 {previous_proposal}
 
-Here are summaries from other experts:
+Other Experts' Summaries:
 {other_summaries}
 
-Knowledge Graph Context:
+Knowledge Graph Description:
+{kg_description}
+
+User Question:
+{initial_question}
+
+Merged Classes Context:
 {merged_classes_context}
 
-Please refine your query to incorporate valuable insights from other experts while maintaining your expertise as a {agent_type}.
+YOUR RESPONSE MUST FOLLOW THIS FORMAT EXACTLY:
 
-In your response:
-1. First, explain your refinement process and what improvements you're making based on other experts' insights.
-2. Then, provide your improved SPARQL query inside a markdown codeblock with the ```sparql ``` tag.
-3. Finally, include a brief summary of your approach (3-4 sentences) that highlights what makes your query effective from your area of expertise.
-"""
+PROPOSAL:
+```sparql
+[Your refined SPARQL query here]
+```
+
+SUMMARY:
+[Your summary of the refined proposal here]
+
+Consider:
+1. Incorporating relevant insights from other experts
+2. Addressing any gaps or issues in the previous proposal
+3. Maintaining or improving query efficiency
+4. Ensuring semantic accuracy and completeness"""
 )
 
 # Retry system prompt for when verification fails

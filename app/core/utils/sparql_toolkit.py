@@ -48,6 +48,20 @@ def run_sparql_query(query: str, endpoint_url: str = None) -> str:
 
 def find_sparql_queries(message: str) -> List[str]:
     """
-    Extract, from the LLM's response, SPARQL queries embedded in a sparql markdown block.
+    Extract, from the LLM's response, SPARQL queries embedded in a sparql markdown block
+    or in freeform text that looks like a SPARQL query.
     """
-    return re.findall("```sparql(.*)```", message, re.DOTALL)
+    # First try to find properly formatted markdown code blocks
+    markdown_queries = re.findall("```sparql(.*)```", message, re.DOTALL)
+    if markdown_queries:
+        return [q.strip() for q in markdown_queries]
+    
+    # If no markdown blocks found, look for SELECT or CONSTRUCT statements
+    # that are likely to be SPARQL queries
+    freeform_queries = re.findall(r"(?:SELECT|CONSTRUCT).*?(?:WHERE\s*\{.*?\})", message, re.DOTALL | re.IGNORECASE)
+    
+    # If still nothing, check if the entire message is a SPARQL query
+    if not freeform_queries and (message.strip().startswith("SELECT") or message.strip().startswith("CONSTRUCT")):
+        freeform_queries = [message.strip()]
+    
+    return [q.strip() for q in freeform_queries]
