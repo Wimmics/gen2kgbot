@@ -138,12 +138,12 @@ def get_properties_qnames_info() -> str:
     return config["properties_qnames_info"]
 
 
-def get_judging_grade_threshold_retry() -> int:
-    return config["judging_grade_threshold_retry"]
+def get_judging_grade_threshold_retry(scenario_id: str) -> int:
+    return config[scenario_id]["judging_grade_threshold_retry"]
 
 
-def get_judging_grade_threshold_run() -> int:
-    return config["judging_grade_threshold_run"]
+def get_judging_grade_threshold_run(scenario_id: str) -> int:
+    return config[scenario_id]["judging_grade_threshold_run"]
 
 
 def get_known_prefixes() -> dict:

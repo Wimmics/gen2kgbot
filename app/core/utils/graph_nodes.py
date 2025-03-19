@@ -5,7 +5,7 @@ This module implements the Langgraph nodes that are common to multiple scenarios
 from datetime import timezone, datetime
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
-from app.core.utils.graph_state import OverallState
+from app.core.utils.graph_state import JudgeStatus, OverallState
 from app.core.utils.question_preprocessing import extract_relevant_entities_spacy
 from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
 import app.core.utils.config_manager as config
@@ -157,7 +157,7 @@ def select_similar_query_examples(state: OverallState) -> OverallState:
     Returns:
         dict: state updated messages and queries (selected_queries)
     """
-    question = state["question_relevant_entities"]
+    question = ", ".join(state["question_relevant_entities"])
     retrieved_documents = config.get_query_vector_db(
         state["scenario_id"]
     ).similarity_search(question, k=3)
@@ -395,7 +395,12 @@ def run_query(state: OverallState) -> OverallState:
 
     # The last generated query may already be in the state (secnarios 4-6)
     # or in the conversation (scenarios 1-3)
-    if "last_generated_query" in state:
+    if state["query_judgements"][-1]["judge_status"] in [
+        JudgeStatus.JUDGE_HIGH_SCORE,
+        JudgeStatus.JUDGE_LOW_SCORE_RUN_QUERY,
+    ]:
+        query = state["query_judgements"][-1]["query"]
+    elif "last_generated_query" in state:
         query = state["last_generated_query"]
     else:
         query = find_sparql_queries(state["messages"][-1].content)[0]
@@ -454,7 +459,7 @@ async def interpret_csv_query_results(state: OverallState) -> OverallState:
     ).ainvoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")
-    return OverallState({"messages": result, "results_interpretation": result})
+    return OverallState({"messages": result, "results_interpretation": result.content})
 
 
 def save_full_context(graph: Graph):

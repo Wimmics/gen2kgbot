@@ -1,4 +1,6 @@
 import asyncio
+import json
+import os
 import re
 from typing import Literal
 from langgraph.graph import StateGraph, START, END
@@ -50,6 +52,7 @@ from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.algebra import translateQuery
 from langchain_core.messages import AIMessage, SystemMessage
 from app.core.utils.sparql_toolkit import find_json, find_sparql_queries
+from langsmith import Client
 
 
 logger = setup_logger(__package__, __file__)
@@ -136,17 +139,32 @@ def judge_query_router(
 
         else:
 
-            judging_grade_threshold_run = config.get_judging_grade_threshold_run()
-            last_judge_grade = state["query_judgements"][-1]["judging_grade"]
+            judging_grade_threshold_run = config.get_judging_grade_threshold_run(
+                scenario_id=SCENARIO
+            )
+
+            if "judging_grade" in state["query_judgements"][-1]:
+                last_judge_grade = state["query_judgements"][-1]["judging_grade"]
+            else:
+                last_judge_grade = 0
 
             if last_judge_grade < judging_grade_threshold_run:
-                logger.info("Max retries reached. The generated SPARQL query needs improvement. And it is not good enough to run.")
-                state["query_judgements"][-1]["judge_status"] = JudgeStatus.JUDGE_LOW_SCORE_END
+                logger.info(
+                    "Max retries reached. The generated SPARQL query needs improvement. And it is not good enough to run."
+                )
+                state["query_judgements"][-1][
+                    "judge_status"
+                ] = JudgeStatus.JUDGE_LOW_SCORE_END
             else:
-                logger.info("Max retries reached. The generated SPARQL query needs improvement. But it is good enough to run.")
-                state["query_judgements"][-1]["judge_status"] = JudgeStatus.JUDGE_LOW_SCORE_RUN_QUERY
+                logger.info(
+                    "Max retries reached. The generated SPARQL query needs improvement. But it is good enough to run."
+                )
+                state["query_judgements"][-1][
+                    "judge_status"
+                ] = JudgeStatus.JUDGE_LOW_SCORE_RUN_QUERY
 
             return END
+
 
 # Nodes
 
@@ -288,13 +306,14 @@ def validate_sparql_syntax(state: OverallState) -> OverallState:
     return {
         "query_judgements": [query_judgement],
         "messages": [AIMessage("The generated SPARQL query is syntactically correct.")],
+        "number_of_tries": state["number_of_tries"] + 1,
     }
 
 
 def find_qnames_info(state: OverallState):
     """
     Retrieve the properties and value types for the QNames.
-    
+
     Used in scenarios 7.
 
     Args:
@@ -347,11 +366,10 @@ def getPropertyDetails(
     Return:
         str: the properties for the provided QName
     """
-    sparqlQuery: str = """PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX dc: <http://purl.org/dc/elements/1.1/description>
-    PREFIX dcterms: <http://purl.org/dc/terms/>
-    PREFIX obo: <http://purl.obolibrary.org/obo/>
+
+    prefixes = config.get_prefixes_as_sparql()
+
+    sparqlQuery: str = f"""{prefixes}
     SELECT """
 
     for i in range(len(listOfProperties)):
@@ -402,7 +420,9 @@ async def judge_query(state: OverallState):
     """
 
     llm = config.get_seq2seq_model(scenario_id=SCENARIO, node_name="judge_query")
-    judging_grade_threshold_retry = config.get_judging_grade_threshold_retry()
+    judging_grade_threshold_retry = config.get_judging_grade_threshold_retry(
+        scenario_id=SCENARIO
+    )
     query_judgement = state["query_judgements"].pop()
 
     try:
@@ -415,29 +435,22 @@ async def judge_query(state: OverallState):
             )
         )
 
-        # Extract the grade and justification from the response
-        grade = find_json(result.content)
+        # Extract the grade and justification from the response if it exists
+        judgement = find_json(result.content)
 
-        if len(grade) > 0:
-
-            # Validate the extracted JSON
-            data = JudgeGrade.model_validate_json(grade[0])
-
-            if data.grade >= judging_grade_threshold_retry:
-                logger.info("The query passed the judging process.")
-                query_judgement["judge_status"] = JudgeStatus.JUDGE_HIGH_SCORE
-
-            else:
-                logger.info("The query did not pass the judging process.")
-                query_judgement["judge_status"] = JudgeStatus.JUDGE_LOW_SCORE
-
-            logger.debug(f"Grade: {data.grade} - Justification: {data.justification}")
-
+        if len(judgement) > 0:
+            data = JudgeGrade.model_validate_json(judgement[0])
         else:
+            data = JudgeGrade.model_validate_json(result.content)
 
-            # No JSON found in the response
-            logger.debug("No JSON found in the response.")
-            query_judgement["judge_status"] = JudgeStatus.NO_VALID_JSON
+        if data.grade >= judging_grade_threshold_retry:
+            logger.info("The query passed the judging process.")
+            query_judgement["judge_status"] = JudgeStatus.JUDGE_HIGH_SCORE
+        else:
+            logger.info("The query did not pass the judging process.")
+            query_judgement["judge_status"] = JudgeStatus.JUDGE_LOW_SCORE
+
+        logger.debug(f"Grade: {data.grade} - Justification: {data.justification}")
 
     except ValidationError as e:
         logger.debug(f"Judge Schema not valid: {e}")
@@ -547,8 +560,9 @@ def create_query_generation_prompt(
     # If retry, add the cause for the last error
     if "last_answer_error_cause" in template.input_variables:
         if state["query_judgements"][-1]["judge_status"] in [
-            JudgeStatus.INVALID_SYNTAX,
             JudgeStatus.NO_QUERY,
+            JudgeStatus.INVALID_SYNTAX,
+            JudgeStatus.NO_VALID_JSON,
             JudgeStatus.JUDGE_LOW_SCORE,
         ]:
             template = template.partial(
@@ -647,7 +661,10 @@ judge_builder.add_edge("judge_regenerate_query", "validate_sparql_syntax")
 
 
 # Main graph for generating and executing the query
-builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
+builder = StateGraph(
+    state_schema=OverallState, input=InputState, output=OverallState
+)  # TODO to put back
+# builder = StateGraph(state_schema=OverallState, input=OverallState, output=OverallState)  # TODO remove
 
 builder.add_node("preprocessing_subgraph", prepro_builder.compile())
 builder.add_node("create_prompt", create_prompt)
@@ -660,6 +677,7 @@ builder.add_edge(START, "preprocessing_subgraph")
 builder.add_conditional_edges("preprocessing_subgraph", preprocessing_subgraph_router)
 builder.add_edge("create_prompt", "generate_query")
 builder.add_edge("generate_query", "judging_subgraph")
+# builder.add_edge(START, "judging_subgraph")  # TODO to remove
 builder.add_conditional_edges("judging_subgraph", judging_subgraph_router)
 builder.add_conditional_edges("run_query", run_query_router)
 builder.add_edge("interpret_results", END)
@@ -667,5 +685,49 @@ builder.add_edge("interpret_results", END)
 graph = builder.compile()
 
 
+async def custom_main(graph: StateGraph):
+    # Parse the command line arguments
+    args = config.setup_cli()
+
+    # Load the configuration file and assign to global variable 'config'
+    config.read_configuration(args)
+
+    question = args.question
+    logger.info(f"Users' question: {question}")
+
+    with open("data/custom_inputs/input_judging_subgraph.json", "r") as f:
+        input_judging_subgraph = json.load(f)
+
+    state = await graph.ainvoke(input=input_judging_subgraph)
+
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")
+
+
+def langsmith_setup():
+    # #Setting up the LangSmith
+    # #For now, all runs will be stored in the "KGBot Testing - GPT4"
+    # #If you want to separate the traces to have a better control of specific traces.
+    # #Metadata as llm version and temperature can be obtained from traces.
+
+    os.environ["LANGCHAIN_TRACING_V2"] = "true"
+    os.environ["LANGCHAIN_PROJECT"] = (
+        "Gen²KGBot Testing - Scenario 7"  # Please update the name here if you want to create a new project for separating the traces.
+    )
+    os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
+
+    client = Client()
+
+    # #Check if the client was initialized
+    print(f"Langchain client was initialized: {client}")
+
+
 if __name__ == "__main__":
-    asyncio.run(config.main(graph))
+    asyncio.run(config.main(graph))  # TODO to put back
+    # langsmith_setup()
+    # asyncio.run(custom_main(graph))  # TODO to put back

@@ -89,10 +89,10 @@ Your evaluation should be a JSON containing two keys "grade" and "justification"
   - Focus on accuracy, completeness, efficiency, and syntax correctness.
 
 For example:
-{
+{{
   "grade": 9,
   "justification": "The query is mostly correct, The query is missing a LIMIT clause."
-}
+}}
 
 
 Question:
