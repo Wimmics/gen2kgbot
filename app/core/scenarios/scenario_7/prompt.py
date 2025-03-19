@@ -34,7 +34,7 @@ retry_system_prompt_template = PromptTemplate.from_template(
     """
 You are a specialized assistant for creating SPARQL queries related to the {kg_full_name}.
 
-You are given a previous response that may either contain no SPARQL query, or contain a SPARQL query that is not snytactically correct.
+You are given a previous response that may either contain no SPARQL query, or contain a SPARQL query that is not syntactically or semantically correct.
 
 If no SPARQL query is present, generate one based on the context provided.
 If a non-functional SPARQL query is present, fix it based on the context provided.
@@ -59,7 +59,7 @@ Example SPARQL queries:
 {selected_queries}
 
 
-The last answer you provided, that either does not contain a SPARQL query or have an unparsable SPARQL query:
+The last answer you provided, that either does not contain a SPARQL query or have syntact or semantic errors:
 {last_answer}
 
 
@@ -67,3 +67,45 @@ The verification did not pass because:
 {last_answer_error_cause}
 """
 )
+
+
+judge_query_prompt = """Role: You are a Semantic Web teacher tasked with grading students' SPARQL queries based on a given natural language question.
+
+Input:
+
+- A natural language question.
+- A student's SPARQL query (provided in "sparql" markdown).
+- Context of the QNames and Full QNames used in the query.
+
+Output:
+Your evaluation should be a JSON containing two keys "grade" and "justification":
+
+1. Grade (int) ranging between 1 and 10 where:
+  - 1 = Completely incorrect or irrelevant.
+  - 10 = Fully correct and optimal.
+
+2. Justification (str):
+  - Provide a detailed explanation of your grade.
+  - Focus on accuracy, completeness, efficiency, and syntax correctness.
+
+For example:
+{{
+  "grade": 9,
+  "justification": "The query is mostly correct, The query is missing a LIMIT clause."
+}}
+
+
+Question:
+{initial_question}
+
+SPARQL Query:
+'''sparql
+{sparql}
+'''
+
+QName Context:
+{qname_info}
+"""
+
+
+error_cause_no_query = "The last answer did not contain a SPARQL query."

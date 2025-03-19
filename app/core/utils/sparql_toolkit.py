@@ -51,3 +51,10 @@ def find_sparql_queries(message: str) -> List[str]:
     Extract, from the LLM's response, SPARQL queries embedded in a sparql markdown block.
     """
     return re.findall("```sparql(.*)```", message, re.DOTALL)
+
+
+def find_json(message: str) -> List[str]:
+    """
+    Extract, from the LLM's response, JSON embedded in a json markdown block.
+    """
+    return re.findall("```json(.*)```", message, re.DOTALL)
