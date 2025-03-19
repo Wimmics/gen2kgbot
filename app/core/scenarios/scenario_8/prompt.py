@@ -137,20 +137,11 @@ Relevant classes and properties:
 Agent Proposal #1 (Domain KG Expert):
 {agent_proposals[0]}
 
-Expert's reasoning:
-{agent_summaries[0]}
-
 Agent Proposal #2 (Query Optimization Expert):
 {agent_proposals[1]}
 
-Expert's reasoning:
-{agent_summaries[1]}
-
 Agent Proposal #3 (Semantic Interpretation Expert):
 {agent_proposals[2]}
-
-Expert's reasoning:
-{agent_summaries[2]}
 
 Evaluate each query using the following format:
 

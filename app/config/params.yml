@@ -217,4 +217,10 @@ scenario_8:
   generate_query: deepseek-r1_8b@local
   interpret_csv_query_results: deepseek-r1_8b@local
   text_embedding_model: nomic-embed-text_faiss@local
-  debate_rounds: 1  # Configurable number of debate rounds
+  debate_rounds: 2  # Configurable number of debate rounds
+  
+  # Multi-agent debate specific configuration
+  moderator_evaluate: deepseek-r1_8b@local
+  domain_kg_expert: deepseek-r1_8b@local
+  query_optimization_expert: deepseek-r1_8b@local
+  semantic_interpretation_expert: deepseek-r1_8b@local

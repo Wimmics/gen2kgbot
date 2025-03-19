@@ -4,6 +4,7 @@ tmp
 
 data/*
 !data/idsm_queries
+ontologies_ttl.zip
 
 logs
 

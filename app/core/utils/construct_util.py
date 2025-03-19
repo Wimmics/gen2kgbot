@@ -100,8 +100,12 @@ def get_class_context(class_label_description: tuple) -> str:
         graph.add((subj, RDF.type, class_ref))
 
         for property_uri, property_label, property_type in properties_results:
+            # Skip if property_uri is None
+            if property_uri is None:
+                continue
+                
             # do not add the triple: "[] rdf:type [ a owl:Class ]"
-            if URIRef(property_uri) != RDF.type and URIRef(property_type) != OWL.Class:
+            if URIRef(property_uri) != RDF.type and (property_type is None or URIRef(property_type) != OWL.Class):
                 obj = BNode()
                 graph.add((subj, URIRef(property_uri), obj))
                 if property_type != None:

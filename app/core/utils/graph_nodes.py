@@ -158,7 +158,8 @@ def select_similar_query_examples(state: OverallState) -> OverallState:
     Returns:
         dict: state updated messages and queries (selected_queries)
     """
-    question = state["question_relevant_entities"]
+    # Join the relevant entities into a string
+    question = " ".join(state["question_relevant_entities"])
     retrieved_documents = config.get_query_vector_db(
         state["scenario_id"]
     ).similarity_search(question, k=3)

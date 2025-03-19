@@ -200,7 +200,7 @@ def get_class_context_cache_directory() -> Path:
         path = Path(__file__).resolve().parent.parent.parent.parent / str_path
 
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
     return path
 
 
@@ -218,7 +218,7 @@ def get_preprocessing_directory() -> Path:
         path = Path(__file__).resolve().parent.parent.parent.parent / str_path
 
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
     return path
 
 
@@ -238,7 +238,7 @@ def get_temp_directory() -> Path:
         path = Path(__file__).resolve().parent.parent.parent.parent / str_path
 
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
     return path
 
 
@@ -278,7 +278,7 @@ def get_embeddings_directory(vector_db_name: str) -> Path:
         path = Path(__file__).resolve().parent.parent.parent.parent / str_path
 
     if not os.path.exists(path):
-        os.makedirs(path)
+        os.makedirs(path, exist_ok=True)
     return path
 
 
