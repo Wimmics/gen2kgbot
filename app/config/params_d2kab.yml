@@ -1,0 +1,276 @@
+# KG full name (used in prompts)
+kg_full_name: WheatGenomic Scienctific Literature Knowledge Graph
+
+# KG short name (used to generate file paths)
+kg_short_name: d2kab
+
+# KG textual description (used in prompts)
+kg_description: The Wheat Genomics Scientific Literature Knowledge Graph (WheatGenomicsSLKG) is a FAIR knowledge graph that exploits the Semantic Web technologies to describe PubMed scientific articles on wheat genetics and genomics. It represents Named Entities (NE) about genes, phenotypes, taxa and varieties, mentioned in the title and the abstract of the articles, and the relationships between wheat mentions of varieties and phenotypes.
+
+# SPARQL endpoint serving the KG
+kg_sparql_endpoint_url: "http://d2kab.i3s.unice.fr/sparql" 
+
+# SPARQL endpoint serving the ontologies, if different from the KG SPARQL endpoint (optional)
+# Default: same as kg_sparql_endpoint_url
+#ontologies_sparql_endpoint_url: "http://d2kab.i3s.unice.fr/sparql" 
+
+# Prefixes and namespaces to be used in the Turtle and SPARQL queries
+prefixes:
+  bibo:           "http://purl.org/ontology/bibo/"
+  d2kab:          "http://ns.inria.fr/d2kab/"
+  dc:             "http://purl.org/dc/elements/1.1/"
+  dcterms:        "http://purl.org/dc/terms/"
+  fabio:          "http://purl.org/spar/fabio/"
+  foaf:           "http://xmlns.com/foaf/0.1/"
+  frbr:           "http://purl.org/vocab/frbr/core#"
+  obo:            "http://purl.obolibrary.org/obo/"
+  oa:             "http://www.w3.org/ns/oa#"
+  owl:            "http://www.w3.org/2002/07/owl#"
+  rdf:            "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  rdfs:           "http://www.w3.org/2000/01/rdf-schema#"
+  schema:         "http://schema.org/"
+  skos:           "http://www.w3.org/2004/02/skos/core#"
+  xsd:            "http://www.w3.org/2001/XMLSchema#"
+  wto:            "http://opendata.inrae.fr/wto/"
+
+# Named graphs where to look for ontology definitions (optional)
+ontology_named_graphs:
+  - "http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg"
+  - "http://ns.inria.fr/d2kab/ontology/wto/v3"
+  - "http://purl.org/dc/elements/1.1/"
+  - "http://purl.org/dc/terms/"
+  - "http://purl.org/obo/owl/"
+  - "http://purl.org/ontology/bibo/"
+  - "http://purl.org/spar/fabio"
+  - "http://purl.org/vocab/frbr/core#"
+  - "http://www.w3.org/2002/07/owl#"
+  - "http://www.w3.org/2004/02/skos/core"
+  - "http://www.w3.org/ns/oa#"
+  #- "http://purl.obolibrary.org/obo/ncbitaxon/ncbitaxon.owl"
+
+# Max number of classes similar to the user's question (optional)
+# Default: 10
+max_similar_classes: 10
+
+# Expand the initial list of classes similar to the question with additional classes connected to them (optional)
+# Default: false
+expand_similar_classes: true
+
+# Format of the classes context: one of "turtle", "tuple" or "nl" for natural language (optional)
+# Default: "turtle"
+class_context_format: turtle
+
+# Optional list of classes and namespaces to be excluded from the similar classes (optional)
+excluded_classes_namespaces:
+
+# Root path for the cache of classes context and pre-computed embeddings
+data_directory: "./data"
+
+# Name of the subdirectoties that contain the pre-computed embeddings of classes, properties and queries.
+# These names must be consistent with the chosen embedding model names in section text_embedding_models
+# Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
+# e.g. ./data/idsm/faiss_embeddings/
+class_embeddings_subdir: "classes_with_instance_nomic"
+property_embeddings_subdir: "properties_nomic"
+queries_embeddings_subdir: "sparql_queries_nomic"
+
+# Path to a usable temporary directory
+temp_directory: "./tmp"
+
+
+# -----------------------------------------------------------
+# LLM configurations
+
+seq2seq_models:
+# Each seq2seq model shall contain the following paramters:
+# - server_type (str): one of "openai", "ollama", "ollama-server", "ovh", "hugface", "google" "deepseek"
+# - id (str): the model identifier as defined by the provider
+# - base_url (str): server's URL. Mandatory if server_type is "ollama-server", "ovh" or "deepseek"
+# - temperature (decimal): the temperature parameter for the generation (optional)
+# - max_retries (int): the maximum number of retries in case of failure (optional)
+# - top_p (decimal): the top_p parameter for the generation (optional), default: 0.95
+# - model_kwargs (str): additional parameters for the model (optional)
+
+# Locally-hosted models
+
+  llama3_2-1b@local:
+    server_type: ollama
+    id: llama3.2:1b
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  llama3_2:3b@local:
+    server_type: ollama
+    id: llama3.2:latest
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  gemma-3_1b@local:
+    server_type: ollama
+    id: gemma3:1b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_4b@local:
+    server_type: ollama
+    id: gemma3:4b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_12b@local:
+    server_type: ollama
+    id: gemma3:12b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_27b@local:
+    server_type: ollama
+    id: gemma3:27b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  deepseek-r1_1_5b@local:
+    server_type: ollama
+    id: deepseek-r1:1.5b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+  
+# OVH-hosted models
+
+  llama-3_1-70B@ovh:
+    server_type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  llama-3_3-70B@ovh:
+    server_type: ovh
+    id: Meta-Llama-3_3-70B-Instruct
+    base_url: https://llama-3-3-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  deepseek-r1-70B@ovh:
+    server_type: ovh
+    id: DeepSeek-R1-Distill-Llama-70B
+    base_url: https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  # OpenAI models
+
+  gpt-4o@openai:
+    server_type: openai
+    id: gpt-4o
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+    
+  o3-mini@openai:
+    server_type: openai
+    id: o3-mini
+
+  o1@openai:
+    server_type: openai
+    id: o1
+
+  # DeepSeek models
+
+  deepseek-chat@deepseek:
+    server_type: deepseek
+    id: deepseek-chat
+    base_url: https://api.deepseek.com
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  deepseek-reasoner@deepseek:
+    server_type: deepseek
+    id: deepseek-reasoner
+    base_url: https://api.deepseek.com
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  # HuggingFace models
+
+  deepseek-reasoner@hf:
+    server_type: hugface
+    id: deepseek-ai/DeepSeek-R1
+    base_url: https://huggingface.co/api/inference-proxy/together
+    top_p: 0.95
+
+
+text_embedding_models:
+# Each text embedding model shall contain the following paramters:
+# - server_type (str): one of "openai-embeddings", "ollama-embeddings"
+# - id (str): the model identifier as defined by the provider
+# - vector_db (str): the type of vector database, one of "faiss", "chroma"
+
+  nomic-embed-text_faiss@local:
+    server_type: ollama-embeddings
+    id: nomic-embed-text
+    vector_db: faiss
+  
+  mxbai-embed-large_faiss@local:
+    server_type: ollama-embeddings
+    id: mxbai-embed-large
+    vector_db: faiss
+
+  nomic-embed-text_chroma@local:
+    server_type: ollama-embeddings
+    id: nomic-embed-text
+    vector_db: chroma
+  
+# -----------------------------------------------------------
+# Scenarios
+      
+scenario_1:
+  validate_question: deepseek-reasoner@hf
+  ask_question: llama3_2-1b@local
+    
+scenario_2:
+  validate_question: llama3_2-1b@local
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama3_2-1b@local
+
+scenario_3:
+  validate_question: llama3_2-1b@local
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama3_2-1b@local
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_4:
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama3_2-1b@local
+  interpret_csv_query_results: llama3_2-1b@local
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_5:
+  validate_question: llama3_2-1b@local
+  generate_query: llama3_2-1b@local
+  interpret_csv_query_results: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_6:
+  validate_question: llama-3_1-70B@ovh
+  generate_query: deepseek-r1_1_5b@local
+  interpret_csv_query_results: llama3_2-1b@local
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_7:
+  validate_question: llama3_2-1b@local
+  generate_query: llama3_2-1b@local
+  interpret_csv_query_results: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local

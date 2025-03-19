@@ -9,10 +9,12 @@ or from a separate SPARQL endpoint if defined (param: ontologies_sparql_endpoint
 Output files are generated in directory `{data_directory}/{KG short name}/preprocessing`. By default these are:
 - `properties_description.txt`: description of all the properties found in the ontologies;
 - `classes_description.txt`: description of all the classes found in the ontologies;
-- `classes_with_instances.txt`: list of classes that have at least one instance in the KG;
-- `classes_with_instances_description.txt`: subset of `classes_description.txt` with the classes
-that have at least one instance in the KG.
+- `classes_with_instances_description.txt`: subset of `classes_description.txt` with the classes that have at least one instance in the KG.
+
 If the output files already exist, they are simply reloaded.
+
+In addition file `<kg short name>_classes_with_instances.txt` is generated in the temporary directory,
+it lists the classes that have at least one instance in the KG.
 
 The configuration file (default: `app/config/params.yaml`) prodives the SPARQL endpoint(s) and known prefixes.
 """
@@ -26,14 +28,13 @@ from app.core.utils.construct_util import run_sparql_query, fulliri_to_prefixed
 logger = config.setup_logger(__package__, __file__)
 
 
-get_classes_query = (
-    config.get_prefixes_as_sparql()
-    + """
+get_classes_query = """
 SELECT DISTINCT
     ?class
-    (group_concat(distinct ?lbl_str, "--") as ?label)
-    (group_concat(distinct ?comment_str, "--") as ?description)
-    
+    (GROUP_CONCAT(DISTINCT ?lbl_str; SEPARATOR=", ") as ?label)
+    (GROUP_CONCAT(DISTINCT ?comment_str; SEPARATOR=", ") as ?description)
+
+{from_clauses}
 WHERE {
     ?class a owl:Class .
     FILTER(isIRI(?class))   # Ignore anonymous classes that are mostly owl constructs
@@ -80,20 +81,20 @@ WHERE {
 
 } GROUP BY ?class
 """
-)
+
 
 get_classes_with_instances_query = """
-SELECT distinct ?class WHERE { ?s a ?class. } LIMIT 100
+SELECT distinct ?class WHERE { ?s a ?class. }
 """
 
-get_properties_query = (
-    config.get_prefixes_as_sparql()
-    + """
+get_properties_query = """
 SELECT DISTINCT
     ?prop
-	?domain ?domain_lbl ?range ?range_lbl
-	(group_concat(distinct ?lbl_str) as ?label)
-    (group_concat(distinct ?comment_str) as ?description)
+    ?domain ?domain_lbl ?range ?range_lbl
+    (GROUP_CONCAT(DISTINCT ?lbl_str; SEPARATOR=", ") as ?label)
+    (GROUP_CONCAT(DISTINCT ?comment_str; SEPARATOR=", ") as ?description)
+
+{from_clauses}
 WHERE {
     {
         { ?prop a owl:ObjectProperty. }
@@ -152,9 +153,8 @@ WHERE {
 
     #FILTER (?comment_str != "None" && ?lbl_str != "None")
     
-} GROUP BY ?prop
+} GROUP BY ?prop ?domain ?domain_lbl ?range ?range_lbl
 """
-)
 
 
 def setup_cli() -> Namespace:
@@ -213,8 +213,12 @@ def make_classes_description() -> list[tuple]:
         list[tuple]: list of tuples (class uri, label, description)
     """
     results = []
+
+    query = config.get_prefixes_as_sparql() + get_classes_query.replace(
+        "{from_clauses}", config.get_ontology_named_graphs_as_from()
+    )
     _sparql_results = run_sparql_query(
-        get_classes_query, config.get_ontologies_sparql_endpoint_url(), timeout=3600
+        query, config.get_ontologies_sparql_endpoint_url(), timeout=3600
     )
     if _sparql_results is not None:
         for result in _sparql_results:
@@ -258,8 +262,11 @@ def make_properties_description() -> list[tuple]:
         list[tuple]: list of tuples (prop uri, label, description)
     """
     results = []
+    query = config.get_prefixes_as_sparql() + get_properties_query.replace(
+        "{from_clauses}", config.get_ontology_named_graphs_as_from()
+    )
     _sparql_results = run_sparql_query(
-        get_properties_query, config.get_ontologies_sparql_endpoint_url(), timeout=3600
+        query, config.get_ontologies_sparql_endpoint_url(), timeout=3600
     )
     if _sparql_results is not None:
         for result in _sparql_results:
@@ -382,7 +389,8 @@ if __name__ == "__main__":
 
     # Retrieve the URIs of the classes with at least 1 instance in the KG
     classes_with_instances_file = os.path.join(
-        config.get_temp_directory(), "classes_with_instances.txt"
+        config.get_temp_directory(),
+        config.get_kg_short_name() + "_classes_with_instances.txt",
     )
     classes_with_instances = []
     if os.path.exists(classes_with_instances_file):
