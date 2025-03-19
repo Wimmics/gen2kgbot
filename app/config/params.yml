@@ -42,6 +42,9 @@ prefixes:
   xsd:            "http://www.w3.org/2001/XMLSchema#"
   up:             "http://purl.uniprot.org/core/"
 
+# Named graphs where to look for ontology definitions (optional)
+#ontology_named_graphs:
+
 # Max number of classes similar to the user's question (optional)
 # Default: 10
 max_similar_classes: 10

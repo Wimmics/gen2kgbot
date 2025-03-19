@@ -79,14 +79,17 @@ def read_configuration(args: Namespace = None):
             Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
         logger.info(f"Loading default configuration file: {config_path}")
+
     elif args.params:
         config_path = args.params
         logger.info(f"Loading custom configuration file: {config_path}")
+
     elif args.__contains__("prod") and args.prod:
         config_path = (
             Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
         )
         logger.info(f"Loading configuration file: {config_path}")
+
     else:
         # Set the default configuration file
         config_path = (
@@ -98,11 +101,7 @@ def read_configuration(args: Namespace = None):
         config = yaml.safe_load(f.read())
         f.close()
 
-    # Make a deep copy of the configuration and assign it to the global variable
-    cfg = {}
-    for key in config.keys():
-        cfg[key] = config[key]
-    globals()["config"] = cfg
+    globals()["config"] = config
 
 
 # Load the default config file.
@@ -128,6 +127,10 @@ def get_kg_sparql_endpoint_url() -> str:
 
 
 def get_ontologies_sparql_endpoint_url() -> str:
+    """
+    Get the url of the SPARQL endpoint hosting the ontologies.
+    If not specified, if returns the same as the KG SPARQL endpoint (config param `kg_sparql_endpoint_url`).
+    """
     if "ontologies_sparql_endpoint_url" in config.keys():
         return config["ontologies_sparql_endpoint_url"]
     else:
@@ -146,9 +149,29 @@ def get_prefixes_as_sparql() -> str:
     Get the prefixes and associated namespaces as SPARQL prefix declarations
     """
     prefixes = ""
-    for prefix, ns in config["prefixes"].items():
+    for prefix, ns in get_known_prefixes().items():
         prefixes += f"PREFIX {prefix}: <{ns}>\n"
     return prefixes + "\n"
+
+
+def get_ontology_named_graphs() -> list:
+    """
+    Get the named graphs where to look for ontology definitions
+    """
+    if "ontology_named_graphs" not in config.keys():
+        return []
+    else:
+        return config["ontology_named_graphs"]
+
+
+def get_ontology_named_graphs_as_from() -> str:
+    """
+    Get the named graphs where to look for ontology definitions as FROM clauses
+    """
+    output = ""
+    for ng in get_ontology_named_graphs():
+        output += f"FROM <{ng}>\n"
+    return output
 
 
 def get_max_similar_classes() -> int:
