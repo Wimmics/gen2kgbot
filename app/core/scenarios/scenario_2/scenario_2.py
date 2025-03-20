@@ -4,7 +4,7 @@ from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.core.scenarios.scenario_2.prompt import system_prompt_template
 from app.core.utils.graph_nodes import (
-    interpret_csv_query_results,
+    interpret_results,
     run_query,
     validate_question,
 )
@@ -73,7 +73,7 @@ builder.add_node("init", init)
 builder.add_node("validate_question", validate_question)
 builder.add_node("generate_query", generate_query)
 builder.add_node("run_query", run_query)
-builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("interpret_results", interpret_results)
 
 builder.add_edge(START, "init")
 builder.add_edge("init", "validate_question")

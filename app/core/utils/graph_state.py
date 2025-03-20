@@ -1,4 +1,5 @@
 from enum import Enum
+import json
 import operator
 from typing import Annotated
 from openai import BaseModel
@@ -20,9 +21,9 @@ class JudgeStatus(Enum):
     INVALID_SYNTAX = "Invalid syntax."
     VALID_SYNTAX = "Valid syntax."
     NO_VALID_JSON = "No JSON found in the judging answer."
-    JUDGE_LOW_SCORE = "Low score.",
-    JUDGE_LOW_SCORE_RUN_QUERY = "Low score, run the query.",
-    JUDGE_LOW_SCORE_END = "Low score, end of the conversation.",
+    JUDGE_LOW_SCORE = "Low score."
+    JUDGE_LOW_SCORE_RUN_QUERY = "Low score, run the query."
+    JUDGE_LOW_SCORE_END = "Low score, end of the conversation."
     JUDGE_HIGH_SCORE = "High score."
 
 
@@ -130,3 +131,10 @@ class JudgeGrade(BaseModel):
 
     grade: int
     justification: str
+
+
+class EnumEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Enum):
+            return obj.value  # Convert Enum to its value (string)
+        return super().default(obj)

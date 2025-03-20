@@ -29,7 +29,7 @@ from app.core.utils.graph_nodes import (
     generate_query,
     validate_question,
     run_query,
-    interpret_csv_query_results,
+    interpret_results,
 )
 from app.core.utils.graph_routers import (
     get_class_context_router,
@@ -670,7 +670,7 @@ builder.add_node("preprocessing_subgraph", prepro_builder.compile())
 builder.add_node("create_prompt", create_prompt)
 builder.add_node("generate_query", generate_query)
 builder.add_node("run_query", run_query)
-builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("interpret_results", interpret_results)
 builder.add_node("judging_subgraph", judge_builder.compile())
 
 builder.add_edge(START, "preprocessing_subgraph")

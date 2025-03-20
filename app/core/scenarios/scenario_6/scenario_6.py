@@ -15,7 +15,7 @@ from app.core.utils.graph_nodes import (
     validate_question,
     verify_query,
     run_query,
-    interpret_csv_query_results,
+    interpret_results,
 )
 from app.core.utils.graph_routers import (
     get_class_context_router,
@@ -80,7 +80,7 @@ builder.add_node("verify_query", verify_query)
 builder.add_node("run_query", run_query)
 builder.add_node("create_retry_prompt", create_retry_prompt)
 
-builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("interpret_results", interpret_results)
 
 builder.add_edge(START, "preprocessing_subgraph")
 builder.add_conditional_edges("preprocessing_subgraph", preprocessing_subgraph_router)

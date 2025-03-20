@@ -1,7 +1,7 @@
 from langchain_core.prompts import PromptTemplate
 
 
-interpret_csv_query_results_prompt = PromptTemplate.from_template(
+interpret_results_prompt = PromptTemplate.from_template(
     template="""
 You are a specialized assistant designed to help users interpret the results of SPARQL queries executed agaisnt the {kg_full_name}.
 

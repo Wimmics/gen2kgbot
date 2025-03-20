@@ -27,6 +27,8 @@ Here is how the properties are used by instances of the classes:
 These are example SPARQL queries that can help you generate the proper query:
 
 {selected_queries}
+
+Do not repeat or reference previous outputs.
 """
 )
 
@@ -65,6 +67,8 @@ The last answer you provided, that either does not contain a SPARQL query or hav
 
 The verification did not pass because:
 {last_answer_error_cause}
+
+Do not repeat or reference previous outputs.
 """
 )
 
@@ -105,6 +109,8 @@ SPARQL Query:
 
 QName Context:
 {qname_info}
+
+Do not repeat or reference previous outputs.
 """
 
 

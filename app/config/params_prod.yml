@@ -196,30 +196,30 @@ scenario_1:
 scenario_2:
   validate_question: llama-3_1-70B@ovh
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
 
 scenario_3:
   validate_question: llama-3_1-70B@ovh
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_4:
   validate_question: llama-3_1-70B@ovh
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_5:
   validate_question: llama-3_1-70B@ovh
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_6:
   validate_question: llama-3_1-70B@ovh
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_7:
@@ -227,7 +227,7 @@ scenario_7:
   generate_query: llama-3_1-70B@ovh
   judge_query: llama-3_1-70B@ovh
   judge_regenerate_query: llama-3_3-70B@ovh
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
   judging_grade_threshold_retry: 8
   judging_grade_threshold_run: 5

@@ -65,7 +65,7 @@ max_similar_classes: 10
 
 # Expand the initial list of classes similar to the question with additional classes connected to them (optional)
 # Default: false
-expand_similar_classes: true
+expand_similar_classes: false
 
 # Format of the classes context: one of "turtle", "tuple" or "nl" for natural language (optional)
 # Default: "turtle"
@@ -256,30 +256,30 @@ scenario_1:
 scenario_2:
   validate_question: llama3_2-1b@local
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
 
 scenario_3:
   validate_question: llama3_2-1b@local
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_4:
   validate_question: llama-3_1-70B@ovh
   generate_query: llama3_2-1b@local
-  interpret_csv_query_results: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_5:
   validate_question: llama3_2-1b@local
   generate_query: llama3_2-1b@local
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_6:
   validate_question: llama-3_1-70B@ovh
   generate_query: deepseek-r1_1_5b@local
-  interpret_csv_query_results: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_7:
@@ -287,7 +287,7 @@ scenario_7:
   generate_query: llama-3_1-70B@ovh
   judge_query: llama-3_1-70B@ovh
   judge_regenerate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
   judging_grade_threshold_retry: 8
   judging_grade_threshold_run: 5

@@ -9,7 +9,7 @@ from app.core.utils.graph_nodes import (
     create_query_generation_prompt,
     generate_query,
     run_query,
-    interpret_csv_query_results,
+    interpret_results,
     validate_question,
 )
 from app.core.utils.graph_routers import (
@@ -48,7 +48,7 @@ builder.add_node("get_context_class_from_kg", get_class_context_from_kg)
 builder.add_node("create_prompt", create_prompt)
 builder.add_node("generate_query", generate_query)
 builder.add_node("run_query", run_query)
-builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("interpret_results", interpret_results)
 
 builder.add_edge(START, "init")
 builder.add_edge("init", "validate_question")

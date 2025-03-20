@@ -17,7 +17,7 @@ from app.core.utils.construct_util import (
     fulliri_to_prefixed,
 )
 from app.core.utils.prompts import (
-    interpret_csv_query_results_prompt,
+    interpret_results_prompt,
     validate_question_prompt,
 )
 from rdflib import Graph
@@ -92,7 +92,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
         f"Classes found: {", ".join([f"{eval(cls)[0]} ({eval(cls)[1]})" for cls in classes_str])}"
     )
 
-    # Extend the initial list o classes by retrieving, from the KG, additional classes connected to the initial ones
+    # Extend the initial list of classes by retrieving, from the KG, additional classes connected to the initial ones
     if config.expand_similar_classes():
         classes_uris = [eval(cls)[0] for cls in classes_str]
         for cls, label, description in get_connected_classes(classes_uris):
@@ -419,7 +419,7 @@ def run_query(state: OverallState) -> OverallState:
         }
 
 
-async def interpret_csv_query_results(state: OverallState) -> OverallState:
+async def interpret_results(state: OverallState) -> OverallState:
     """
     Generate a prompt asking the interpret the SPARQL CSV results and invoke the LLM.
 
@@ -430,7 +430,7 @@ async def interpret_csv_query_results(state: OverallState) -> OverallState:
         dict: state updated with the response from the LLM in results_interpretation
     """
 
-    template = interpret_csv_query_results_prompt
+    template = interpret_results_prompt
     # logger.debug(f"Results interpretation prompt template: {template}")
 
     if "kg_full_name" in template.input_variables:
@@ -455,7 +455,7 @@ async def interpret_csv_query_results(state: OverallState) -> OverallState:
     prompt = template.format()
     logger.info(f"Results interpretation prompt created:\n{prompt}.")
     result = await config.get_seq2seq_model(
-        scenario_id=state["scenario_id"], node_name="interpret_csv_query_results"
+        scenario_id=state["scenario_id"], node_name="interpret_results"
     ).ainvoke(prompt)
 
     logger.debug(f"Interpretation of the query results:\n{result.content}")

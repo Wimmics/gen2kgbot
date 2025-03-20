@@ -58,6 +58,8 @@ def setup_cli() -> Namespace:
         help="Load the production configuration file",
         default=False,
     )
+    parser.add_argument("app.api.test_dataset_api:app", nargs="?", help="Run the API")
+    parser.add_argument("--reload", nargs="?", help="Debug mode")
     return parser.parse_args()
 
 
@@ -345,6 +347,11 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
     else:
         top_p = 0.95
 
+    if "max_tokens" in llm_config.keys():
+        max_tokens = llm_config["max_tokens"]
+    else:
+        max_tokens = 1000
+
     if server_type == "openai":
         if model_id.startswith("o"):  # o1/o3 do not support parameter top_p
             llm_config = ChatOpenAI(
@@ -354,6 +361,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
                 verbose=True,
                 openai_api_key=get_openai_key(),
                 model_kwargs=model_kwargs,
+                max_tokens=max_tokens,
             )
         else:
             llm_config = ChatOpenAI(
@@ -364,6 +372,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
                 openai_api_key=get_openai_key(),
                 model_kwargs=model_kwargs,
                 top_p=top_p,
+                max_tokens=max_tokens,
             )
 
     elif server_type == "ollama":
@@ -374,6 +383,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
             verbose=True,
             top_p=top_p,
             model_kwargs=model_kwargs,
+            max_tokens=max_tokens,
         )
 
     elif server_type == "ollama-server":
@@ -388,6 +398,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
             top_p=top_p,
             model_kwargs=model_kwargs,
             auth=("username", "password"),
+            max_tokens=max_tokens,
         )
 
     elif server_type == "ovh":
@@ -402,6 +413,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
             api_key=get_ovh_key(),
             top_p=top_p,
             model_kwargs=model_kwargs,
+            max_tokens=max_tokens,
         )
 
     elif server_type == "hugface":
@@ -415,6 +427,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
             repetition_penalty=1.03,
             top_p=top_p,
             inference_server_url=base_url,
+            max_tokens=max_tokens,
         )
 
         llm_config = ChatHuggingFace(llm=hfe, verbose=True)
@@ -428,6 +441,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
             verbose=True,
             top_p=top_p,
             model_kwargs=model_kwargs,
+            max_tokens=max_tokens,
         )
 
     elif server_type == "deepseek":
@@ -441,6 +455,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
             openai_api_key=get_deepseek_key(),
             top_p=top_p,
             model_kwargs=model_kwargs,
+            max_tokens=max_tokens,
         )
 
     else:
@@ -622,7 +637,9 @@ def set_custom_scenario_configuration(
     validate_question_model: str,
     ask_question_model: str,
     generate_query_model: str,
-    interpret_csv_query_results_model: str,
+    judge_query_model: str,
+    judge_regenerate_query_model: str,
+    interpret_results_model: str,
     text_embedding_model: str,
 ):
     """
@@ -637,10 +654,16 @@ def set_custom_scenario_configuration(
     if generate_query_model is not None:
         config[f"scenario_{scenario_id}"]["generate_query"] = generate_query_model
 
-    if interpret_csv_query_results_model is not None:
+    if judge_query_model is not None:
+        config[f"scenario_{scenario_id}"]["judge_query"] = judge_query_model
+
+    if judge_regenerate_query_model is not None:
+        config[f"scenario_{scenario_id}"]["judge_regenerate_query"] = judge_regenerate_query_model
+
+    if interpret_results_model is not None:
         config[f"scenario_{scenario_id}"][
-            "interpret_csv_query_results"
-        ] = interpret_csv_query_results_model
+            "interpret_results"
+        ] = interpret_results_model
 
     if f"scenario_{scenario_id}" in globals()["current_llm"].keys():
         del globals()["current_llm"][f"scenario_{scenario_id}"]

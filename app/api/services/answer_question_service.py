@@ -3,6 +3,8 @@ from langchain_core.messages import AIMessageChunk
 from app.core.utils.config_manager import get_scenario_module
 from langgraph.graph.state import CompiledStateGraph
 
+from app.core.utils.graph_state import EnumEncoder
+
 
 def serialize_aimessagechunk(chunk):
     if isinstance(chunk, AIMessageChunk):
@@ -27,6 +29,10 @@ async def generate_stream_responses(scenario_id: int, question: str):
         "create_prompt",
         "create_retry_prompt",
         "verify_query",
+        "validate_sparql_syntax",
+        "extract_query_qnames",
+        "find_qnames_info",
+        "judge_regeneration_prompt",
         "run_query",
     ]
 
@@ -35,8 +41,14 @@ async def generate_stream_responses(scenario_id: int, question: str):
         "generate_query",
         "interpret_results",
         "ask_question",
+        "judge_query",
+        "judge_regenerate_query",
     ]
 
+    # with open("data/custom_inputs/input_judging_subgraph.json", "r") as f:
+    #     input_judging_subgraph = json.load(f)
+
+    # async for event in graph.astream_events(input_judging_subgraph, version="v2"):
     async for event in graph.astream_events(
         {"initial_question": question}, version="v2"
     ):
@@ -74,7 +86,7 @@ async def generate_stream_responses(scenario_id: int, question: str):
                         "node": event["metadata"]["langgraph_node"],
                         "data": event["data"]["output"],
                     }
-                    yield json.dumps(response_part)
+                    yield json.dumps(response_part, cls=EnumEncoder)
 
         elif event["event"] == "on_chat_model_start":
 

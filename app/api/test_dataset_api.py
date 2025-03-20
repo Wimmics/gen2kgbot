@@ -117,7 +117,9 @@ def test_dataset_answer_question(
         validate_question_model=test_request.validate_question_model,
         ask_question_model=test_request.ask_question_model,
         generate_query_model=test_request.generate_query_model,
-        interpret_csv_query_results_model=test_request.interpret_csv_query_results_model,
+        judge_query_model=test_request.judge_query_model,
+        judge_regenerate_query_model=test_request.judge_regenerate_query_model,
+        interpret_results_model=test_request.interpret_results_model,
         text_embedding_model=test_request.text_embedding_model,
     )
     return StreamingResponse(
