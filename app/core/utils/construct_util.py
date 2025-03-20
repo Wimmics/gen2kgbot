@@ -48,7 +48,11 @@ SELECT DISTINCT ?class (COALESCE(?lbl, "None") as ?label) (COALESCE(?comment, "N
       ?seed a {class_uri}.
       { ?seed ?p ?other. } UNION { ?other ?p ?seed. }
 	  ?other a ?class.
-      FILTER (?class != owl:Class && ?class != rdfs:Class)
+      FILTER (
+        ! strstarts(str(?class), "http://www.w3.org/2002/07/owl#") &&
+        ! strstarts(str(?class), "http://www.w3.org/2000/01/rdf-schema#") &&
+        ! strstarts(str(?class), "http://www.w3.org/1999/02/22-rdf-syntax-ns#")
+      )
     } LIMIT 1000
   }
     
