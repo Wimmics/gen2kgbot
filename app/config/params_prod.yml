@@ -119,6 +119,14 @@ seq2seq_models:
     max_retries: 3
     top_p: 0.95
 
+  llama-3_1-8B@ovh:
+    server_type: ovh
+    id: Llama-3.1-8B-Instruct
+    base_url: https://llama-3-1-8b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1/
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
   deepseek-r1-70B@ovh:
     server_type: ovh
     id: DeepSeek-R1-Distill-Llama-70B
