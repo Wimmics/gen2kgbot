@@ -214,7 +214,10 @@ def get_class_context_format() -> Literal["turtle", "tuple", "nl"]:
 
 def get_excluded_classes_namespaces() -> list[str]:
     if "excluded_classes_namespaces" in config.keys():
-        return config["excluded_classes_namespaces"]
+        if config["excluded_classes_namespaces"] is None:
+            return []
+        else:
+            return config["excluded_classes_namespaces"]
     else:
         return []
 

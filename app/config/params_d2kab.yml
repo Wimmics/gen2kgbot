@@ -24,6 +24,7 @@ prefixes:
   foaf:           "http://xmlns.com/foaf/0.1/"
   frbr:           "http://purl.org/vocab/frbr/core#"
   obo:            "http://purl.obolibrary.org/obo/"
+  oio:            "http://www.geneontology.org/formats/oboInOwl#"
   oa:             "http://www.w3.org/ns/oa#"
   owl:            "http://www.w3.org/2002/07/owl#"
   rdf:            "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -61,7 +62,7 @@ expand_similar_classes: true
 class_context_format: turtle
 
 # Optional list of classes and namespaces to be excluded from the similar classes (optional)
-excluded_classes_namespaces:
+#excluded_classes_namespaces:
 
 # Root path for the cache of classes context and pre-computed embeddings
 data_directory: "./data"
@@ -259,7 +260,7 @@ scenario_4:
 
 scenario_5:
   validate_question: llama3_2-1b@local
-  generate_query: llama3_2-1b@local
+  generate_query: o1@openai
   interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
@@ -274,3 +275,10 @@ scenario_7:
   generate_query: llama3_2-1b@local
   interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
+
+
+
+# Example questons:
+# 1. What article abstracts mention taxon wheat (Triticum aestivum) and trait 'resistance to Leaf rust'?
+# 2. What genes are mentioned in the articles abstracts that also mention phenotype wto:0000549 (resistance to Leaf rust)?
+#    Counts the number of times that a gene is cited and rank the results in decreasing count order.

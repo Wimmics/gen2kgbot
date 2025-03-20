@@ -36,7 +36,7 @@ SELECT DISTINCT
 
 {from_clauses}
 WHERE {
-    ?class a owl:Class .
+    { ?class a owl:Class . } UNION { ?class a rdfs:Class . }
     FILTER(isIRI(?class))   # Ignore anonymous classes that are mostly owl constructs
 
     OPTIONAL {
@@ -102,6 +102,8 @@ WHERE {
         { ?prop a owl:DataTypeProperty. }
         UNION
         { ?prop rdfs:subPropertyOf []. }
+        UNION
+        { ?prop rdf:Property []. }
 	}
     
   	OPTIONAL { 
