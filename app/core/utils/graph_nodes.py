@@ -395,10 +395,15 @@ def run_query(state: OverallState) -> OverallState:
 
     # The last generated query may already be in the state (secnarios 4-6)
     # or in the conversation (scenarios 1-3)
-    if state["query_judgements"][-1]["judge_status"] in [
-        JudgeStatus.JUDGE_HIGH_SCORE,
-        JudgeStatus.JUDGE_LOW_SCORE_RUN_QUERY,
-    ]:
+    if (
+        "query_judgements" in state
+        and len(state["query_judgements"]) > 0
+        and state["query_judgements"][-1]["judge_status"]
+        in [
+            JudgeStatus.JUDGE_HIGH_SCORE,
+            JudgeStatus.JUDGE_LOW_SCORE_RUN_QUERY,
+        ]
+    ):
         query = state["query_judgements"][-1]["query"]
     elif "last_generated_query" in state:
         query = state["last_generated_query"]
