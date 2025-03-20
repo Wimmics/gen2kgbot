@@ -12,9 +12,7 @@ logger = setup_logger(__package__, __file__)
 
 # SPARQL query to retrieve the properties used by instances of a given class, with their value types.
 # The value type can be a class URI, a datatype URI, or "None" if the value is unknown/unspecified
-class_properties_valuetypes_query = (
-    config.get_prefixes_as_sparql()
-    + """
+class_properties_valuetypes_query = """
 SELECT DISTINCT 
     ?property
     (COALESCE(?lbl, "None") as ?label)
@@ -34,7 +32,7 @@ WHERE {
 GROUP BY ?property ?lbl
 LIMIT 100
 """
-)
+
 
 # SPARQL query to retrieve the label/description of classes "connected" to a given class.
 # Connected meaning: for class A, retrieve all classes B such that:
@@ -43,9 +41,7 @@ LIMIT 100
 #    ?a ?p ?b.
 # or
 #    ?b ?p ?a.
-connected_classes_query = (
-    config.get_prefixes_as_sparql()
-    + """
+connected_classes_query = """
 SELECT DISTINCT ?class (COALESCE(?lbl, "None") as ?label) (COALESCE(?comment, "None") as ?description) WHERE {
   { 
   	SELECT DISTINCT ?class WHERE {
@@ -61,7 +57,6 @@ SELECT DISTINCT ?class (COALESCE(?lbl, "None") as ?label) (COALESCE(?comment, "N
 }
 LIMIT 20
 """
-)
 
 
 def get_class_context(class_label_description: tuple) -> str:
@@ -94,18 +89,20 @@ def get_class_context(class_label_description: tuple) -> str:
         graph = get_empty_graph_with_prefixes()
 
         subj = BNode()
-        # URIRef takes a full IRI, so we need to convert a possible prefixed IRI to a full IRI
+        # Function URIRef() takes a full IRI, so we need to convert a possible prefixed IRI to a full IRI
         class_ref = URIRef(prefixed_to_fulliri(class_uri))
+
         # First triple: [] rdf:type [ a <CLS> ]
         graph.add((subj, RDF.type, class_ref))
 
         for property_uri, property_label, property_type in properties_results:
-            # do not add the triple: "[] rdf:type [ a owl:Class ]"
-            if (
-                URIRef(property_uri) != RDF.type
-                and property_type != str(OWL.Class)
-            ):
-                obj = BNode()
+            if property_uri == str(RDF.type) and property_type in [str(OWL.Class), str(RDFS.Class)]:
+                # do not add the triple: "[] rdf:type [ a owl:Class ]" since we already have "[] rdf:type [ a <CLS> ]"
+                continue
+            else:
+                # Use a BNode identifier to avoid creating multiple BNodes for the same property and value type
+                obj = BNode(f"{property_uri}{property_type}")
+
                 graph.add((subj, URIRef(property_uri), obj))
                 if property_type != None:
                     graph.add((obj, RDF.type, URIRef(property_type)))
@@ -150,13 +147,14 @@ def get_class_properties_and_val_types(
             Value type may be a URI, a datatype, or None. Label may be None.
     """
 
+    query = config.get_prefixes_as_sparql()
     if isPrefixed(class_uri):
-        query = class_properties_valuetypes_query.replace("{class_uri}", class_uri)
+        query += class_properties_valuetypes_query.replace("{class_uri}", class_uri)
     else:
-        query = class_properties_valuetypes_query.replace(
+        query += class_properties_valuetypes_query.replace(
             "{class_uri}", f"<{class_uri}>"
         )
-    # logger.debug(f"SPARQL query to retrieve class properties and types:\n{query}")
+    #logger.debug(f"SPARQL query to retrieve class properties and types:\n{query}")
 
     results = []
     _sparql_results = run_sparql_query(query, endpoint_url)
@@ -234,10 +232,11 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
         else:
             logger.debug(f"Connected classes not found in cache for class {class_uri}.")
             results_one_class = []
+            query = config.get_prefixes_as_sparql()
             if isPrefixed(class_uri):
-                query = connected_classes_query.replace("{class_uri}", class_uri)
+                query += connected_classes_query.replace("{class_uri}", class_uri)
             else:
-                query = connected_classes_query.replace("{class_uri}", f"<{class_uri}>")
+                query += connected_classes_query.replace("{class_uri}", f"<{class_uri}>")
 
             _sparql_results = run_sparql_query(query, endpoint_url)
             if _sparql_results is None:

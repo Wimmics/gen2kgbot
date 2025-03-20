@@ -98,7 +98,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
         for cls, label, description in get_connected_classes(classes_uris):
             if cls not in classes_uris:
                 classes_str.append(f"{(cls, label, description)}")
-    logger.info(f"Expanded to {len(classes_str)} classes related to the question.")
+        logger.info(f"Expanded to {len(classes_str)} classes related to the question.")
 
     # Filter out classes marked as to be excluded
     classes_filtered_str = []
