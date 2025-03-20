@@ -288,7 +288,7 @@ def validate_sparql_syntax(state: OverallState) -> OverallState:
         query_judgement = JudgeState(
             judge_status=JudgeStatus.INVALID_SYNTAX,
             query=queries[0],
-            judgement=e,
+            judgement=str(e),
             generated_answer=generated_answer,
         )
         return {

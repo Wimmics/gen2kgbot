@@ -82,7 +82,7 @@ Input:
 - Context of the QNames and Full QNames used in the query.
 
 Output:
-Your evaluation should be a JSON containing two keys "grade" and "justification":
+Your evaluation MUST be a valid JSON containing two fields "grade" and "justification":
 
 1. Grade (int) ranging between 1 and 10 where:
   - 1 = Completely incorrect or irrelevant.
