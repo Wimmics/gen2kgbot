@@ -93,6 +93,28 @@ class OverallState(MessagesState, InputState):
         last_query_results (str): results of executing the last generated SPARQL query
 
         results_interpretation (str): interpretation of the SPARQL results of the last executed SPARQL query
+        
+        agents (list): list of agent instances for the multi-agent debate
+        
+        agent_proposals (list): current round proposals from all agents
+        
+        agent_summaries (list): current round summaries from all agents
+        
+        agent_proposals_history (list): history of proposals from all agents across rounds
+        
+        agent_summaries_history (list): history of summaries from all agents across rounds
+        
+        debate_round (int): current debate round number
+        
+        agent_types (list): list of agent types/roles in the debate
+        
+        final_proposals (list): final proposals from all agents after debate
+        
+        kg_description (str): description of the knowledge graph
+        
+        selected_query (str): the query selected by the moderator
+        
+        max_debate_rounds (int): maximum number of debate rounds to run
     """
 
     scenario_id: str
@@ -120,6 +142,30 @@ class OverallState(MessagesState, InputState):
     results_interpretation: str
 
     query_judgements: Annotated[list[JudgeState], operator.add]
+    
+    agents: list
+    
+    agent_proposals: list
+    
+    agent_summaries: list
+    
+    agent_proposals_history: list
+    
+    agent_summaries_history: list
+    
+    debate_round: int
+    
+    agent_types: list
+    
+    final_proposals: list
+    
+    kg_description: str
+    
+    selected_query: str
+    
+    max_debate_rounds: int
+
+    verified_query: str
 
 
 class JudgeGrade(BaseModel):

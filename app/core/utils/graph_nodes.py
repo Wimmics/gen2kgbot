@@ -166,6 +166,7 @@ def select_similar_query_examples(state: OverallState) -> OverallState:
     result = ""
     for item in retrieved_documents:
         result = f"{result}\n```sparql\n{item.page_content}\n```\n"
+    
     logger.info(
         f"Selected {len(retrieved_documents)} SPARQL queries similar to the named entities of the quesion."
     )

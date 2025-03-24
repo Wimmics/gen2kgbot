@@ -1,8 +1,10 @@
 .langgraph_api
+.cursorrules
 tmp
 
 data/*
 !data/idsm_queries
+ontologies_ttl.zip
 
 logs
 
@@ -21,3 +23,8 @@ app/notebooks/evaluation
 .vscode
 
 app/config/custom_scenario_params.yml
+
+scenario_8_design_summary.md
+scenario_8_flowchart.md
+scenario_8_parallel_flowchart.md
+scenario_8_revised_design_summary.md

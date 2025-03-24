@@ -240,5 +240,12 @@ scenario_7:
   judge_regenerate_query: llama-3_3-70B@ovh
   interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_8:
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama-3_1-70B@ovh
+  interpret_csv_query_results: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
+  debate_rounds: 2  # Configurable number of debate rounds
   judging_grade_threshold_retry: 8
   judging_grade_threshold_run: 5

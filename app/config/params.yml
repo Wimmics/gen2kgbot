@@ -86,7 +86,7 @@ data_directory: "./data"
 # These names must be consistent with the chosen embedding model names in section text_embedding_models
 # Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
 # e.g. ./data/idsm/faiss_embeddings/
-class_embeddings_subdir: "classes_with_instance_nomic"
+class_embeddings_subdir: "classes_nomic"
 property_embeddings_subdir: "properties_nomic"
 queries_embeddings_subdir: "sparql_queries_nomic"
 
@@ -115,7 +115,7 @@ seq2seq_models:
     temperature: 0
     max_retries: 3
     top_p: 0.95
-
+  
   llama3_2:3b@local:
     server_type: ollama
     id: llama3.2:latest
@@ -261,8 +261,8 @@ text_embedding_models:
 # Scenarios
       
 scenario_1:
-  validate_question: deepseek-reasoner@hf
-  ask_question: llama3_2-1b@local
+  validate_question: deepseek-r1_8b@local
+  ask_question: deepseek-r1_8b@local
     
 scenario_2:
   validate_question: llama3_2-1b@local
@@ -302,3 +302,19 @@ scenario_7:
   text_embedding_model: nomic-embed-text_faiss@local
   judging_grade_threshold_retry: 8
   judging_grade_threshold_run: 5
+
+
+scenario_8:
+  validate_question: o3-mini@openai
+  generate_query: o3-mini@openai
+  interpret_csv_query_results: o3-mini@openai
+  text_embedding_model: nomic-embed-text_faiss@local
+  debate_rounds: 2  
+  
+  # Multi-agent debate specific configuration
+  moderator_evaluate: o3-mini@openai
+  domain_kg_expert: o3-mini@openai
+  query_optimization_expert: o3-mini@openai
+  semantic_interpretation_expert: o3-mini@openai
+  query_repair: o3-mini@openai  # Query repair expert model
+>>>>>>> dev_tjiang
