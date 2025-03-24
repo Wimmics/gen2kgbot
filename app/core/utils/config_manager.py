@@ -376,7 +376,7 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
     if "max_tokens" in llm_config.keys():
         max_tokens = llm_config["max_tokens"]
     else:
-        max_tokens = 1000
+        max_tokens = None
 
     if server_type == "openai":
         if model_id.startswith("o"):  # o1/o3 do not support parameter top_p
