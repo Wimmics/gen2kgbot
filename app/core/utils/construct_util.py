@@ -23,11 +23,12 @@ WHERE {
             ?instance a {class_uri} .
         } LIMIT 100
     }
-    {
-        ?instance ?property ?value .
-        OPTIONAL { ?property rdfs:label ?lbl . }
-        OPTIONAL { ?value a ?type . }
-    }
+
+    ?instance ?property ?value .
+    FILTER(?property != rdf:type)
+
+    OPTIONAL { ?property rdfs:label ?lbl . }
+    OPTIONAL { ?value a ?type . }
 }
 GROUP BY ?property ?lbl
 LIMIT 100
@@ -100,7 +101,10 @@ def get_class_context(class_label_description: tuple) -> str:
         graph.add((subj, RDF.type, class_ref))
 
         for property_uri, property_label, property_type in properties_results:
-            if property_uri == str(RDF.type) and property_type in [str(OWL.Class), str(RDFS.Class)]:
+            if property_uri == str(RDF.type) and property_type in [
+                str(OWL.Class),
+                str(RDFS.Class),
+            ]:
                 # do not add the triple: "[] rdf:type [ a owl:Class ]" since we already have "[] rdf:type [ a <CLS> ]"
                 continue
             else:
@@ -240,7 +244,9 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
             if isPrefixed(class_uri):
                 query += connected_classes_query.replace("{class_uri}", class_uri)
             else:
-                query += connected_classes_query.replace("{class_uri}", f"<{class_uri}>")
+                query += connected_classes_query.replace(
+                    "{class_uri}", f"<{class_uri}>"
+                )
 
             _sparql_results = run_sparql_query(query, endpoint_url)
             if _sparql_results is None:

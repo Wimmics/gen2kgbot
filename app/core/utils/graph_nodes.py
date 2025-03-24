@@ -84,7 +84,8 @@ def select_similar_classes(state: OverallState) -> OverallState:
     for doc in db.similarity_search(
         ", ".join(relevant_entities_list), k=config.get_max_similar_classes()
     ):
-        classes_str.append(doc.page_content)
+        classes_str.append(fulliri_to_prefixed(doc.page_content))
+
 
     classes_str = list(set(classes_str))
     logger.info(f"Found {len(classes_str)} classes related to the question.")
@@ -97,8 +98,11 @@ def select_similar_classes(state: OverallState) -> OverallState:
         classes_uris = [eval(cls)[0] for cls in classes_str]
         for cls, label, description in get_connected_classes(classes_uris):
             if cls not in classes_uris:
-                classes_str.append(f"{(cls, label, description)}")
+                cls_tuple = (cls, label, description)
+                classes_str.append(f"{fulliri_to_prefixed(str(cls_tuple))}")
         logger.info(f"Expanded to {len(classes_str)} classes related to the question.")
+
+    classes_str = list(set(classes_str))
 
     # Filter out classes marked as to be excluded
     classes_filtered_str = []
