@@ -196,4 +196,4 @@ scenario_8:
   generate_query: llama-3_1-70B@ovh
   interpret_csv_query_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
-  debate_rounds: 1  # Configurable number of debate rounds
+  debate_rounds: 2  # Configurable number of debate rounds

@@ -218,10 +218,11 @@ scenario_8:
   generate_query: o3-mini@openai
   interpret_csv_query_results: o3-mini@openai
   text_embedding_model: nomic-embed-text_faiss@local
-  debate_rounds: 1  # Changed from 2 to 1
+  debate_rounds: 2  
   
   # Multi-agent debate specific configuration
   moderator_evaluate: o3-mini@openai
   domain_kg_expert: o3-mini@openai
   query_optimization_expert: o3-mini@openai
   semantic_interpretation_expert: o3-mini@openai
+  query_repair: o3-mini@openai  # Query repair expert model

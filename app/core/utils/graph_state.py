@@ -140,3 +140,5 @@ class OverallState(MessagesState, InputState):
     selected_query: str
     
     max_debate_rounds: int
+
+    verified_query: str

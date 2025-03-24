@@ -15,7 +15,7 @@ from app.core.scenarios.scenario_8.prompt import (
     query_refinement_prompt,
 )
 from app.core.utils.logger_manager import setup_logger
-from app.core.utils.sparql_toolkit import find_sparql_queries
+from app.core.scenarios.scenario_8.sparql_utils import extract_sparql_from_proposal_summary
 
 logger = setup_logger(__package__, __file__)
 
@@ -90,11 +90,10 @@ class Agent:
         summary_match = re.search(r"SUMMARY:\s*(.*?)(?:\n\n|$)", content, re.DOTALL)
         
         if proposal_match and summary_match:
-            proposal = proposal_match.group(1).strip()
             summary = summary_match.group(1).strip()
             
             # Verify the proposal is a valid SPARQL query
-            queries = find_sparql_queries(proposal)
+            queries = extract_sparql_from_proposal_summary(content)
             if queries:
                 logger.info(f"{self.agent_type} successfully generated a valid SPARQL query and summary")
                 logger.debug(f"{self.agent_type}'s extracted proposal:\n{queries[0]}")
@@ -244,17 +243,30 @@ async def moderator_evaluate(state: OverallState) -> OverallState:
     logger.info("Starting moderator evaluation")
     logger.info(f"Moderator evaluation state keys: {list(state.keys())}")
     
+    # Get debate round information and log it
+    current_round = state.get("last_debate_round", state.get("debate_round", 1) - 1)
+    max_rounds = state.get("max_debate_rounds", 3)
+    
+    # Log the direct access to config value for debugging
+    config_value = config.get_configuration().get("scenario_8", {}).get("debate_rounds")
+    logger.info(f"Direct access to config debate_rounds: {config_value}")
+    
+    logger.info(f"Debate round information: current={current_round}, max={max_rounds}")
+    
     # Get proposals and summaries
     proposals = state.get("final_proposals", [])
-    summaries = state.get("agent_summaries", [])
-    agent_types = state.get("agent_types", [])
+    if not proposals:
+        proposals = state.get("agent_proposals", [])
+    
+    # Ensure we have proposals to evaluate
+    if not proposals:
+        logger.warning("No proposals found for evaluation")
+        return state
     
     # Ensure we have three proposals
     if len(proposals) < 3:
         logger.warning(f"Not enough proposals ({len(proposals)}), padding with empty proposals")
         proposals.extend(["No proposal provided."] * (3 - len(proposals)))
-        summaries.extend(["No summary provided."] * (3 - len(summaries)))
-        agent_types.extend(["Unknown Agent"] * (3 - len(agent_types)))
     
     # Prepare moderator prompt
     moderator_prompt = moderator_evaluation_prompt.format(
@@ -281,16 +293,15 @@ async def moderator_evaluate(state: OverallState) -> OverallState:
         
         if 0 <= selected_index < len(proposals):
             logger.info(f"Moderator selected proposal {selected_index + 1}")
-            logger.debug(f"Moderator's evaluation:\n{evaluation}")
             logger.debug(f"Selected proposal:\n{proposals[selected_index]}")
             
             # Update state with evaluation results
             updated_state = OverallState({
                 **state,
                 "moderator_evaluation": evaluation,
-                "selected_proposal": proposals[selected_index],
+                "selected_query": proposals[selected_index],
                 "selected_proposal_index": selected_index,
-                "selected_agent_type": agent_types[selected_index]
+                "selected_agent_type": state.get("agent_types", [])[selected_index]
             })
             
             return updated_state
@@ -324,6 +335,9 @@ async def format_selected_query(state: OverallState) -> OverallState:
     if "selected_query" in state and state["selected_query"]:
         selected_query = state["selected_query"]
         logger.info("Using selected_query from state")
+    elif "selected_proposal" in state and state["selected_proposal"]:
+        selected_query = state["selected_proposal"]
+        logger.info("Using selected_proposal from moderator evaluation")
     elif "final_proposals" in state and state["final_proposals"]:
         selected_query = state["final_proposals"][0]
         logger.info("Using first item from final_proposals")

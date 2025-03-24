@@ -118,6 +118,49 @@ The query should:
 4. Be efficient and well-structured"""
 )
 
+# Query Repair Expert prompt
+query_repair_expert_prompt = PromptTemplate.from_template(
+    """
+You are a SPARQL Query Repair Expert specializing in fixing syntactic and structural errors in SPARQL queries.
+
+Your task is to repair a SPARQL query that failed verification. Focus only on fixing technical issues while preserving the query's original intent.
+
+Knowledge Graph Description:
+{kg_description}
+
+User Question:
+{initial_question}
+
+The query that needs repair:
+```sparql
+{query_to_repair}
+```
+
+The verification error:
+{verification_error}
+
+Merged Classes Context:
+{merged_classes_context}
+
+YOUR RESPONSE MUST FOLLOW THIS FORMAT EXACTLY:
+
+REPAIRED_QUERY:
+```sparql
+[Your repaired SPARQL query here]
+```
+
+EXPLANATION:
+[Brief explanation of the issues you fixed and how you fixed them]
+
+Common SPARQL syntax issues to check:
+1. Missing or mismatched prefixes
+2. Unbalanced brackets or parentheses
+3. Missing periods or semicolons
+4. Incorrect property paths
+5. Malformed FILTER expressions
+6. Invalid namespace prefixes"""
+)
+
 # Agent summary prompt
 agent_summary_prompt = PromptTemplate.from_template(
     """
@@ -140,6 +183,7 @@ Your task is to evaluate the following proposals and select the best one based o
 2. Query efficiency and performance
 3. Semantic correctness
 4. Completeness of the solution
+5. Keep the query number consistent with the proposal number to make sure that empty queries are not selected
 
 User Question:
 {initial_question}

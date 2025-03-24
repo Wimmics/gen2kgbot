@@ -592,6 +592,22 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
     return db
 
 
+def get_scenario_config(scenario_id: str) -> dict:
+    """
+    Return the configuration for a specific scenario
+    
+    Args:
+        scenario_id (str): The ID of the scenario (e.g., "scenario_8")
+        
+    Returns:
+        dict: The configuration dictionary for the specified scenario
+    """
+    if scenario_id not in config:
+        logger.warning(f"Configuration for {scenario_id} not found")
+        return {}
+    return config[scenario_id]
+
+
 def get_scenario_module(scenario_id: int):
     scenario_module = importlib.import_module(
         f"app.core.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
