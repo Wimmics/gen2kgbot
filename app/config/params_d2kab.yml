@@ -244,41 +244,74 @@ scenario_1:
 scenario_2:
   validate_question: llama3_2-1b@local
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
 
 scenario_3:
   validate_question: llama3_2-1b@local
   generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_4:
   validate_question: llama-3_1-70B@ovh
   generate_query: llama3_2-1b@local
-  interpret_csv_query_results: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_5:
   validate_question: llama3_2-1b@local
   generate_query: o1@openai
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_6:
   validate_question: llama-3_1-70B@ovh
   generate_query: deepseek-r1_1_5b@local
-  interpret_csv_query_results: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_7:
   validate_question: llama3_2-1b@local
   generate_query: llama3_2-1b@local
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
 
+# python -m app.core.scenarios.scenario_5.scenario_5 --params app/config/params_d2kab.yml --question "" 
 
 # Example questons:
-# 1. What article abstracts mention taxon wheat (Triticum aestivum) and trait 'resistance to Leaf rust'?
-# 2. What genes are mentioned in the articles abstracts that also mention phenotype wto:0000549 (resistance to Leaf rust)?
-#    Counts the number of times that a gene is cited and rank the results in decreasing count order.
+# 1. What are the articles whose abstract mentions taxon 'wheat' (Triticum aestivum) and trait 'resistance to Leaf rust'?
+# 	 => Almost ok. Fail to link annotations to parts of abstracts.
+#    Generated: 
+#       ?annotationGene oa:hasTarget ?abstract.
+#    Should be:
+#       ?annotationGene oa:hasTarget [ oa:hasSource ?source ]. ?source frbr:partOf+ ?abstract.
+
+# 2.0 What genes are mentioned proximal to trait 'resistance to Leaf rust'?
+#    => NOK. Link the 2 mentions to the same annotation.
+# 2.1 What genes are mentioned in articles' abstracts that also mention trait 'resistance to Leaf rust'?
+# 	 => Almost ok. Fail to link annotations to parts of abstracts.
+
+# 3.0 Count the number of times that genes are mentioned with phenotype 'resistance to rust'.
+#    => NOK. Link the 2 mentions to the same annotation.
+# 3.1 Count the number of times that genes are mentioned in articles' abstracts that also mention phenotype 'resistance to rust'. Rank the results in decreasing count order.
+# 	 => Almost ok. Fail to link annotations to parts of abstracts.
+#
+# SELECT ?gene (COUNT(DISTINCT ?annotationGene) AS ?mentionCount)
+# WHERE {
+#   ?annotationGene a oa:Annotation ;
+#                   oa:hasBody ?gene ;
+#                   oa:hasTarget ?abstract .
+#   ?gene a d2kab:Gene .
+
+#   ?annotationPheno a oa:Annotation ;
+#                    oa:hasBody ?phenotype ;
+#                    oa:hasTarget ?abstract .
+#   ?phenotype a wto:0000506 .
+# }
+# GROUP BY ?gene
+# ORDER BY DESC(?mentionCount)
+
+# 4.0 Retrieve the genetic markers mentioned in  articles' abstracts that also mention a gene which, in turn, is mentioned in possibly different articles' abstracts that mention trait 'resistance to Stripe Rust'.
+# 	 => Not bad: fail to link annotations to parts of abstracts, but tries to find the 2 articles with (marker,gene) and (gene,trait) mentions.
+#       Use phenotype 'resistance to rust' instead of trait 'resistance to Stripe Rust'.
