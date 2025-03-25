@@ -242,10 +242,15 @@ scenario_7:
   text_embedding_model: nomic-embed-text_faiss@local
 
 scenario_8:
-  validate_question: llama-3_1-70B@ovh
-  generate_query: llama-3_1-70B@ovh
-  interpret_csv_query_results: llama-3_1-70B@ovh
+  validate_question: o3-mini@openai
+  generate_query: o3-mini@openai
+  interpret_csv_query_results: o3-mini@openai
   text_embedding_model: nomic-embed-text_faiss@local
-  debate_rounds: 2  # Configurable number of debate rounds
-  judging_grade_threshold_retry: 8
-  judging_grade_threshold_run: 5
+  debate_rounds: 2  
+  
+  # Multi-agent debate specific configuration
+  moderator_evaluate: o3-mini@openai
+  domain_kg_expert: o3-mini@openai
+  query_optimization_expert: o3-mini@openai
+  semantic_interpretation_expert: o3-mini@openai
+  query_repair: o3-mini@openai  # Query repair expert model

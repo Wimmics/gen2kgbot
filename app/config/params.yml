@@ -317,4 +317,3 @@ scenario_8:
   query_optimization_expert: o3-mini@openai
   semantic_interpretation_expert: o3-mini@openai
   query_repair: o3-mini@openai  # Query repair expert model
->>>>>>> dev_tjiang

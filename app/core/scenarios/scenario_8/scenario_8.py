@@ -13,7 +13,7 @@ from app.core.utils.graph_nodes import (
     validate_question,
     verify_query,
     run_query,
-    interpret_csv_query_results,
+    interpret_results,
 )
 from app.core.utils.graph_routers import (
     get_class_context_router,
@@ -375,7 +375,7 @@ debate_builder.add_edge("moderator_evaluate", END)
 builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 # Get configured debate rounds from config and log it
-configured_debate_rounds = config.get_scenario_config("scenario_8").get("debate_rounds")
+configured_debate_rounds = config.get_debate_rounds_config_by_scenario(SCENARIO)
 logger.info(f"Loading configured debate rounds: {configured_debate_rounds}")
 
 builder.add_node("preprocessing_subgraph", prepro_builder.compile())
@@ -383,7 +383,7 @@ builder.add_node("debate_subgraph", debate_builder.compile())
 builder.add_node("verify_query", verify_query_with_error_capture)
 builder.add_node("query_repair", repair_query)
 builder.add_node("run_query", run_query)
-builder.add_node("interpret_results", interpret_csv_query_results)
+builder.add_node("interpret_results", interpret_results)
 
 # Main flow with repair path
 builder.add_edge(START, "preprocessing_subgraph")
@@ -447,7 +447,7 @@ if __name__ == "__main__":
     async def run_graph():
         try:
             # Create input state with configured debate rounds
-            configured_debate_rounds = config.get_scenario_config("scenario_8").get("debate_rounds")
+            configured_debate_rounds = config.get_debate_rounds_config_by_scenario(SCENARIO)
             input_state = {
                 "initial_question": question,
                 "max_debate_rounds": configured_debate_rounds if configured_debate_rounds is not None else 3
