@@ -246,7 +246,7 @@ def get_class_context_cache_directory() -> Path:
         path = Path(__file__).resolve().parent.parent.parent.parent / str_path
 
     if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(path)
     return path
 
 
@@ -264,7 +264,7 @@ def get_preprocessing_directory() -> Path:
         path = Path(__file__).resolve().parent.parent.parent.parent / str_path
 
     if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(path)
     return path
 
 
@@ -284,7 +284,7 @@ def get_temp_directory() -> Path:
         path = Path(__file__).resolve().parent.parent.parent.parent / str_path
 
     if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(path)
     return path
 
 
@@ -324,7 +324,7 @@ def get_embeddings_directory(vector_db_name: str) -> Path:
         path = Path(__file__).resolve().parent.parent.parent.parent / str_path
 
     if not os.path.exists(path):
-        os.makedirs(path, exist_ok=True)
+        os.makedirs(path)
     return path
 
 
@@ -651,20 +651,11 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
     return db
 
 
-def get_scenario_config(scenario_id: str) -> dict:
+def get_debate_rounds_config_by_scenario(scenario_id: str) -> dict:
     """
-    Return the configuration for a specific scenario
-    
-    Args:
-        scenario_id (str): The ID of the scenario (e.g., "scenario_8")
-        
-    Returns:
-        dict: The configuration dictionary for the specified scenario
+    Return the number of debate rounds of a given scenario
     """
-    if scenario_id not in config:
-        logger.warning(f"Configuration for {scenario_id} not found")
-        return {}
-    return config[scenario_id]
+    return config[scenario_id]["debate_rounds"]
 
 
 def get_scenario_module(scenario_id: int):
