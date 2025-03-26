@@ -9,9 +9,8 @@ To do so, you are provided with a user's question and some context information a
 
 In your response:
 - Place the SPARQL query inside a markdown codeblock with the ```sparql ``` tag.
-- Always base the query on the details provided in the prompt — do not create a query from scratch, do not make up a generic query.
 - Limit your response to at most one SPARQL query.
-- Do not add any other unnecessary codeblock or comment.
+- Make sure to never mix up classes and instances of these classes.
 
 The user's question is:
 {initial_question}
@@ -24,9 +23,10 @@ Here is a list of classes relevant to the user's question, formatted as (class u
 Here is how the properties are used by instances of the classes:
 {merged_classes_context}
 
-These are example SPARQL queries that can help you generate the proper query:
 
+Here are example SPARQL queries that can help you generate the proper query:
 {selected_queries}
+
 
 Do not repeat or reference previous outputs.
 """
@@ -45,7 +45,7 @@ When providing a SPARQL query:
 - Place the SPARQL query inside a markdown codeblock with the ```sparql ``` tag.
 - Ensure the query is tailored to the details in the prompt — do not create a query from scratch, do not make up a generic query.
 - Limit your response to at most one SPARQL query.
-- Do not add any other unnecessary codeblock or comment.
+- Make sure to never mix up classes and instances of these classes.
 
 DO NOT FORGET the ```sparql ``` language tag. It is crucial for the rest of the process.
 
@@ -53,15 +53,20 @@ DO NOT FORGET the ```sparql ``` language tag. It is crucial for the rest of the 
 The user's question is:
 {initial_question}
 
+
+Here is a list of classes relevant to the user's question:
+{selected_classes}
+
+
 Here are some classes, properties and data types that that can be relevant to the user's question:
 {merged_classes_context}
 
 
-Example SPARQL queries:
+Here are example SPARQL queries that can help you generate the proper query:
 {selected_queries}
 
 
-The last answer you provided, that either does not contain a SPARQL query or have syntact or semantic errors:
+Here is the last answer you provided, that either does not contain a SPARQL query or have syntact or semantic errors:
 {last_answer}
 
 

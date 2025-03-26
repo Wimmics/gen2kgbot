@@ -10,9 +10,8 @@ To do so, you are provided with a user's question and some context information a
 
 In your response:
 - Place the SPARQL query inside a markdown codeblock with the ```sparql ``` tag.
-- Always base the query on the details provided in the prompt — do not create a query from scratch, do not make up a generic query.
 - Limit your response to at most one SPARQL query.
-- Do not add any other unnecessary codeblock or comment.
+- Make sure to never mix up classes and instances of these classes.
 
 The user's question is:
 {initial_question}
