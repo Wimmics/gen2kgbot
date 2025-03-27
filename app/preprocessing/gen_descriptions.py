@@ -323,6 +323,8 @@ def make_properties_description() -> list[tuple]:
                 )
             else:
                 logger.warning(f"Unexpected SPARQL result format: {result}")
+
+    results = list(set(results))  # remove duplicates
     return results
 
 
