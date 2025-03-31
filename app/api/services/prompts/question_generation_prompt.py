@@ -28,7 +28,7 @@ Generate only {number_of_questions} questions. No more or less.
 {enforce_structured_output_prompt}
 """
 
-enforce_structured_output_prompt = """Make sure to generate a JSON file following this schema:
+enforce_structured_output_prompt = """Make SURE to generate a JSON file following this schema and use the ```json``` code block to format it:
 
 ------------------------
 "question": string
