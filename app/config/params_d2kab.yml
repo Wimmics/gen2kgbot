@@ -5,7 +5,29 @@ kg_full_name: WheatGenomic Scienctific Literature Knowledge Graph
 kg_short_name: d2kab
 
 # KG textual description (used in prompts)
-kg_description: The Wheat Genomics Scientific Literature Knowledge Graph (WheatGenomicsSLKG) is a FAIR knowledge graph that exploits the Semantic Web technologies to describe PubMed scientific articles on wheat genetics and genomics. It represents Named Entities (NE) about genes, phenotypes, taxa and varieties, mentioned in the title and the abstract of the articles, and the relationships between wheat mentions of varieties and phenotypes.
+# kg_description: >
+#   The Wheat Genomics Scientific Literature Knowledge Graph (WheatGenomicsSLKG) is a FAIR 
+#   knowledge graph that exploits the Semantic Web technologies to describe PubMed 
+#   scientific articles on wheat genetics and genomics. It represents Named Entities (NE)
+#   about genes, phenotypes, taxa and varieties, mentioned in the title and the abstract
+#   of the articles, and the relationships between wheat mentions of varieties and phenotypes.
+
+kg_description: >
+  The Wheat Genomics Scientific Literature Knowledge Graph (WheatGenomicsSLKG) exploits the 
+  Semantic Web technologies to represent named entities mentioned in scientific articles from PubMed.
+  The named entities may be genes, phenotypes or traits, taxa, and varieties. 
+  The named entities are extracted from parts (frbr:Work) of abstracts (fabio:Abstract), where abstracts are parts of articles (fabio:ResearchPaper).
+  The mentions of named entities are represented as annotations that follow the following pattern:
+  
+  :annotation
+    a oa:Annotation ;
+    oa:hasBody :body_iri ;
+    oa:hasTarget [
+      a oa:ResourceSelection; 
+      oa:hasSource :part_of_text .
+    ] .
+
+    :part_of_text frbr:partOf+ :paper .
 
 # SPARQL endpoint serving the KG
 kg_sparql_endpoint_url: "http://d2kab.i3s.unice.fr/sparql" 
@@ -276,7 +298,9 @@ scenario_7:
   interpret_results: llama-3_1-70B@ovh
   text_embedding_model: nomic-embed-text_faiss@local
 
-
+# --------------------------------------------------------------------
+# Results with the first (commented out) description of the KG:
+#
 # python -m app.core.scenarios.scenario_5.scenario_5 --params app/config/params_d2kab.yml --question "" 
 
 # Example questons:
