@@ -117,8 +117,7 @@ def compute_embeddings(embed_name: str, descriptions_file: str, output_dir: str)
     vectorstore.save_local(output_dir)
 
 
-if __name__ == "__main__":
-
+def start_compute_embeddings():
     # Parse the command line arguments
     args = setup_cli()
 
@@ -145,3 +144,7 @@ if __name__ == "__main__":
     )
     embeddings_dir = f"{config.get_embeddings_directory(vector_db_name)}/{config.get_property_embeddings_subdir()}"
     compute_embeddings(embed_name, description_file, embeddings_dir)
+
+
+if __name__ == "__main__":
+    start_compute_embeddings()

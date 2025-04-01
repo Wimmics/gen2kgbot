@@ -351,7 +351,7 @@ def get_classes_with_instances() -> list[str]:
     return results
 
 
-if __name__ == "__main__":
+def generate_descriptions():
 
     # Parse the command line arguments
     args = setup_cli()
@@ -425,3 +425,7 @@ if __name__ == "__main__":
         args.classes_with_instances,
     )
     save_to_txt(classes_with_instances_description_file, classes_description_filtered)
+
+
+if __name__ == "__main__":
+    generate_descriptions()

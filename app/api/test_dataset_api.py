@@ -1,10 +1,17 @@
 import json
 import os
-from fastapi import FastAPI
+from pathlib import Path
+from fastapi import FastAPI, Response
 from fastapi.responses import StreamingResponse
+from torch import ge
+import yaml
+from app.api.models.test_dataset_activate_config_request import (
+    TestDatasetActivateConfigRequest,
+)
 from app.api.models.test_dataset_answer_question_request import (
     TestDatasetAnswerQuestionRequest,
 )
+from app.api.models.test_dataset_config_request import TestDatasetConfigRequest
 from app.api.models.test_dataset_generate_question_request import (
     TestDatasetGenerateQuestionRequest,
 )
@@ -22,6 +29,13 @@ from app.core.utils.config_manager import (
     set_custom_scenario_configuration,
     setup_cli,
 )
+from app.core.utils.logger_manager import setup_logger
+from app.preprocessing.compute_embeddings import start_compute_embeddings
+from app.preprocessing.gen_descriptions import generate_descriptions
+import app.core.utils.config_manager as config
+
+
+logger = setup_logger(__package__, __file__)
 
 
 def get_env_variable(var_name: str) -> str:
@@ -160,6 +174,175 @@ def test_dataset_default_config():
     yaml_data = get_configuration()
 
     return json.dumps(yaml_data, indent=4)
+
+
+@app.post("/api/test_dataset/config/create")
+def test_dataset_create_config(config_request: TestDatasetConfigRequest):
+    """
+    This endpoint is used to create a new configuration Yaml file.
+
+    Returns:
+        dict:
+            A dictionary containing the created configuration.
+    """
+    try:
+
+        logger.debug(f"Received configuration request: {config_request}")
+
+        config_path = (
+            Path(__file__).resolve().parent.parent
+            / "config"
+            / f"params_{config_request.kg_short_name}.yml"
+        )
+
+        # Check if the file already exists
+        if config_path.exists():
+            logger.error(f"Configuration file already exists at {config_path}")
+            return Response(
+                status_code=400,
+                content=json.dumps(
+                    {"error": f"Configuration file already exists at {config_path}"}
+                ),
+                media_type="application/json",
+            )
+
+        # Create the configuration dictionary from the request
+        with open(config_path, "w", encoding="utf-8") as file:
+            yaml.safe_dump(config_request.model_dump(), file)
+            logger.info(f"Configuration file created at {config_path}")
+            return Response(
+                status_code=200,
+                content=json.dumps(config_request.model_dump()),
+                media_type="application/json",
+            )
+    except Exception as e:
+        logger.error(f"Error creating configuration file: {str(e)}")
+        return Response(
+            status_code=500,
+            content={"error": f"Error creating configuration file: {str(e)}"},
+            media_type="application/json",
+        )
+
+
+@app.post("/api/test_dataset/config/activate")
+def test_dataset_activate_config(config_request: TestDatasetActivateConfigRequest):
+    """
+    This endpoint is used to create a new configuration Yaml file.
+
+    Returns:
+        dict:
+            A dictionary containing the created configuration.
+    """
+    try:
+
+        logger.debug(f"Configuration to activate: {config_request}")
+
+        config_to_activate_path = (
+            Path(__file__).resolve().parent.parent
+            / "config"
+            / f"params_{config_request.kg_short_name}.yml"
+        )
+
+        # Check if the file already exists
+        if not config_to_activate_path.exists():
+            logger.error(
+                f"Configuration file does not exist at {config_to_activate_path}"
+            )
+            return Response(
+                status_code=400,
+                content=json.dumps(
+                    {
+                        "error": f"Configuration file does not exist at {config_to_activate_path}"
+                    }
+                ),
+                media_type="application/json",
+            )
+
+        active_config_path = (
+            Path(__file__).resolve().parent.parent / "config" / "params.yml"
+        )
+
+        with open(config_to_activate_path, "r", encoding="utf-8") as file_to_activate:
+            config_data = yaml.safe_load(file_to_activate)
+
+            # Activate the configuration
+            with open(active_config_path, "w", encoding="utf-8") as active_file:
+                yaml.safe_dump(config_data, active_file)
+                logger.info(f"Configuration file activated at {active_file}")
+                return Response(
+                    status_code=200,
+                    content=json.dumps(config_data),
+                    media_type="application/json",
+                )
+    except Exception as e:
+        logger.error(f"Error activating configuration file: {str(e)}")
+        return Response(
+            status_code=500,
+            content={"error": f"Error activating configuration file: {str(e)}"},
+            media_type="application/json",
+        )
+
+
+@app.post("/api/test_dataset/config/kg_descriptions")
+def test_dataset_generate_kg_descriptions(config_request: TestDatasetActivateConfigRequest):
+    """
+    This endpoint is used to generate KG description of a given Knowledge Graph.
+
+    Returns:
+        dict:
+            A dictionary containing the created configuration.
+    """
+    try:
+
+        generate_descriptions()
+
+        directory = config.get_preprocessing_directory()
+        generated_files = {}
+        for file in directory.iterdir():
+            if file.is_file():
+                with file.open('r', encoding='utf-8') as f:
+                    content = f.read()
+                    generated_files[file.name] = content
+
+        return Response(
+            status_code=200,
+            content=json.dumps(generated_files),
+            media_type="application/json",
+        )
+    except Exception as e:
+        logger.error(f"Error  configuration file: {str(e)}")
+        return Response(
+            status_code=500,
+            content={"error": f"Error creating configuration file: {str(e)}"},
+            media_type="application/json",
+        )
+    
+
+@app.post("/api/test_dataset/config/kg_embeddings")
+def test_dataset_generate_kg_embeddings(config_request: TestDatasetActivateConfigRequest):
+    """
+    This endpoint is used to generate KG embeddings of a given Knowledge Graph.
+
+    Returns:
+        dict:
+            A dictionary containing the created configuration.
+    """
+    try:
+
+        start_compute_embeddings()
+
+        return Response(
+            status_code=200,
+            content=json.dumps({"message": "KG embeddings generated successfully"}),
+            media_type="application/json",
+        )
+    except Exception as e:
+        logger.error(f"Error  configuration file: {str(e)}")
+        return Response(
+            status_code=500,
+            content={"error": f"Error generated embeddings: {str(e)}"},
+            media_type="application/json",
+        )
 
 
 if __name__ == "__main__":

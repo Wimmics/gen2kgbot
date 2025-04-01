@@ -443,20 +443,17 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
         )
 
     elif server_type == "hugface":
-        base_url = llm_config["base_url"]
 
         hfe = HuggingFaceEndpoint(
-            model=model_id,
+            repo_id=model_id,
             task="text-generation",
-            max_new_tokens=512,
             do_sample=False,
             repetition_penalty=1.03,
             top_p=top_p,
-            inference_server_url=base_url,
             max_tokens=max_tokens,
         )
 
-        llm_config = ChatHuggingFace(llm=hfe, verbose=True)
+        llm_config = ChatHuggingFace(llm=hfe)
 
     elif server_type == "google":
         llm_config = ChatGoogleGenerativeAI(
