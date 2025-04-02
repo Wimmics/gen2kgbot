@@ -1,9 +1,9 @@
+from calendar import c
 import json
 import os
 from pathlib import Path
 from fastapi import FastAPI, Response
 from fastapi.responses import StreamingResponse
-from torch import ge
 import yaml
 from app.api.models.test_dataset_activate_config_request import (
     TestDatasetActivateConfigRequest,
@@ -18,6 +18,7 @@ from app.api.models.test_dataset_generate_question_request import (
 from app.api.models.test_dataset_query_request import TestDatasetQueryRequest
 
 from app.api.services.answer_question_service import generate_stream_responses
+from app.api.services.config_manager_service import add_missing_config_params
 from app.api.services.generate_question_dataset_service import generate_questions
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -201,18 +202,29 @@ def test_dataset_create_config(config_request: TestDatasetConfigRequest):
             return Response(
                 status_code=400,
                 content=json.dumps(
-                    {"error": f"Configuration file already exists at {config_path}"}
+                    {
+                        "error": f"Configuration file already exists: {config_request.kg_short_name}"
+                    }
                 ),
                 media_type="application/json",
             )
 
         # Create the configuration dictionary from the request
         with open(config_path, "w", encoding="utf-8") as file:
-            yaml.safe_dump(config_request.model_dump(), file)
+            # Convert the request to a dictionary
+            config_dict = config_request.model_dump()
+
+            # Add missing parameters to the configuration
+            updated_config = add_missing_config_params(config_dict)
+
+            # Write the configuration to the file
+            yaml.safe_dump(updated_config, file)
+
             logger.info(f"Configuration file created at {config_path}")
+
             return Response(
                 status_code=200,
-                content=json.dumps(config_request.model_dump()),
+                content=config_request.model_dump_json(),
                 media_type="application/json",
             )
     except Exception as e:
@@ -252,7 +264,7 @@ def test_dataset_activate_config(config_request: TestDatasetActivateConfigReques
                 status_code=400,
                 content=json.dumps(
                     {
-                        "error": f"Configuration file does not exist at {config_to_activate_path}"
+                        "error": f"Configuration file does not exist {config_request.kg_short_name}"
                     }
                 ),
                 media_type="application/json",
@@ -271,7 +283,7 @@ def test_dataset_activate_config(config_request: TestDatasetActivateConfigReques
                 logger.info(f"Configuration file activated at {active_file}")
                 return Response(
                     status_code=200,
-                    content=json.dumps(config_data),
+                    content=config_request.model_dump_json(),
                     media_type="application/json",
                 )
     except Exception as e:
@@ -284,7 +296,9 @@ def test_dataset_activate_config(config_request: TestDatasetActivateConfigReques
 
 
 @app.post("/api/test_dataset/config/kg_descriptions")
-def test_dataset_generate_kg_descriptions(config_request: TestDatasetActivateConfigRequest):
+def test_dataset_generate_kg_descriptions(
+    config_request: TestDatasetActivateConfigRequest,
+):
     """
     This endpoint is used to generate KG description of a given Knowledge Graph.
 
@@ -300,7 +314,7 @@ def test_dataset_generate_kg_descriptions(config_request: TestDatasetActivateCon
         generated_files = {}
         for file in directory.iterdir():
             if file.is_file():
-                with file.open('r', encoding='utf-8') as f:
+                with file.open("r", encoding="utf-8") as f:
                     content = f.read()
                     generated_files[file.name] = content
 
@@ -316,10 +330,12 @@ def test_dataset_generate_kg_descriptions(config_request: TestDatasetActivateCon
             content={"error": f"Error creating configuration file: {str(e)}"},
             media_type="application/json",
         )
-    
+
 
 @app.post("/api/test_dataset/config/kg_embeddings")
-def test_dataset_generate_kg_embeddings(config_request: TestDatasetActivateConfigRequest):
+def test_dataset_generate_kg_embeddings(
+    config_request: TestDatasetActivateConfigRequest,
+):
     """
     This endpoint is used to generate KG embeddings of a given Knowledge Graph.
 

@@ -19,11 +19,6 @@ class TestDatasetConfigRequest(BaseModel):
         expand_similar_classes (bool): Whether to expand similar classes or not.
         class_context_format (str): The format for class context.
         excluded_classes_namespaces (list[str]): A list of excluded class namespaces.
-        data_directory (str): The directory where data is stored.
-        class_embeddings_subdir (str): The subdirectory for class embeddings.
-        property_embeddings_subdir (str): The subdirectory for property embeddings.
-        queries_embeddings_subdir (str): The subdirectory for query embeddings.
-        temp_directory (str): The temporary directory for storing files.
     """
 
     kg_full_name: str
@@ -38,17 +33,3 @@ class TestDatasetConfigRequest(BaseModel):
     expand_similar_classes: bool
     class_context_format: str
     excluded_classes_namespaces: list[str]
-    data_directory: str
-    class_embeddings_subdir: str
-    property_embeddings_subdir: str
-    queries_embeddings_subdir: str
-    temp_directory: str
-    seq2seq_models: dict
-    text_embedding_models: dict
-    scenario_1: dict
-    scenario_2: dict
-    scenario_3: dict
-    scenario_4: dict
-    scenario_5: dict
-    scenario_6: dict
-    scenario_7: dict
