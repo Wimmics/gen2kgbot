@@ -1,142 +1,122 @@
 # Gen²KGBot - Generic Generative Knowledge Graph Robot
 
-## Scenarios
-
-- Scenario 1: simply ask the question to the LLM, to figure out what it "knows" about the topic. No query to the KG.
-- Scenario 2: ask the model to create a SPARQL query without any information other than the user's question.
-- Scenario 3: ask the model to create a SPARQL query based on the user's question, a list of classes related to the question, formatted as tuples (class uri, label, description)
-- Scenario 4: Scenario 3 + add in the context a description of the properties used with the instances of selected classes. Triples of the form: `<class> <prop> <datatype or class>.`
-- Scenario 5: Scenario 4 + retry mechanism if the generated SPARQL query is not syntactically correct.
-- Scenario 6: Scenario 6 + add in the context some example SPARQL queries related to the question.
+Gen²KGBot addresses the problem of implementing GraphRAG applied to RDF knowledge graphs in a generic manner.
+It provides two components:
+- An application to generate a validation dataset, that is, a set of natural language questions and equivalent SPARQL queries.
+- A framework to query an RDF knowledge graph (KG) using natural language questions: this involves the generation of a SPARQL query, its execution and the interpretation of the SPARQL results.
 
 
-## General information
+## Documentation
 
-We use the ```dev``` branch for pushing contributions. Please create your own branch like (either user-centric or feature-centric) and do a pull request to the ```dev``` branch when ready for reviewing.
+- [Envionment setup](#environment-setup)
+- [Startup instructions](#startup-instructions)
+- [Development Guidelines](doc/dev_guidelines.md)
+
+## License
+
+See the [LICENSE file](LICENSE).
+
+
+## KGQueryForge: (NL question, SPARQL query) generator
+
+
+## NL-to-SPARQL translation and execution
+
+Gen²KGBot implements multiple scenarios of increasing complexity to translate natural language questions into SPARQL, and refining the generated query.
+
+### Scenario 1
+Simply ask the user's question to the language model. This naive scenario is used to figure out what the language model "knows" about the topic. The KG is not involved.
+
+### Scenario 2
+Ask the language model to directly **translate the user's question into a SPARQL query without any other information**.
+
+This scenario is used to figure out what the language model may "know" about the target KG.
+It can be used as a baseline for the construction of a SPARQL query.
+
+### Scenario 3
+Ask the language model to generate a SPARQL query based on the **user's question** and a context containing a **list of classes related to the question**.
+These classes are selected using a **similarity search between the question and the class descriptions**.
+
+This involves a preprocessing step where a **textual description of the classes** used in the KG is generated, and **text embeddings** of the descriptions are computed.
+
+### Scenario 4
+Extends the context in Scenario 3 with a **description of the properties and value types used with the instances of selected classes**.
+
+This additional context can be provided in multiples syntaxes: as Turtle, as tuples _(class, property, property label, value type)_, 
+or in natural language like _"Instances of class 'class' have property 'prop' (label) with value type 'value_type'"_.
+
+### Scenario 5
+Extends the Scenario 4 with a **retry mechanism if the generated SPARQL query is not syntactically correct**.
+
+In this case the language model is provided with the previously generated query, and asked to reformulate it.
+
+### Scenario 6
+Extends the context in Scenario 5 with some **example SPARQL queries** related to the question.
+
+These queries are selected using a **similarity search with the question**.
+
+This involves a preprocessing step where existing SPARQL queries are provided, and **text embeddings** thereof are computed.
+
+### Scenario 7
+Extends the Scenario 6 with a **query judge** component that can evaluates the quality of the generated SPARQL and may start a **query improvement cycle**.
+
 
 
 ## Environment setup
 
-Conda is required for setting up the environment. For installation instructions, see: https://docs.conda.io/projects/conda/en/latest/user-guide/install/
-1) Install conda
-2) To install the environment from the `environment.yml` file, use the following command:
+Conda (or one of its distributions) is required for setting up the environment.
+
+1) [Install conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/)
+2) File `environment.yml` shall be used to install the dependencies. Use the following command:
 ```sh
-conda env create -f ./environment_{os}.yml
+conda env create -f ./environment.yml
 ```
 
-⚠️ Some packages are os and hardware dependent. If you have a problem creating the environment you can delete it and retry without the dependencies causing the problem.
+⚠️ Some packages are OS and hardware dependent. You may delete the environment and retry without the dependencies causing the problem.
 
-☢️ To delete the environment use:
-```sh
-conda env remove --name kgbot-rag-backend
-```
-
-3) At the root of the repository, create the follwing directories:
-    - `logs`: log files produces while running the application (see configuration in `app/config/logging.yml`)
-    - `data`: descriptions extracted from the knowledge graph, as well as the embeddings thereof.
-    - `tmp`: files containing the descripton of the knowledge graph
-
-4) Install the [Ollama](https://github.com/ollama/ollama) application for your platform and, as a startup config, insttall the models `ollama3.2:1b`, `nomic-embed-text`
+3) Install the [Ollama](https://github.com/ollama/ollama) application for your platform and, as a startup config, install the models `ollama3.2:1b`, `nomic-embed-text`:
 ```sh
 ollama pull ollama3.2:1b
 ollama pull nomic-embed-text
 ```
 
-⚠️ To run Ollama on Windows, you may need to install Microsoft Visual C++ 14+: install and run [Build Tools](https://visualstudio.microsoft.com/fr/visual-cpp-build-tools/) then install Desktop C++ Development with default packages.
-
-5) Set up the following environment variables:
-    - `LANGCHAIN_API_KEY`
-    - `OPENAI_API_KEY` if you use OpenAI models
+4) Set up environment variable `LANGCHAIN_API_KEY` awith your key, s Gen²KGBot relies on LangChain.
+Also, set up the environment variables proviing your keys for using the LLMs and services of your choice.
+Currently, Gen²KGBot supports the following ones: `OPENAI_API_KEY`, `OVHCLOUD_API_KEY`, `HF_TOKEN`, `GOOGLE_API_KEY`, `DEEPSEEK_API_KEY`.
 
 
-## Application Startup Instructions
 
-The application has been structured as a module and adheres to the dot notation convention for Python imports. To import a module within the Python script, you can either use an absolute path (e.g., app.core.module1.module2) or a relative import (e.g., ..core.module1.module2).
+## Startup instructions
 
-### Launching the Application
+### Using CLI
 
-It is recomanded to use the [LangGraph Studio](https://studio.langchain.com/) inteface to interact with the application. To achieve this, you simply run the following command in the root directory.
+Each scenario can be run in the terminal. 
+
+Option `-q|--question` allows to set a custom NL question. Otherwise a default NL question.
+
+Option `-p|--params` allows to set a custom configuration faile. Otherwise file `config/params.yml` is used.
+
+Use python's option `-m` to run one of the scenarios. For instance:
+
+````bash
+python -m app.core.scenarios.scenario_1.scenario_1 -c "What is the name of proteine X"
+````
+
+Or with additional parameters:
+
+````bash
+python -m app.core.scenarios.scenario_1.scenario_1 \
+    --params app/config/params_d2kab.yml \ 
+    --question "What articles mention taxon 'wheat' (Triticum aestivum) and trait 'resistance to Leaf rust'?"
+````
+
+### Using Langgraph Studio
+
+You may use the [LangGraph Studio](https://studio.langchain.com/) inteface to interact with the application. Simply run the following command in the root directory.
 
 ````bash
 langgraph dev
 ````
-This will initialize LangGraph studio based on local file langgraph.json.
+This will initialize LangGraph studio based on local file `langgraph.json` and the defauult configuration file `config/params.yml`.
 
-Then you can select the scenario and input the question.
-
-However, it is also possible to run each of the scenarios in the terminal. You should use the `-m` option from the Python command line interface, for example, to run scenario_6 with the default question use: 
-````bash
-python -m app.core.scenarios.scenario_1.scenario_1
-````
-
-Custom questions are allowed and can be asked with the following command:
-
-````bash
-python -m app.core.scenarios.scenario_1.scenario_1 -c "What is the name of protene X"
-````
-
-## Project Structure
-- **Each scenario** have its own [subfolder](./app/core/scenarios) in `app.core.scenarios`
-- **The notebooks** for creating the embeddings are in [the folder](./app/notebooks) `app.notebooks`
-
-
-## Development Guidelines
-
-To ensure that all contributors are aligned and to facilitate smoother integration of our work, we kindly ask that you adhere to the following guidelines:
-
-**Documentation Standards**
-- **Google Docstring Format**: All documentation for classes and functions should be written following the Google Docstring format. This format is both natural language and supports automatic documentation generation tools. The documentation is also parsed by the LLM to know about class/function signature, so natural language is more indicated.
-
-- **Mintlify Doc Writer for VSCode**: To simplify the process of writing docstrings, we recommend using the Mintlify Doc Writer extension available in Visual Studio Code. This tool automates the creation of docstrings. To use this extension effectively:
-    Install Mintlify Doc Writer from the VSCode extensions marketplace.
-    In the extension's settings, set the docstring format to Google.
-    To generate a docstring for a class or function, simply right-click on the code element and select the Generate Documentation option.
-    Review and adjust the generated docstrings as necessary to accurately reflect the code’s purpose and behavior.
-
-**Code Formatting**
-
-To maintain a unified code style across our project, we adhere to the PEP8 convention. This style guide helps in keeping our code readable and maintainable. Here's how to ensure your code meets these standards:
-
-- **Black Formatter** in VSCode: The easiest way to format your code according to PEP8 is by using the Black Formatter extension in Visual Studio Code. Here’s how to use it:
-    Install Black Formatter from the VSCode extensions marketplace.
-    Right-click inside any Python file and select Format Document to automatically format your code.
-
-
-## Logging guidelines
-
-These guidelines will help us efficiently track application behavior, debug issues, and understand application flow.
-
-**Configuration**
-
-Our logging configuration is centralized in an INI file located at app/config/logging.yml. This setup allows us to manage logging behavior across all scripts from a single location.
-
-
-**Integrating Logging into Your Scripts**
-
-To leverage logging setup, please incorporate the following code at the beginning of each Python script:
-
-```python
-from app.core.utils.logger_manager import setup_logger
-
-logger = setup_logger(__package__, __file__)
-```
-
-**Usage Recommendations**
-
-**Prefer Logging Over Print**: For any output meant for debugging or information tracking, use the logger object instead of the print function. 
-
-**Logging Levels**: Please use the appropriate level when emitting log messages:
-- logger.DEBUG: Detailed information, typically of interest only when diagnosing problems.
-- logger.INFO: Confirmation that things are working as expected.
-- logger.WARNING: Indicates a deviation from the norm but doesn't prevent the program from working
-- logger.ERROR: Issues that prevent certain functionalities from operating correctly but do not necessarily affect the overall application's ability to run.
-- logger.CRITICAL: These are used for errors that require immediate attention, such as a complete system failure or a critical resource unavailability.
-
-**Logs Outputs**
-
-Our configuration supports outputting log messages to two destinations:
-
-- Console: Log messages at the INFO level and above will be outputted to the console. This setup is intended for general monitoring and quick diagnostics.
-- File: A more detailed log, including messages at the DEBUG level and above, is written to a file. 
-
-The log files are located within the /logs directory.
+Then select the scenario and fill in a NL question.
