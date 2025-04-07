@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -20,7 +21,7 @@ class TestDatasetGenerateQuestionRequest(BaseModel):
     model_name: str
     base_uri: str = ""
     kg_description: str
-    kg_schema: str
-    additional_context: str
+    kg_schema: Optional[str] = None
+    additional_context: Optional[str] = None
     number_of_questions: int
     enforce_structured_output: bool
