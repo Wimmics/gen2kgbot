@@ -1,34 +1,32 @@
 name: gen2kgbot
 channels:
   - conda-forge
-  #- defaults
-  #- https://repo.anaconda.com/pkgs/main
-  #- https://repo.anaconda.com/pkgs/r
 dependencies:
   - python=3.12.*
   - chromadb
-  # - faiss-cpu  # to use instead of faiss-gpu if no GPU is available
-  - faiss-gpu  # to use instead of faiss_cpu if a GPU is available
-  - langchain
+  # Choose between faiss-cpu and faiss-gpu depending on hardware
+  - faiss-cpu
+  #- faiss-gpu
+  - langchain=0.3.*
   - langchain-chroma
   - langchain-community
-  - langchain-core
+  - langchain-core=0.3.*
   - langchain-google-genai
   - langchain-huggingface
   - langchain-openai
   - langchain-qdrant
   - langchain-text-splitters
-  - langcodes
-  - langgraph
+  - langcodes=3.*
+  - langgraph=0.3.*
   - langgraph-checkpoint
   - langgraph-sdk
   - langsmith
   - pip
   - setuptools
-  - rdflib
-  - requests
-  - SPARQLWrapper
-  - flake8
+  - rdflib=7.*
+  - requests=2.*
+  - SPARQLWrapper=2.*
+  - flake8=7.*
 
   - pip:
     - https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0.tar.gz
@@ -36,11 +34,11 @@ dependencies:
     - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_core_sci_lg-0.5.4.tar.gz
     - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_bionlp13cg_md-0.5.4.tar.gz
     - https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_craft_md-0.5.4.tar.gz
-    - langchain-deepseek-official
-    - langchain-ollama
-    - langgraph-api
+    - langchain-deepseek-official==0.1.*
+    - langchain-ollama==0.3.*
+    - langgraph-api==0.0.*
     - langgraph-cli
-    - scispacy
-    - spacy
-    - spacy-legacy
+    - scispacy==0.*
+    - spacy==3.*
+    - spacy-legacy==3.*
     - spacy-loggers

@@ -66,29 +66,33 @@ Extends the Scenario 6 with a **query judge** component that can evaluates the q
 
 Conda (or one of its distributions) is required for setting up the environment.
 
-1) [Install conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/)
-2) File `environment.yml` shall be used to install the dependencies. Use the following command:
+1) Install [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) or an equivalent distribution e.g. [mamba](https://mamba.readthedocs.io/en/latest/installation/mamba-installation.html).
+2) File `environment.yml` shall be used to install the dependencies. 
+⚠️ Some packages are hardware-dependent (notably faiss-cpu vs. faiss-gpu). 
+**Update `environment.yml` accordingly** before runnung the command below:
 ```sh
 conda env create -f ./environment.yml
 ```
 
-⚠️ Some packages are OS and hardware dependent. You may delete the environment and retry without the dependencies causing the problem.
-
-3) Install the [Ollama](https://github.com/ollama/ollama) application for your platform and, as a startup config, install the models `ollama3.2:1b`, `nomic-embed-text`:
+3) Install the [Ollama](https://github.com/ollama/ollama) application for your platform and, as a startup config, install models `ollama3.2:1b`, `nomic-embed-text`:
 ```sh
 ollama pull ollama3.2:1b
 ollama pull nomic-embed-text
 ```
 
-4) Set up environment variable `LANGCHAIN_API_KEY` awith your key, s Gen²KGBot relies on LangChain.
-Also, set up the environment variables proviing your keys for using the LLMs and services of your choice.
+4) Gen²KGBot relies on LangChain. Set up environment variable `LANGCHAIN_API_KEY` with your own key.
+Also, set up the environment variables providing your own keys for using the LLMs and services of your choice.
 Currently, Gen²KGBot supports the following ones: `OPENAI_API_KEY`, `OVHCLOUD_API_KEY`, `HF_TOKEN`, `GOOGLE_API_KEY`, `DEEPSEEK_API_KEY`.
 
 
 
 ## Startup instructions
 
-### Using CLI
+### KG-dependent Preprocessing
+
+[TBC]
+
+### Running scenarios using CLI
 
 Each scenario can be run in the terminal. 
 
@@ -110,7 +114,7 @@ python -m app.core.scenarios.scenario_1.scenario_1 \
     --question "What articles mention taxon 'wheat' (Triticum aestivum) and trait 'resistance to Leaf rust'?"
 ````
 
-### Using Langgraph Studio
+### Running scenarios using Langgraph Studio
 
 You may use the [LangGraph Studio](https://studio.langchain.com/) inteface to interact with the application. Simply run the following command in the root directory.
 
