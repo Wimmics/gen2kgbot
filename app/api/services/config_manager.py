@@ -13,7 +13,7 @@ def add_missing_config_params(config: dict):
     """
 
     params_to_add_path = (
-        Path(__file__).resolve().parent.parent.parent / "config" / "params_to_add.yml"
+        Path(__file__).resolve().parent.parent.parent.parent / "config" / "params_to_add.yml"
     )
 
     with open(params_to_add_path, "r") as to_add_file:

@@ -23,7 +23,7 @@ def setup_cli() -> Namespace:
     parser = ArgumentParser(
         description="Compute the embeddings of the class descriptions previsouly generated."
     )
-    parser.add_argument("-p", "--params", type=str, help="Custom configuration file. Default: to app/config/params.yaml")
+    parser.add_argument("-p", "--params", type=str, help="Custom configuration file. Default: to config/params.yaml")
     parser.add_argument(
         "-m",
         "--model",

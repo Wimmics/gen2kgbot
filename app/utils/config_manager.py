@@ -78,7 +78,7 @@ def read_configuration(args: Namespace = None):
     if args is None:
         # Set the default configuration file: used when starting from Langgraph Studio
         config_path = (
-            Path(__file__).resolve().parent.parent / "config" / "params.yml"
+            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
         logger.info(f"Loading default configuration file: {config_path}")
 
@@ -88,14 +88,14 @@ def read_configuration(args: Namespace = None):
 
     elif args.__contains__("prod") and args.prod:
         config_path = (
-            Path(__file__).resolve().parent.parent / "config" / "params_prod.yml"
+            Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
         )
         logger.info(f"Loading configuration file: {config_path}")
 
     else:
         # Set the default configuration file
         config_path = (
-            Path(__file__).resolve().parent.parent / "config" / "params.yml"
+            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
         logger.info(f"Loading default configuration file: {config_path}")
 

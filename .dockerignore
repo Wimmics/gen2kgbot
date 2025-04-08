@@ -15,4 +15,4 @@ app/notebooks/evaluation
 
 .vscode
 
-app/config/custom_scenario_params.yml
+config/custom_scenario_params.yml

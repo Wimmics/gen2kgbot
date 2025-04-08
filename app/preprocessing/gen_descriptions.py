@@ -16,7 +16,7 @@ If the output files already exist, they are simply reloaded.
 In addition file `<kg short name>_classes_with_instances.txt` is generated in the temporary directory,
 it lists the classes that have at least one instance in the KG.
 
-The configuration file (default: `app/config/params.yaml`) prodives the SPARQL endpoint(s) and known prefixes.
+The configuration file (default: `config/params.yaml`) prodives the SPARQL endpoint(s) and known prefixes.
 """
 
 from argparse import Namespace, ArgumentParser
@@ -167,7 +167,7 @@ def setup_cli() -> Namespace:
         "-p",
         "--params",
         type=str,
-        help="Custom configuration file. Default: to app/config/params.yaml.",
+        help="Custom configuration file. Default: to config/params.yaml.",
     )
     parser.add_argument(
         "--classes",

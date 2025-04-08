@@ -190,7 +190,7 @@ def dataset_forge_create_config(config_request: CreateConfig):
         logger.debug(f"Received configuration request: {config_request}")
 
         config_path = (
-            Path(__file__).resolve().parent.parent
+            Path(__file__).resolve().parent.parent.parent
             / "config"
             / f"params_{config_request.kg_short_name}.yml"
         )
@@ -249,7 +249,7 @@ def dataset_forge_activate_config(config_request: ActivateConfig):
         logger.debug(f"Configuration to activate: {config_request}")
 
         config_to_activate_path = (
-            Path(__file__).resolve().parent.parent
+            Path(__file__).resolve().parent.parent.parent
             / "config"
             / f"params_{config_request.kg_short_name}.yml"
         )
@@ -270,7 +270,7 @@ def dataset_forge_activate_config(config_request: ActivateConfig):
             )
 
         active_config_path = (
-            Path(__file__).resolve().parent.parent / "config" / "params.yml"
+            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
         )
 
         with open(config_to_activate_path, "r", encoding="utf-8") as file_to_activate:

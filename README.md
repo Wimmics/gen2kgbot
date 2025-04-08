@@ -110,7 +110,7 @@ Or with additional parameters:
 
 ````bash
 python -m app.scenarios.scenario_1.scenario_1 \
-    --params app/config/params_d2kab.yml \ 
+    --params config/params_d2kab.yml \ 
     --question "What articles mention taxon 'wheat' (Triticum aestivum) and trait 'resistance to Leaf rust'?"
 ````
 
