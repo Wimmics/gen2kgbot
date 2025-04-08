@@ -6,11 +6,11 @@ that are common to multiple scenarios
 import ast
 from typing import Literal
 import os
-from app.core.utils.graph_state import OverallState
-import app.core.utils.config_manager as config
-from app.core.utils.sparql_toolkit import find_sparql_queries
-from app.core.utils.construct_util import generate_context_filename
-from app.core.utils.graph_nodes import SPARQL_QUERY_EXEC_ERROR
+from app.utils.graph_state import OverallState
+import app.utils.config_manager as config
+from app.utils.sparql_toolkit import find_sparql_queries
+from app.utils.construct_util import generate_context_filename
+from app.utils.graph_nodes import SPARQL_QUERY_EXEC_ERROR
 from langgraph.graph import END
 from langgraph.constants import Send
 

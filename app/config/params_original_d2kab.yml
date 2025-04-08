@@ -277,7 +277,7 @@ scenario_7:
   text_embedding_model: nomic-embed-text_faiss@local
 
 
-# python -m app.core.scenarios.scenario_5.scenario_5 --params app/config/params_d2kab.yml --question "" 
+# python -m app.scenarios.scenario_5.scenario_5 --params app/config/params_d2kab.yml --question "" 
 
 # Example questons:
 # 1. What are the articles whose abstract mentions taxon 'wheat' (Triticum aestivum) and trait 'resistance to Leaf rust'?

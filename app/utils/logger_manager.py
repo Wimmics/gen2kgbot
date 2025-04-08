@@ -28,7 +28,7 @@ def setup_logger(package: str = __package__, file: str = __file__) -> logging.Lo
         _mod_name = _mod_name[: -len(".py")]
 
     # Resolve the path to the configuration file
-    parent_dir = Path(__file__).resolve().parent.parent.parent
+    parent_dir = Path(__file__).resolve().parent.parent
     config_path = parent_dir / "config" / "logging.yml"
 
     # Configure logging

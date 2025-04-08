@@ -1,9 +1,9 @@
 import json
 from langchain_core.messages import AIMessageChunk
-from app.core.utils.config_manager import get_scenario_module
+from app.utils.config_manager import get_scenario_module
 from langgraph.graph.state import CompiledStateGraph
 
-from app.core.utils.graph_state import EnumEncoder
+from app.utils.graph_state import EnumEncoder
 
 
 def serialize_aimessagechunk(chunk):

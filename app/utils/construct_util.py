@@ -4,8 +4,8 @@ import re
 from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper, POST
 from rdflib import Graph, URIRef, BNode, RDF, RDFS, OWL, term
-import app.core.utils.config_manager as config
-from app.core.utils.logger_manager import setup_logger
+import app.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
 
 
 logger = setup_logger(__package__, __file__)

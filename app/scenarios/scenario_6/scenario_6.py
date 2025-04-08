@@ -1,10 +1,10 @@
 import asyncio
 from langgraph.graph import StateGraph, START, END
-from app.core.scenarios.scenario_6.prompt import (
+from app.scenarios.scenario_6.prompt import (
     system_prompt_template,
     retry_system_prompt_template,
 )
-from app.core.utils.graph_nodes import (
+from app.utils.graph_nodes import (
     preprocess_question,
     select_similar_classes,
     get_class_context_from_cache,
@@ -17,16 +17,16 @@ from app.core.utils.graph_nodes import (
     run_query,
     interpret_results,
 )
-from app.core.utils.graph_routers import (
+from app.utils.graph_routers import (
     get_class_context_router,
     preprocessing_subgraph_router,
     validate_question_router,
     verify_query_router,
     run_query_router,
 )
-from app.core.utils.graph_state import InputState, OverallState
-import app.core.utils.config_manager as config
-from app.core.utils.logger_manager import setup_logger
+from app.utils.graph_state import InputState, OverallState
+import app.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 

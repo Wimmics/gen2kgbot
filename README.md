@@ -103,13 +103,13 @@ Option `-p|--params` allows to set a custom configuration faile. Otherwise file 
 Use python's option `-m` to run one of the scenarios. For instance:
 
 ````bash
-python -m app.core.scenarios.scenario_1.scenario_1 -c "What is the name of proteine X"
+python -m app.scenarios.scenario_1.scenario_1 -c "What is the name of proteine X"
 ````
 
 Or with additional parameters:
 
 ````bash
-python -m app.core.scenarios.scenario_1.scenario_1 \
+python -m app.scenarios.scenario_1.scenario_1 \
     --params app/config/params_d2kab.yml \ 
     --question "What articles mention taxon 'wheat' (Triticum aestivum) and trait 'resistance to Leaf rust'?"
 ````

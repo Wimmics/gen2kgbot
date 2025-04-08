@@ -13,8 +13,8 @@ from tqdm import tqdm
 from langchain_community.vectorstores import FAISS, VectorStore
 from langchain_community.docstore import InMemoryDocstore
 from langchain_chroma import Chroma
-import app.core.utils.config_manager as config
-from app.core.utils.logger_manager import setup_logger
+import app.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 

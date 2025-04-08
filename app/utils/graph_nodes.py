@@ -5,18 +5,18 @@ This module implements the Langgraph nodes that are common to multiple scenarios
 from datetime import timezone, datetime
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
-from app.core.utils.graph_state import JudgeStatus, OverallState
-from app.core.utils.question_preprocessing import extract_relevant_entities_spacy
-from app.core.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
-import app.core.utils.config_manager as config
-from app.core.utils.construct_util import (
+from app.utils.graph_state import JudgeStatus, OverallState
+from app.utils.question_preprocessing import extract_relevant_entities_spacy
+from app.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
+import app.utils.config_manager as config
+from app.utils.construct_util import (
     get_class_context,
     get_connected_classes,
     get_empty_graph_with_prefixes,
     add_known_prefixes_to_query,
     fulliri_to_prefixed,
 )
-from app.core.utils.prompts import (
+from app.utils.prompts import (
     interpret_results_prompt,
     validate_question_prompt,
 )

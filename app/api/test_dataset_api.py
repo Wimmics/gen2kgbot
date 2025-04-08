@@ -1,4 +1,3 @@
-from calendar import c
 import json
 import os
 from pathlib import Path
@@ -24,16 +23,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.services.graph_mermaid_service import get_scenarios_schema
 from app.api.services.test_answer_dataset_service import judge_answer
-from app.core.utils.config_manager import (
+from app.utils.config_manager import (
     get_configuration,
     read_configuration,
     set_custom_scenario_configuration,
     setup_cli,
 )
-from app.core.utils.logger_manager import setup_logger
+from app.utils.logger_manager import setup_logger
 from app.preprocessing.compute_embeddings import start_compute_embeddings
 from app.preprocessing.gen_descriptions import generate_descriptions
-import app.core.utils.config_manager as config
+import app.utils.config_manager as config
 
 
 logger = setup_logger(__package__, __file__)

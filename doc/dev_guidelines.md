@@ -34,7 +34,7 @@ Logging configuration is described in file `app/config/logging.yml`. This setup 
 To leverage logging setup, please incorporate the following code at the beginning of each Python script:
 
 ```python
-from app.core.utils.logger_manager import setup_logger
+from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 ```

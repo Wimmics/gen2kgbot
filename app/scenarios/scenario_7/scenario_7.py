@@ -6,19 +6,19 @@ from typing import Literal
 from langgraph.graph import StateGraph, START, END
 from pydantic import ValidationError
 from rdflib import Graph
-from app.core.scenarios.scenario_7.prompt import (
+from app.scenarios.scenario_7.prompt import (
     system_prompt_template,
     error_cause_no_query,
     retry_system_prompt_template,
     judge_query_prompt,
 )
-from app.core.utils.construct_util import (
+from app.utils.construct_util import (
     add_known_prefixes_to_query,
     fulliri_to_prefixed,
     get_empty_graph_with_prefixes,
     run_sparql_query,
 )
-from app.core.utils.graph_nodes import (
+from app.utils.graph_nodes import (
     class_context_tuple_to_nl,
     class_description_tuple_to_nl,
     preprocess_question,
@@ -31,7 +31,7 @@ from app.core.utils.graph_nodes import (
     run_query,
     interpret_results,
 )
-from app.core.utils.graph_routers import (
+from app.utils.graph_routers import (
     get_class_context_router,
     preprocessing_subgraph_router,
     validate_question_router,
@@ -39,19 +39,19 @@ from app.core.utils.graph_routers import (
     MAX_NUMBER_OF_TRIES,
 )
 from langchain_core.prompts import PromptTemplate
-from app.core.utils.graph_state import (
+from app.utils.graph_state import (
     InputState,
     JudgeGrade,
     JudgeState,
     JudgeStatus,
     OverallState,
 )
-import app.core.utils.config_manager as config
-from app.core.utils.logger_manager import setup_logger
+import app.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.algebra import translateQuery
 from langchain_core.messages import AIMessage, SystemMessage
-from app.core.utils.sparql_toolkit import find_json, find_sparql_queries
+from app.utils.sparql_toolkit import find_json, find_sparql_queries
 from langsmith import Client
 
 

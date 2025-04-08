@@ -14,14 +14,14 @@ from langchain_community.vectorstores import FAISS
 from langchain_chroma import Chroma
 from langgraph.graph.state import CompiledStateGraph
 from langchain_google_genai import ChatGoogleGenerativeAI
-from app.core.utils.envkey_manager import (
+from app.utils.envkey_manager import (
     get_deepseek_key,
     get_google_key,
     get_openai_key,
     get_ovh_key,
 )
-from app.core.utils.graph_state import InputState
-from app.core.utils.logger_manager import setup_logger
+from app.utils.graph_state import InputState
+from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
@@ -78,7 +78,7 @@ def read_configuration(args: Namespace = None):
     if args is None:
         # Set the default configuration file: used when starting from Langgraph Studio
         config_path = (
-            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+            Path(__file__).resolve().parent.parent / "config" / "params.yml"
         )
         logger.info(f"Loading default configuration file: {config_path}")
 
@@ -88,14 +88,14 @@ def read_configuration(args: Namespace = None):
 
     elif args.__contains__("prod") and args.prod:
         config_path = (
-            Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
+            Path(__file__).resolve().parent.parent / "config" / "params_prod.yml"
         )
         logger.info(f"Loading configuration file: {config_path}")
 
     else:
         # Set the default configuration file
         config_path = (
-            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+            Path(__file__).resolve().parent.parent / "config" / "params.yml"
         )
         logger.info(f"Loading default configuration file: {config_path}")
 
@@ -243,7 +243,7 @@ def get_class_context_cache_directory() -> Path:
     if os.path.isabs(str_path):
         path = Path(str_path)
     else:
-        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+        path = Path(__file__).resolve().parent.parent.parent / str_path
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -261,7 +261,7 @@ def get_preprocessing_directory() -> Path:
     if os.path.isabs(str_path):
         path = Path(str_path)
     else:
-        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+        path = Path(__file__).resolve().parent.parent.parent / str_path
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -281,7 +281,7 @@ def get_temp_directory() -> Path:
     if os.path.isabs(str_path):
         path = Path(str_path)
     else:
-        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+        path = Path(__file__).resolve().parent.parent.parent / str_path
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -321,7 +321,7 @@ def get_embeddings_directory(vector_db_name: str) -> Path:
     if os.path.isabs(str_path):
         path = Path(str_path)
     else:
-        path = Path(__file__).resolve().parent.parent.parent.parent / str_path
+        path = Path(__file__).resolve().parent.parent.parent / str_path
 
     if not os.path.exists(path):
         os.makedirs(path)
@@ -650,7 +650,7 @@ def get_query_vector_db(scenario_id: str) -> VectorStore:
 
 def get_scenario_module(scenario_id: int):
     scenario_module = importlib.import_module(
-        f"app.core.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
+        f"app.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
     )
     return scenario_module
 

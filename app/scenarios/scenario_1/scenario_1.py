@@ -2,11 +2,11 @@ import asyncio
 from typing import Literal
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
-from app.core.utils.graph_nodes import validate_question
-from app.core.utils.graph_state import InputState, OverallState
-import app.core.utils.config_manager as config
-from app.core.utils.logger_manager import setup_logger
-from app.core.scenarios.scenario_1.prompt import system_prompt_template
+from app.utils.graph_nodes import validate_question
+from app.utils.graph_state import InputState, OverallState
+import app.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
+from app.scenarios.scenario_1.prompt import system_prompt_template
 
 
 logger = setup_logger(__package__, __file__)

@@ -21,8 +21,8 @@ The configuration file (default: `app/config/params.yaml`) prodives the SPARQL e
 
 from argparse import Namespace, ArgumentParser
 import os
-import app.core.utils.config_manager as config
-from app.core.utils.construct_util import run_sparql_query, fulliri_to_prefixed
+import app.utils.config_manager as config
+from app.utils.construct_util import run_sparql_query, fulliri_to_prefixed
 
 
 logger = config.setup_logger(__package__, __file__)

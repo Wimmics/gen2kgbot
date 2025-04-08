@@ -1,4 +1,4 @@
-from app.core.utils.config_manager import get_configuration, get_scenario_module
+from app.utils.config_manager import get_configuration, get_scenario_module
 
 
 def get_scenarios_schema():

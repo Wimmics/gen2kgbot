@@ -3,8 +3,8 @@ from rdflib import Graph
 from rdflib.exceptions import ParserError
 from rdflib.plugins.stores import sparqlstore
 import re
-from app.core.utils.logger_manager import setup_logger
-import app.core.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
+import app.utils.config_manager as config
 
 
 logger = setup_logger(__package__, __file__)

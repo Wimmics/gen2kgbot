@@ -1,6 +1,6 @@
 from langsmith import Client
 from pandas import DataFrame
-from app.core.scenarios.scenario_1.scenario_1 import run_scenario
+from app.scenarios.scenario_1.scenario_1 import run_scenario
 
 
 def evaluate_provide_answer(outputs: dict, reference_outputs: dict) -> dict:
