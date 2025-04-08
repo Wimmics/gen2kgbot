@@ -4,9 +4,6 @@ from pydantic import BaseModel
 
 class GenerateCompetencyQuestion(BaseModel):
     """
-    GenerateCompetencyQuestion is a Pydantic model that defines the structure of the request body for the
-    generate_questions endpoint of the DatasetForge API.
-
     Attributes:
         model_provider: str: The name of the model provider e.g. Ollama, OpenAI.
         model_name: str: The name of the model e.g. llama3.2:1b, o3-mini.

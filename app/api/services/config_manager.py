@@ -19,7 +19,6 @@ def add_missing_config_params(config: dict):
     with open(params_to_add_path, "r") as to_add_file:
         config_to_add = yaml.safe_load(to_add_file) or {}
 
-    # Merge the dictionaries =
     config.update(config_to_add)
 
     return config

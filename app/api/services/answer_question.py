@@ -1,21 +1,19 @@
 import json
-from langchain_core.messages import AIMessageChunk
+from app.api.services.utils import serialize_aimessagechunk
 from app.utils.config_manager import get_scenario_module
 from langgraph.graph.state import CompiledStateGraph
-
 from app.utils.graph_state import EnumEncoder
 
 
-def serialize_aimessagechunk(chunk):
-    if isinstance(chunk, AIMessageChunk):
-        return chunk.content
-    else:
-        raise TypeError(
-            f"Object of type {type(chunk).__name__} is not correctly formatted for serialization"
-        )
-
-
 async def answer_question(scenario_id: int, question: str):
+    """
+    Asynchronously answers a question based on the provided scenario ID and a question.
+    Args:
+        scenario_id (int): The ID of the scenario to use for answering the question.
+        question (str): The question to be answered.
+    Yields:
+        str: A JSON string containing the event type, node name, and relevant data.
+    """
 
     graph: CompiledStateGraph = get_scenario_module(scenario_id).graph
 

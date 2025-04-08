@@ -3,8 +3,6 @@ from pydantic import BaseModel
 
 class RefineQuery(BaseModel):
     """
-    RefineQuery is a Pydantic model that represents the request body for the /api/dataset_forge/judge_query endpoint.
-
     Attributes:
         modelProvider: str: The provider of the language model.
         modelName: str: The name of the language model.

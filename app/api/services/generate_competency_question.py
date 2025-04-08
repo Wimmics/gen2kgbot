@@ -9,16 +9,7 @@ from app.api.services.prompts.generate_competency_question import (
     enforce_structured_output_prompt,
 )
 import json
-from langchain_core.messages import AIMessageChunk
-
-
-def serialize_aimessagechunk(chunk):
-    if isinstance(chunk, AIMessageChunk):
-        return chunk.content
-    else:
-        raise TypeError(
-            f"Object of type {type(chunk).__name__} is not correctly formatted for serialization"
-        )
+from app.api.services.utils import serialize_aimessagechunk
 
 
 async def generate_competency_questions(
@@ -44,11 +35,8 @@ async def generate_competency_questions(
         number_of_questions (int): The number of questions to generate
         enforce_structured_output (bool): Whether to enforce structured output by adding a prefix to the prompt
 
-    Returns:
-        str: The generated questions
-
-    Raises:
-        HTTPException: If an error occurs during the question generation
+    Yields:
+        str: A stream of the generated questions in JSON format containing the keys "event" and "data"
     """
 
     query_test_prompt_template = ChatPromptTemplate.from_template(

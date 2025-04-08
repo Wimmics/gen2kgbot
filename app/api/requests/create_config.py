@@ -3,9 +3,6 @@ from pydantic import BaseModel
 
 class CreateConfig(BaseModel):
     """
-    CreateConfig is a Pydantic model that defines the structure of the request body for the
-    create_dataset_forge_create_config endpoint of the DatasetForge API.
-
     Attributes:
         kg_full_name (str): The full name of the knowledge graph.
         kg_short_name (str): The short name of the knowledge graph.

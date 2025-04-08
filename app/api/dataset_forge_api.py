@@ -1,26 +1,17 @@
 import json
-import os
 from pathlib import Path
 from fastapi import FastAPI, Response
 from fastapi.responses import StreamingResponse
 import yaml
-from app.api.requests.activate_config import (
-    ActivateConfig,
-)
-from app.api.requests.answer_question import (
-    AnswerQuestion,
-)
+from app.api.requests.activate_config import ActivateConfig
+from app.api.requests.answer_question import AnswerQuestion
 from app.api.requests.create_config import CreateConfig
-from app.api.requests.generate_competency_question import (
-    GenerateCompetencyQuestion,
-)
+from app.api.requests.generate_competency_question import GenerateCompetencyQuestion
 from app.api.requests.refine_query import RefineQuery
-
 from app.api.services.answer_question import answer_question
 from app.api.services.config_manager import add_missing_config_params
 from app.api.services.generate_competency_question import generate_competency_questions
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.api.services.graph_mermaid import get_scenarios_schema
 from app.api.services.refine_query import refine_query
 from app.utils.config_manager import (
@@ -35,17 +26,10 @@ from app.preprocessing.gen_descriptions import generate_descriptions
 import app.utils.config_manager as config
 
 
+# setup logger
 logger = setup_logger(__package__, __file__)
 
-
-def get_env_variable(var_name: str) -> str:
-    value = os.getenv(var_name)
-    if value is None:
-        raise ValueError(f"Environement variable `{var_name}` not found.")
-
-    return value
-
-
+# setup FastAPI
 app = FastAPI()
 
 origins = ["*"]
@@ -60,7 +44,7 @@ app.add_middleware(
 
 
 @app.post("/api/dataset_forge/judge_query")
-async def dataset_forge_judge_query(refine_query_request: RefineQuery):
+async def judge_query_endpoint(refine_query_request: RefineQuery):
     """
     This endpoint is used to judge the answer of a question based on the given SPARQL query.
 
@@ -85,7 +69,7 @@ async def dataset_forge_judge_query(refine_query_request: RefineQuery):
 
 
 @app.post("/api/dataset_forge/generate-question")
-async def dataset_forge_generate_question(
+async def generate_question_endpoint(
     generate_competency_question_request: GenerateCompetencyQuestion,
 ):
     """
@@ -114,9 +98,7 @@ async def dataset_forge_generate_question(
 
 
 @app.post("/api/dataset_forge/answer_question")
-def dataset_forge_answer_question(
-    answer_question_request: AnswerQuestion,
-):
+def answer_question_endpoint(answer_question_request: AnswerQuestion):
     """
     This endpoint is used to answer questions about a given Knowledge Graph
 
@@ -138,7 +120,8 @@ def dataset_forge_answer_question(
     )
     return StreamingResponse(
         answer_question(
-            scenario_id=answer_question_request.scenario_id, question=answer_question_request.question
+            scenario_id=answer_question_request.scenario_id,
+            question=answer_question_request.question,
         ),
         # media_type="text/event-stream",
         media_type="application/json",
@@ -146,7 +129,7 @@ def dataset_forge_answer_question(
 
 
 @app.get("/api/dataset_forge/scenarios_graph_schema")
-def dataset_forge_scenario_schema():
+def get_scenario_schema_endpoint():
     """
     This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
 
@@ -161,7 +144,7 @@ def dataset_forge_scenario_schema():
 
 
 @app.get("/api/dataset_forge/default_config")
-def dataset_forge_default_config():
+def get_active_config_endpoint():
     """
     This endpoint is used to get the default configuration of the dataset forge API.
 
@@ -177,9 +160,12 @@ def dataset_forge_default_config():
 
 
 @app.post("/api/dataset_forge/config/create")
-def dataset_forge_create_config(config_request: CreateConfig):
+def create_config_endpoint(config_request: CreateConfig):
     """
     This endpoint is used to create a new configuration Yaml file.
+
+    Args:
+        config_request (CreateConfig): The request object containing the necessary information to create a configuration.
 
     Returns:
         dict:
@@ -236,9 +222,12 @@ def dataset_forge_create_config(config_request: CreateConfig):
 
 
 @app.post("/api/dataset_forge/config/activate")
-def dataset_forge_activate_config(config_request: ActivateConfig):
+def activate_config_endpoint(config_request: ActivateConfig):
     """
     This endpoint is used to create a new configuration Yaml file.
+
+    Args:
+        config_request (ActivateConfig): The request object containing the necessary information to activate a configuration.
 
     Returns:
         dict:
@@ -295,11 +284,14 @@ def dataset_forge_activate_config(config_request: ActivateConfig):
 
 
 @app.post("/api/dataset_forge/config/kg_descriptions")
-def dataset_forge_generate_kg_descriptions(
+def generate_kg_descriptions_endpoint(
     config_request: ActivateConfig,
 ):
     """
     This endpoint is used to generate KG description of a given Knowledge Graph.
+
+    Args:
+        config_request (ActivateConfig): The request object containing the necessary information to generate KG descriptions.
 
     Returns:
         dict:
@@ -332,11 +324,14 @@ def dataset_forge_generate_kg_descriptions(
 
 
 @app.post("/api/dataset_forge/config/kg_embeddings")
-def dataset_forge_generate_kg_embeddings(
+def generate_kg_embeddings_endpoint(
     config_request: ActivateConfig,
 ):
     """
     This endpoint is used to generate KG embeddings of a given Knowledge Graph.
+
+    Args:
+        config_request (ActivateConfig): The request object containing the necessary information to generate KG embeddings.
 
     Returns:
         dict:

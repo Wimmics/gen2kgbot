@@ -6,16 +6,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_ollama import ChatOllama
 from app.api.services.prompts.refine_query import refine_query_prompt
 import json
-from langchain_core.messages import AIMessageChunk
-
-
-def serialize_aimessagechunk(chunk):
-    if isinstance(chunk, AIMessageChunk):
-        return chunk.content
-    else:
-        raise TypeError(
-            f"Object of type {type(chunk).__name__} is not correctly formatted for serialization"
-        )
+from app.api.services.utils import serialize_aimessagechunk
 
 
 async def refine_query(
@@ -37,11 +28,8 @@ async def refine_query(
         sparql_query (str): The sparql query to be judged
         sparql_query_context (str): The list of QNames and Full QNames used in the sparql query with some additional context e.g. rdfs:label, rdfs:comment
 
-    Returns:
-        str: The judged answer
-
-    Raises:
-        HTTPException: If an error occurs during the question answering
+    Yields:
+        str: A stream of the generated questions in JSON format containing the keys "event" and "data"
     """
     query_test_prompt_template = ChatPromptTemplate.from_template(refine_query_prompt)
 
