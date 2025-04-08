@@ -4,25 +4,25 @@ from pathlib import Path
 from fastapi import FastAPI, Response
 from fastapi.responses import StreamingResponse
 import yaml
-from app.api.models.test_dataset_activate_config_request import (
-    TestDatasetActivateConfigRequest,
+from app.api.requests.activate_config import (
+    ActivateConfig,
 )
-from app.api.models.test_dataset_answer_question_request import (
-    TestDatasetAnswerQuestionRequest,
+from app.api.requests.answer_question import (
+    AnswerQuestion,
 )
-from app.api.models.test_dataset_config_request import TestDatasetConfigRequest
-from app.api.models.test_dataset_generate_question_request import (
-    TestDatasetGenerateQuestionRequest,
+from app.api.requests.create_config import CreateConfig
+from app.api.requests.generate_competency_question import (
+    GenerateCompetencyQuestion,
 )
-from app.api.models.test_dataset_query_request import TestDatasetQueryRequest
+from app.api.requests.refine_query import RefineQuery
 
-from app.api.services.answer_question_service import generate_stream_responses
-from app.api.services.config_manager_service import add_missing_config_params
-from app.api.services.generate_question_dataset_service import generate_questions
+from app.api.services.answer_question import answer_question
+from app.api.services.config_manager import add_missing_config_params
+from app.api.services.generate_competency_question import generate_competency_questions
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.services.graph_mermaid_service import get_scenarios_schema
-from app.api.services.test_answer_dataset_service import judge_answer
+from app.api.services.graph_mermaid import get_scenarios_schema
+from app.api.services.refine_query import refine_query
 from app.utils.config_manager import (
     get_configuration,
     read_configuration,
@@ -59,94 +59,94 @@ app.add_middleware(
 )
 
 
-@app.post("/api/test_dataset/judge_query")
-async def test_dataset_judge_query(test_request: TestDatasetQueryRequest):
+@app.post("/api/dataset_forge/judge_query")
+async def dataset_forge_judge_query(refine_query_request: RefineQuery):
     """
     This endpoint is used to judge the answer of a question based on the given SPARQL query.
 
     Args:
-        test_request (TestDatasetQueryRequest): The request object containing the necessary information to judge the answer.
+        refine_query_request (RefineQuery): The request object containing the necessary information to judge the answer.
 
     Returns:
         StreamingResponse: The stream of the model judgement.
     """
 
     return StreamingResponse(
-        judge_answer(
-            base_uri=test_request.base_uri,
-            model_provider=test_request.modelProvider,
-            model_name=test_request.modelName,
-            question=test_request.question,
-            sparql_query=test_request.sparql_query,
-            sparql_query_context=test_request.sparql_query_context,
+        refine_query(
+            base_uri=refine_query_request.base_uri,
+            model_provider=refine_query_request.modelProvider,
+            model_name=refine_query_request.modelName,
+            question=refine_query_request.question,
+            sparql_query=refine_query_request.sparql_query,
+            sparql_query_context=refine_query_request.sparql_query_context,
         ),
         media_type="application/json",
     )
 
 
-@app.post("/api/test_dataset/generate-question")
-async def test_dataset_generate_question(
-    test_request: TestDatasetGenerateQuestionRequest,
+@app.post("/api/dataset_forge/generate-question")
+async def dataset_forge_generate_question(
+    generate_competency_question_request: GenerateCompetencyQuestion,
 ):
     """
     This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
 
     Args:
-        test_request (TestDatasetGenerateQuestionRequest): The request object containing the necessary information to generate questions.
+        generate_competency_question_request (GenerateCompetencyQuestion): The request object containing the necessary information to generate competency questions.
 
     Returns:
         StreamingResponse: The stream of the generated questions.
     """
 
     return StreamingResponse(
-        generate_questions(
-            base_uri=test_request.base_uri,
-            model_provider=test_request.model_provider,
-            model_name=test_request.model_name,
-            number_of_questions=test_request.number_of_questions,
-            additional_context=test_request.additional_context,
-            kg_description=test_request.kg_description,
-            kg_schema=test_request.kg_schema,
-            enforce_structured_output=test_request.enforce_structured_output,
+        generate_competency_questions(
+            base_uri=generate_competency_question_request.base_uri,
+            model_provider=generate_competency_question_request.model_provider,
+            model_name=generate_competency_question_request.model_name,
+            number_of_questions=generate_competency_question_request.number_of_questions,
+            additional_context=generate_competency_question_request.additional_context,
+            kg_description=generate_competency_question_request.kg_description,
+            kg_schema=generate_competency_question_request.kg_schema,
+            enforce_structured_output=generate_competency_question_request.enforce_structured_output,
         ),
         media_type="application/json",
     )
 
 
-@app.post("/api/test_dataset/answer_question")
-def test_dataset_answer_question(
-    test_request: TestDatasetAnswerQuestionRequest,
+@app.post("/api/dataset_forge/answer_question")
+def dataset_forge_answer_question(
+    answer_question_request: AnswerQuestion,
 ):
     """
     This endpoint is used to answer questions about a given Knowledge Graph
 
     Args:
-        test_request (TestDatasetAnswerQuestionRequest): The request object containing the necessary information to answer a question.
+        answer_question_request (AnswerQuestion): The request object containing the necessary information to answer a question.
 
     Returns:
         StreamingResponse: the stream of the answer to the question.
     """
     set_custom_scenario_configuration(
-        scenario_id=test_request.scenario_id,
-        validate_question_model=test_request.validate_question_model,
-        ask_question_model=test_request.ask_question_model,
-        generate_query_model=test_request.generate_query_model,
-        judge_query_model=test_request.judge_query_model,
-        judge_regenerate_query_model=test_request.judge_regenerate_query_model,
-        interpret_results_model=test_request.interpret_results_model,
-        text_embedding_model=test_request.text_embedding_model,
+        scenario_id=answer_question_request.scenario_id,
+        validate_question_model=answer_question_request.validate_question_model,
+        ask_question_model=answer_question_request.ask_question_model,
+        generate_query_model=answer_question_request.generate_query_model,
+        judge_query_model=answer_question_request.judge_query_model,
+        judge_regenerate_query_model=answer_question_request.judge_regenerate_query_model,
+        interpret_results_model=answer_question_request.interpret_results_model,
+        text_embedding_model=answer_question_request.text_embedding_model,
     )
     return StreamingResponse(
-        generate_stream_responses(
-            scenario_id=test_request.scenario_id, question=test_request.question
+        answer_question(
+            scenario_id=answer_question_request.scenario_id, question=answer_question_request.question
         ),
         # media_type="text/event-stream",
         media_type="application/json",
     )
 
 
-@app.get("/api/test_dataset/scenarios_graph_schema")
-def test_dataset_scenario_schema():
+@app.get("/api/dataset_forge/scenarios_graph_schema")
+def dataset_forge_scenario_schema():
     """
     This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
 
@@ -160,14 +160,14 @@ def test_dataset_scenario_schema():
     return get_scenarios_schema()
 
 
-@app.get("/api/test_dataset/default_config")
-def test_dataset_default_config():
+@app.get("/api/dataset_forge/default_config")
+def dataset_forge_default_config():
     """
-    This endpoint is used to get the default configuration of the test dataset.
+    This endpoint is used to get the default configuration of the dataset forge API.
 
     Returns:
         dict:
-            A dictionary containing the default configuration of the test dataset.
+            A dictionary containing the default configuration of the dataset forge API.
     """
     args = setup_cli()
     read_configuration(args=args)
@@ -176,8 +176,8 @@ def test_dataset_default_config():
     return json.dumps(yaml_data, indent=4)
 
 
-@app.post("/api/test_dataset/config/create")
-def test_dataset_create_config(config_request: TestDatasetConfigRequest):
+@app.post("/api/dataset_forge/config/create")
+def dataset_forge_create_config(config_request: CreateConfig):
     """
     This endpoint is used to create a new configuration Yaml file.
 
@@ -235,8 +235,8 @@ def test_dataset_create_config(config_request: TestDatasetConfigRequest):
         )
 
 
-@app.post("/api/test_dataset/config/activate")
-def test_dataset_activate_config(config_request: TestDatasetActivateConfigRequest):
+@app.post("/api/dataset_forge/config/activate")
+def dataset_forge_activate_config(config_request: ActivateConfig):
     """
     This endpoint is used to create a new configuration Yaml file.
 
@@ -294,9 +294,9 @@ def test_dataset_activate_config(config_request: TestDatasetActivateConfigReques
         )
 
 
-@app.post("/api/test_dataset/config/kg_descriptions")
-def test_dataset_generate_kg_descriptions(
-    config_request: TestDatasetActivateConfigRequest,
+@app.post("/api/dataset_forge/config/kg_descriptions")
+def dataset_forge_generate_kg_descriptions(
+    config_request: ActivateConfig,
 ):
     """
     This endpoint is used to generate KG description of a given Knowledge Graph.
@@ -331,9 +331,9 @@ def test_dataset_generate_kg_descriptions(
         )
 
 
-@app.post("/api/test_dataset/config/kg_embeddings")
-def test_dataset_generate_kg_embeddings(
-    config_request: TestDatasetActivateConfigRequest,
+@app.post("/api/dataset_forge/config/kg_embeddings")
+def dataset_forge_generate_kg_embeddings(
+    config_request: ActivateConfig,
 ):
     """
     This endpoint is used to generate KG embeddings of a given Knowledge Graph.

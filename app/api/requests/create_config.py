@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 
 
-class TestDatasetConfigRequest(BaseModel):
+class CreateConfig(BaseModel):
     """
-    TestDatasetConfigRequest is a Pydantic model that defines the structure of the request body for the
-    create_test_dataset_create_config endpoint of the TestDataset API.
+    CreateConfig is a Pydantic model that defines the structure of the request body for the
+    create_dataset_forge_create_config endpoint of the DatasetForge API.
 
     Attributes:
         kg_full_name (str): The full name of the knowledge graph.

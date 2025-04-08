@@ -2,10 +2,10 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class TestDatasetGenerateQuestionRequest(BaseModel):
+class GenerateCompetencyQuestion(BaseModel):
     """
-    TestDatasetGenerateQuestionRequest is a Pydantic model that defines the structure of the request body for the
-    generate_questions endpoint of the TestDataset API.
+    GenerateCompetencyQuestion is a Pydantic model that defines the structure of the request body for the
+    generate_questions endpoint of the DatasetForge API.
 
     Attributes:
         model_provider: str: The name of the model provider e.g. Ollama, OpenAI.

@@ -4,10 +4,7 @@ from langchain_deepseek import ChatDeepSeek
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.language_models import BaseChatModel
 from langchain_ollama import ChatOllama
-from app.api.services.prompts.question_generation_prompt import (
-    question_generation_prompt,
-    enforce_structured_output_prompt,
-)
+from app.api.services.prompts.refine_query import refine_query_prompt
 import json
 from langchain_core.messages import AIMessageChunk
 
@@ -21,39 +18,32 @@ def serialize_aimessagechunk(chunk):
         )
 
 
-async def generate_questions(
+async def refine_query(
     model_provider: str,
     model_name: str,
     base_uri: str,
-    kg_schema: str,
-    kg_description: str,
-    additional_context: str,
-    number_of_questions: int,
-    enforce_structured_output: bool,
+    question: str,
+    sparql_query: str,
+    sparql_query_context: str,
 ):
     """
-    Generate a fixed number of questions from a given KG schema, description and additional context using a language model.
+    Judge the sparql query correctness given a question and the sparql query context using a language model.
 
     Args:
         model_provider (str): The provider of the language model
         model_name (str): The name of the language model
         base_uri (str): The base URI of the language model
-        kg_schema (str): The schema of the knowledge graph e.g. a list of used ontologies or a list of classes and properties to be used in the questions
-        kg_description (str): The description of the knowledge graph
-        additional_context (str): Some additional context to be used in the question generation, e.g. the abstract of the paper presenting the KG
-        number_of_questions (int): The number of questions to generate
-        enforce_structured_output (bool): Whether to enforce structured output by adding a prefix to the prompt
+        question (str): The asked question to be judged in natural language
+        sparql_query (str): The sparql query to be judged
+        sparql_query_context (str): The list of QNames and Full QNames used in the sparql query with some additional context e.g. rdfs:label, rdfs:comment
 
     Returns:
-        str: The generated questions
+        str: The judged answer
 
     Raises:
-        HTTPException: If an error occurs during the question generation
+        HTTPException: If an error occurs during the question answering
     """
-
-    query_test_prompt_template = ChatPromptTemplate.from_template(
-        question_generation_prompt
-    )
+    query_test_prompt_template = ChatPromptTemplate.from_template(refine_query_prompt)
 
     llm: BaseChatModel
 
@@ -79,15 +69,9 @@ async def generate_questions(
 
     async for event in chain_for_json_mode.astream_events(
         {
-            "kg_schema": kg_schema,
-            "kg_description": kg_description,
-            "additional_context": additional_context,
-            "number_of_questions": number_of_questions,
-            "enforce_structured_output_prompt": (
-                enforce_structured_output_prompt
-                if enforce_structured_output
-                else ""
-            ),
+            "question": question,
+            "sparql": sparql_query,
+            "qname_info": sparql_query_context,
         },
         version="v2",
     ):

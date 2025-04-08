@@ -1,4 +1,4 @@
-query_test_prompt = """Role: You are a Semantic Web teacher tasked with grading students' SPARQL queries based on a given natural language question.
+refine_query_prompt = """Role: You are a Semantic Web teacher tasked with grading students' SPARQL queries based on a given natural language question.
 
 Input:
 

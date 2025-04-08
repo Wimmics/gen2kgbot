@@ -712,10 +712,9 @@ async def custom_main(graph: StateGraph):
 
 
 def langsmith_setup():
-    # #Setting up the LangSmith
-    # #For now, all runs will be stored in the "KGBot Testing - GPT4"
-    # #If you want to separate the traces to have a better control of specific traces.
-    # #Metadata as llm version and temperature can be obtained from traces.
+    """
+    Setup Langsmith client for tracing.
+    """
 
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_PROJECT"] = (

@@ -15,7 +15,7 @@ def serialize_aimessagechunk(chunk):
         )
 
 
-async def generate_stream_responses(scenario_id: int, question: str):
+async def answer_question(scenario_id: int, question: str):
 
     graph: CompiledStateGraph = get_scenario_module(scenario_id).graph
 

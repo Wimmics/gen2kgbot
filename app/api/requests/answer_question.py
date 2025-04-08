@@ -2,10 +2,10 @@ from typing import Optional
 from pydantic import BaseModel
 
 
-class TestDatasetAnswerQuestionRequest(BaseModel):
+class AnswerQuestion(BaseModel):
     """
-    TestDatasetGenerateQuestionRequest is a Pydantic model that defines the structure of the request body for the
-    generate_questions endpoint of the TestDataset API.
+    AnswerQuestion is a Pydantic model that defines the structure of the request body for the
+    generate_questions endpoint of the DatasetForge API.
 
     Attributes:
         seq2seq_model: str: The name of the seq2seq model to be used for answering the question.

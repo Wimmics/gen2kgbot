@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
 
-class TestDatasetQueryRequest(BaseModel):
+class RefineQuery(BaseModel):
     """
-    TestDatasetQueryRequest is a Pydantic model that represents the request body for the /api/test_dataset/judge_query endpoint.
+    RefineQuery is a Pydantic model that represents the request body for the /api/dataset_forge/judge_query endpoint.
 
     Attributes:
         modelProvider: str: The provider of the language model.

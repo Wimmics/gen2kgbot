@@ -58,7 +58,7 @@ def setup_cli() -> Namespace:
         help="Load the production configuration file",
         default=False,
     )
-    parser.add_argument("app.api.test_dataset_api:app", nargs="?", help="Run the API")
+    parser.add_argument("app.api.dataset_forge_api:app", nargs="?", help="Run the API")
     parser.add_argument("--reload", nargs="?", help="Debug mode")
     return parser.parse_args()
 

@@ -1,4 +1,4 @@
-question_generation_prompt: str = """Generate a well-structured list of {number_of_questions} scientifically relevant questions based on the following knowledge graph by researchers:
+generate_competency_question_prompt: str = """Generate a well-structured list of {number_of_questions} scientifically relevant questions based on the following knowledge graph by researchers:
 - A brief description of the KG.
 - A condensed schema representation of the KG.
 - Some additional context to help generate questions.
