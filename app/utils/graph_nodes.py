@@ -86,7 +86,6 @@ def select_similar_classes(state: OverallState) -> OverallState:
     ):
         classes_str.append(fulliri_to_prefixed(doc.page_content))
 
-
     classes_str = list(set(classes_str))
     logger.info(f"Found {len(classes_str)} classes related to the question.")
     logger.debug(

@@ -13,7 +13,7 @@ logger = setup_logger(__package__, __file__)
 # SPARQL query to retrieve the properties used by instances of a given class, with their value types.
 # The value type can be a class URI, a datatype URI, or "None" if the value is unknown/unspecified
 class_properties_valuetypes_query = """
-SELECT DISTINCT 
+SELECT DISTINCT
     ?property
     (COALESCE(?lbl, "None") as ?label)
     (SAMPLE(COALESCE(STR(?type), STR(DATATYPE(?value)), "None")) AS ?valueType)
@@ -44,11 +44,11 @@ LIMIT 100
 #    ?b ?p ?a.
 connected_classes_query = """
 SELECT DISTINCT ?class (COALESCE(?lbl, "None") as ?label) (COALESCE(?comment, "None") as ?description) WHERE {
-  { 
-  	SELECT DISTINCT ?class WHERE {
+  {
+    SELECT DISTINCT ?class WHERE {
       ?seed a {class_uri}.
       { ?seed ?p ?other. } UNION { ?other ?p ?seed. }
-	  ?other a ?class.
+      ?other a ?class.
       FILTER (
         ! strstarts(str(?class), "http://www.w3.org/2002/07/owl#") &&
         ! strstarts(str(?class), "http://www.w3.org/2000/01/rdf-schema#") &&
@@ -56,7 +56,7 @@ SELECT DISTINCT ?class (COALESCE(?lbl, "None") as ?label) (COALESCE(?comment, "N
       )
     } LIMIT 1000
   }
-    
+
   OPTIONAL { ?class rdfs:label ?lbl. }
   OPTIONAL { ?class rdfs:comment ?comment. }
 }
@@ -112,11 +112,11 @@ def get_class_context(class_label_description: tuple) -> str:
                 obj = BNode(f"{property_uri}{property_type}")
 
                 graph.add((subj, URIRef(property_uri), obj))
-                if property_type != None:
+                if property_type is not None:
                     graph.add((obj, RDF.type, URIRef(property_type)))
 
                 # Add a separate triple for the property label
-                if property_label != None:
+                if property_label is not None:
                     graph.add(
                         (URIRef(property_uri), RDFS.label, term.Literal(property_label))
                     )
@@ -162,7 +162,7 @@ def get_class_properties_and_val_types(
         query += class_properties_valuetypes_query.replace(
             "{class_uri}", f"<{class_uri}>"
         )
-    #logger.debug(f"SPARQL query to retrieve class properties and types:\n{query}")
+    # logger.debug(f"SPARQL query to retrieve class properties and types:\n{query}")
 
     results = []
     _sparql_results = run_sparql_query(query, endpoint_url)

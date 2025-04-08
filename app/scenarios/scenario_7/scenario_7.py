@@ -444,7 +444,7 @@ async def judge_query(state: OverallState):
             data = JudgeGrade.model_validate_json(result.content)
 
         query_judgement["judging_grade"] = data.grade
-        
+
         if data.grade >= judging_grade_threshold_retry:
             logger.info("The query passed the judging process.")
             query_judgement["judge_status"] = JudgeStatus.JUDGE_HIGH_SCORE

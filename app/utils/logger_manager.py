@@ -4,7 +4,9 @@ from pathlib import Path
 import yaml
 
 
-def setup_logger(package: str = __package__, file: str = __file__) -> logging.Logger:
+def setup_logger(
+    package: str = __package__ or "", file: str = __file__
+) -> logging.Logger:
     """
     Set up logging configuration.
 

@@ -27,7 +27,7 @@ def run_sparql_query(query: str, endpoint_url: str = None) -> str:
     if endpoint_url is None:
         endpoint_url = config.get_kg_sparql_endpoint_url()
     try:
-        #logger.debug(f"Submiting SPARQL query:\n{query}")
+        # logger.debug(f"Submiting SPARQL query:\n{query}")
         logger.debug(f"Submiting to SPARQL endpoint: {endpoint_url}")
 
         _store = sparqlstore.SPARQLStore()

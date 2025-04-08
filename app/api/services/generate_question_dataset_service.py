@@ -113,4 +113,3 @@ async def generate_questions(
                 "event": "on_chat_model_start",
             }
             yield json.dumps(response_part)
-

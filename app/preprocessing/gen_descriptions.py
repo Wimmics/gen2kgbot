@@ -40,42 +40,42 @@ WHERE {
     FILTER(isIRI(?class))   # Ignore anonymous classes that are mostly owl constructs
 
     OPTIONAL {
-    	{ SELECT DISTINCT ?class ?lbl WHERE {
+        { SELECT DISTINCT ?class ?lbl WHERE {
           { ?class rdfs:label ?lbl }
-          UNION 
+          UNION
           { ?class skos:prefLabel ?lbl }
-          UNION 
+          UNION
           { ?class skos:altLabel ?lbl }
-          UNION 
+          UNION
           { ?class schema:name ?lbl }
-          UNION 
+          UNION
           { ?class schema:alternateName ?lbl }
-          UNION 
+          UNION
           { ?class obo:IAO_0000118 ?lbl }       # alt label
-          UNION 
+          UNION
           { ?class obo:OBI_9991118 ?lbl }       # IEDB alternative term
-          UNION 
+          UNION
           { ?class obo:OBI_0001847 ?lbl }       # ISA alternative term
-		}}
-	}
-	BIND(COALESCE(str(?lbl), "None") as ?lbl_str)
+        }}
+     }
+     BIND(COALESCE(str(?lbl), "None") as ?lbl_str)
 
     OPTIONAL {
-    	{ SELECT DISTINCT ?class ?comment WHERE {
+         { SELECT DISTINCT ?class ?comment WHERE {
           { ?class rdfs:comment ?comment }
-          UNION 
+          UNION
           { ?class skos:definition ?comment }
-          UNION 
+          UNION
           { ?class dc:description ?comment }
-          UNION 
+          UNION
           { ?class dcterms:description ?comment }
-          UNION 
+          UNION
           { ?class schema:description ?comment }
-          UNION 
+          UNION
           { ?class obo:IAO_0000115 ?comment }   # definition
-		}}
-	}
- 	BIND(COALESCE(str(?comment), "None") as ?comment_str)
+          }}
+     }
+      BIND(COALESCE(str(?comment), "None") as ?comment_str)
 
     #FILTER (?comment_str != "None" && ?lbl_str != "None")   # removes lots of deprecated classes, but is it a good idea?
 
@@ -104,57 +104,57 @@ WHERE {
         { ?prop rdfs:subPropertyOf []. }
         UNION
         { ?prop rdf:Property []. }
-	}
-    
-  	OPTIONAL { 
+     }
+
+       OPTIONAL {
         ?prop rdfs:domain ?domain. FILTER(isIRI(?domain))
         OPTIONAL { ?domain rdfs:label ?domain_lbl }
     }
-    OPTIONAL { 
-        ?prop rdfs:range ?range. FILTER(isIRI(?range)) 
+    OPTIONAL {
+        ?prop rdfs:range ?range. FILTER(isIRI(?range))
         OPTIONAL { ?range rdfs:label ?range_lbl }
     }
 
     OPTIONAL {
-    	{ SELECT DISTINCT ?prop ?lbl WHERE {
+         { SELECT DISTINCT ?prop ?lbl WHERE {
           { ?prop rdfs:label ?lbl }
-          UNION 
+          UNION
           { ?prop skos:prefLabel ?lbl }
-          UNION 
+          UNION
           { ?prop skos:altLabel ?lbl }
-          UNION 
+          UNION
           { ?prop schema:name ?lbl }
-          UNION 
+          UNION
           { ?prop schema:alternateName ?lbl }
-          UNION 
+          UNION
           { ?prop obo:IAO_0000118 ?lbl }       # alt label
-          UNION 
+          UNION
           { ?prop obo:OBI_9991118 ?lbl }       # IEDB alternative term
-          UNION 
+          UNION
           { ?prop obo:OBI_0001847 ?lbl }       # ISA alternative term
-		}}
-	}
-	BIND(COALESCE(str(?lbl), "None") as ?lbl_str)
+          }}
+     }
+     BIND(COALESCE(str(?lbl), "None") as ?lbl_str)
 
     OPTIONAL {
-    	{ SELECT DISTINCT ?prop ?comment WHERE {
+         { SELECT DISTINCT ?prop ?comment WHERE {
           { ?prop rdfs:comment ?comment }
-          UNION 
+          UNION
           { ?prop skos:definition ?comment }
-          UNION 
+          UNION
           { ?prop dc:description ?comment }
-          UNION 
+          UNION
           { ?prop dcterms:description ?comment }
-          UNION 
+          UNION
           { ?prop schema:description ?comment }
-          UNION 
+          UNION
           { ?prop obo:IAO_0000115 ?comment }   # definition
-		}}
-	}
- 	BIND(COALESCE(str(?comment), "None") as ?comment_str)
+          }}
+     }
+      BIND(COALESCE(str(?comment), "None") as ?comment_str)
 
     #FILTER (?comment_str != "None" && ?lbl_str != "None")
-    
+
 } GROUP BY ?prop ?domain ?domain_lbl ?range ?range_lbl
 """
 
@@ -370,7 +370,7 @@ def generate_descriptions():
         descriptions = [eval(line) for line in f.readlines()]
         f.close()
     else:
-        logger.info(f"Retrieving property descriptions from the SPARQL endpoint")
+        logger.info("Retrieving property descriptions from the SPARQL endpoint")
         descriptions = make_properties_description()
         save_to_txt(descr_txt_file, descriptions)
 
@@ -385,7 +385,7 @@ def generate_descriptions():
         descriptions = [eval(line) for line in f.readlines()]
         f.close()
     else:
-        logger.info(f"Retrieving class descriptions from the SPARQL endpoint")
+        logger.info("Retrieving class descriptions from the SPARQL endpoint")
         descriptions = make_classes_description()
         save_to_txt(descr_txt_file, descriptions)
 
@@ -405,7 +405,7 @@ def generate_descriptions():
         classes_with_instances = [line.strip() for line in f.readlines()]
         f.close()
     else:
-        logger.info(f"Retrieving classes with instances from the SPARQL endpoint")
+        logger.info("Retrieving classes with instances from the SPARQL endpoint")
         classes_with_instances = get_classes_with_instances()
         save_to_txt(classes_with_instances_file, classes_with_instances)
         logger.info(f"Saved classes with instances to {classes_with_instances_file}.")

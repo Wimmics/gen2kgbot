@@ -52,8 +52,8 @@ async def generate_stream_responses(scenario_id: int, question: str):
     async for event in graph.astream_events(
         {"initial_question": question}, version="v2"
     ):
-        if event["event"] == "on_chat_model_stream":
-            if event["metadata"]["langgraph_node"] in chat_nodes_filter:
+        if event["event"] == "on_chat_model_stream" and "metadata" in event:
+            if event["metadata"]["langgraph_node"] in chat_nodes_filter and "chunk" in event["data"]:
                 chunk_content = serialize_aimessagechunk(event["data"]["chunk"])
                 response_part = {
                     "event": "on_chat_model_stream",
@@ -63,19 +63,20 @@ async def generate_stream_responses(scenario_id: int, question: str):
                 # print(response_part)
                 yield json.dumps(response_part)
 
-        elif event["event"] == "on_chat_model_end":
+        elif event["event"] == "on_chat_model_end" and "metadata" in event:
             response_part = {
                 "event": "on_chat_model_end",
                 "node": event["metadata"]["langgraph_node"],
             }
             yield json.dumps(response_part)
 
-        elif event["event"] == "on_chain_end":
+        elif event["event"] == "on_chain_end" and "metadata" in event:
             if "langgraph_node" in event["metadata"]:
                 # print(event)
                 if (
                     event["metadata"]["langgraph_node"] in state_nodes_filter
                     and event["name"] in state_nodes_filter
+                    and "output" in event["data"]
                 ):
                     data = event["data"]["output"]
                     if "messages" in data:
@@ -88,7 +89,7 @@ async def generate_stream_responses(scenario_id: int, question: str):
                     }
                     yield json.dumps(response_part, cls=EnumEncoder)
 
-        elif event["event"] == "on_chat_model_start":
+        elif event["event"] == "on_chat_model_start" and "metadata" in event:
 
             response_part = {
                 "event": "on_chat_model_start",

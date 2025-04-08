@@ -49,7 +49,7 @@ def setup_cli() -> Namespace:
 def chunks(lst: list, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i : i + n]
+        yield lst[i: i + n]
 
 
 def get_vector_store(embed_name: str) -> VectorStore:
