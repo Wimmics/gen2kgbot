@@ -292,8 +292,7 @@ scenario_7:
   text_embedding_model: nomic-embed-text_faiss@local
 
 # --------------------------------------------------------------------
-# Results with the first (commented out) description of the KG:
-#
+# Results with the first version of the description of the KG:
 # python -m app.scenarios.scenario_5.scenario_5 --params config/params_d2kab.yml --question "" 
 
 # Example questons:

@@ -20,7 +20,7 @@ See the [LICENSE file](LICENSE).
 ## KGQueryForge: (NL question, SPARQL query) generator
 
 
-## NL-to-SPARQL translation and execution
+## NL2sparql translation and execution
 
 Gen²KGBot implements multiple scenarios of increasing complexity to translate natural language questions into SPARQL, and refining the generated query.
 
@@ -52,7 +52,6 @@ In this case the language model is provided with the previously generated query,
 
 ### Scenario 6
 Extends the context in Scenario 5 with some **example SPARQL queries** related to the question.
-
 These queries are selected using a **similarity search with the question**.
 
 This involves a preprocessing step where existing SPARQL queries are provided, and **text embeddings** thereof are computed.
@@ -88,7 +87,7 @@ Currently, Gen²KGBot supports the following ones: `OPENAI_API_KEY`, `OVHCLOUD_A
 
 ## Startup instructions
 
-### KG-dependent Preprocessing
+### KG preprocessing
 
 [TBC]
 
@@ -121,6 +120,6 @@ You may use the [LangGraph Studio](https://studio.langchain.com/) inteface to in
 ````bash
 langgraph dev
 ````
-This will initialize LangGraph studio based on local file `langgraph.json` and the defauult configuration file `config/params.yml`.
+This will initialize LangGraph studio based on local file `langgraph.json` and the default configuration file `config/params.yml`.
 
-Then select the scenario and fill in a NL question.
+Then select the scenario and fill in a question in natural language.
