@@ -77,7 +77,8 @@ def select_similar_classes(state: OverallState) -> OverallState:
     for entity in relevant_entities_list:
         matches = db.similarity_search(entity, k=1)
         if len(matches) > 0:
-            if eval(matches[0].page_content)[1].lower() == entity.lower():
+            tuple = eval(matches[0].page_content)
+            if tuple[1] is not None and tuple[1].lower() == entity.lower():
                 classes_str.append(matches[0].page_content)
 
     # Then, retrieve from the vector DB the classes similar to all the entites together
