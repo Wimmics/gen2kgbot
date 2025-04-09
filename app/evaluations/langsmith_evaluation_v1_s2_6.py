@@ -24,7 +24,7 @@ def evaluate_provide_answer(outputs: dict, reference_outputs: dict) -> dict:
 
 def run_example(input):
     scenario_module = importlib.import_module(
-        f"app.core.scenarios.scenario_{scenario}.scenario_{scenario}"
+        f"app.scenarios.scenario_{scenario}.scenario_{scenario}"
     )
     return scenario_module.run_scenario(input["question"])
 

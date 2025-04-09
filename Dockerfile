@@ -25,5 +25,5 @@ COPY . /app
 EXPOSE 8000
 
 # Run the FastAPI server using Conda's Python
-CMD ["conda", "run", "-n", "gen2kgbot", "python", "-m", "app.api.test_dataset_api"]
+CMD ["conda", "run", "-n", "gen2kgbot", "python", "-m", "app.api.dataset_forge_api"]
 

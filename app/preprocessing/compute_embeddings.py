@@ -13,8 +13,8 @@ from tqdm import tqdm
 from langchain_community.vectorstores import FAISS, VectorStore
 from langchain_community.docstore import InMemoryDocstore
 from langchain_chroma import Chroma
-import app.core.utils.config_manager as config
-from app.core.utils.logger_manager import setup_logger
+import app.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 
@@ -23,7 +23,7 @@ def setup_cli() -> Namespace:
     parser = ArgumentParser(
         description="Compute the embeddings of the class descriptions previsouly generated."
     )
-    parser.add_argument("-p", "--params", type=str, help="Custom configuration file. Default: to app/config/params.yaml")
+    parser.add_argument("-p", "--params", type=str, help="Custom configuration file. Default: to config/params.yaml")
     parser.add_argument(
         "-m",
         "--model",
@@ -49,7 +49,7 @@ def setup_cli() -> Namespace:
 def chunks(lst: list, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i : i + n]
+        yield lst[i: i + n]
 
 
 def get_vector_store(embed_name: str) -> VectorStore:

@@ -12,12 +12,7 @@ tests
 .env.example
 .env
 
-app/config/sparql.ini
-app/config/params.ini
-
 !app/notebooks/data
 app/notebooks/evaluation
 
 .vscode
-
-app/config/custom_scenario_params.yml

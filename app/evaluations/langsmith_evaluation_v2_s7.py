@@ -2,8 +2,8 @@ import asyncio
 from langsmith import Client
 from pandas import DataFrame
 from langgraph.graph.state import CompiledStateGraph
-from app.core.utils.config_manager import get_scenario_module
-from app.core.utils.graph_state import InputState
+from app.utils.config_manager import get_scenario_module
+from app.utils.graph_state import InputState
 
 
 def evaluate_last_judging_score(outputs: dict, reference_outputs: dict) -> dict:

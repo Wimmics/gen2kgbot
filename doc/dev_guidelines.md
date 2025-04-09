@@ -26,7 +26,7 @@ To maintain a unified code style across our project, we adhere to the PEP8 conve
 
 ## Logging
 
-Logging configuration is described in file `app/config/logging.yml`. This setup centralizes logging behavior across all scripts.
+Logging configuration is described in file `config/logging.yml`. This setup centralizes logging behavior across all scripts.
 
 
 #### Integrating Logging into Your Scripts
@@ -34,7 +34,7 @@ Logging configuration is described in file `app/config/logging.yml`. This setup 
 To leverage logging setup, please incorporate the following code at the beginning of each Python script:
 
 ```python
-from app.core.utils.logger_manager import setup_logger
+from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
 ```
@@ -56,8 +56,8 @@ The configuration supports writing log messages to two destinations:
 - Console: this setup is intended for development.
 - File: includes timestamped traces
 
-By default, log files are located within the `./logs` directory. This can be changed in the file handler in `app/config/logging.yml`.
+By default, log files are located within the `./logs` directory. This can be changed in the file handler in `config/logging.yml`.
 
 **Run time**
 
-Change the log level to DEBUG, INFO, WARNING etc. in the handlers' configuration in `app/config/logging.yml`.
+Change the log level to DEBUG, INFO, WARNING etc. in the handlers' configuration in `config/logging.yml`.
