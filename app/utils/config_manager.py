@@ -222,6 +222,23 @@ def get_excluded_classes_namespaces() -> list[str]:
         return []
 
 
+def get_kg_data_directory() -> Path:
+    """
+    Generate the full path of the data directory for the current knowledge graph,
+    in the form `data_directory/kg_short_name`, E.g. `data/idsm/`.
+
+    Create the directory structure if it does not exist.
+    """
+    str_path = f"{config["data_directory"]}/{get_kg_short_name().lower()}"
+    if os.path.isabs(str_path):
+        path = Path(str_path)
+    else:
+        path = Path(__file__).resolve().parent.parent.parent / str_path
+    if not os.path.exists(path):
+        os.makedirs(path)
+    return path
+
+
 def get_class_context_cache_directory() -> Path:
     """
     Generate the path for the cache of class context files, and
@@ -233,18 +250,9 @@ def get_class_context_cache_directory() -> Path:
 
     # Format "nl" applies to serialization in prompts but is still stored as "tuple"
     format = get_class_context_format()
-    if format == "nl":
-        format = "tuple"
+    format = "tuple" if format == "nl" else format
 
-    str_path = (
-        config["data_directory"]
-        + f"/{get_kg_short_name().lower()}/classes_context/{format}"
-    )
-    if os.path.isabs(str_path):
-        path = Path(str_path)
-    else:
-        path = Path(__file__).resolve().parent.parent.parent / str_path
-
+    path = get_kg_data_directory() / "classes_context" / format
     if not os.path.exists(path):
         os.makedirs(path)
     return path
@@ -255,14 +263,7 @@ def get_preprocessing_directory() -> Path:
     Generate the path for the directory where to store the class and property textual descriptions.
     Create the directory structure if it does not exist.
     """
-    str_path = (
-        config["data_directory"] + f"/{get_kg_short_name().lower()}/preprocessing"
-    )
-    if os.path.isabs(str_path):
-        path = Path(str_path)
-    else:
-        path = Path(__file__).resolve().parent.parent.parent / str_path
-
+    path = get_kg_data_directory() / "preprocessing"
     if not os.path.exists(path):
         os.makedirs(path)
     return path
@@ -274,6 +275,10 @@ def get_class_embeddings_subdir() -> str:
 
 def get_property_embeddings_subdir() -> str:
     return config["property_embeddings_subdir"]
+
+
+def queries_embeddings_subdir() -> str:
+    return config["queries_embeddings_subdir"]
 
 
 def get_temp_directory() -> Path:
@@ -314,15 +319,7 @@ def get_embeddings_directory(vector_db_name: str) -> Path:
     The path includes the KG short name (e.g. "idsm"), vector db name (e.g. "faiss") sub-directories.
     E.g. "./data/idsm/faiss_embeddings"
     """
-    str_path = (
-        config["data_directory"]
-        + f"/{get_kg_short_name().lower()}/{vector_db_name}_embeddings"
-    )
-    if os.path.isabs(str_path):
-        path = Path(str_path)
-    else:
-        path = Path(__file__).resolve().parent.parent.parent / str_path
-
+    path = get_kg_data_directory() / f"{vector_db_name}_embeddings"
     if not os.path.exists(path):
         os.makedirs(path)
     return path
@@ -344,8 +341,6 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
     ):
         logger.debug(f"Using cached current_llm for scenario: {current_llm}")
         return current_llm[scenario_id][node_name]
-
-    logger.debug(f"Current LLM config used: {current_llm}")
 
     llm_id = config[scenario_id][node_name]
     llm_config = config["seq2seq_models"][llm_id]
@@ -490,7 +485,6 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
     )
 
     globals()["current_llm"].setdefault(scenario_id, {}).update({node_name: llm_config})
-
     logger.debug(f"Current LLM config used: {current_llm}")
 
     return llm_config
@@ -681,12 +675,12 @@ def set_custom_scenario_configuration(
         config[f"scenario_{scenario_id}"]["judge_query"] = judge_query_model
 
     if judge_regenerate_query_model is not None:
-        config[f"scenario_{scenario_id}"]["judge_regenerate_query"] = judge_regenerate_query_model
+        config[f"scenario_{scenario_id}"][
+            "judge_regenerate_query"
+        ] = judge_regenerate_query_model
 
     if interpret_results_model is not None:
-        config[f"scenario_{scenario_id}"][
-            "interpret_results"
-        ] = interpret_results_model
+        config[f"scenario_{scenario_id}"]["interpret_results"] = interpret_results_model
 
     if f"scenario_{scenario_id}" in globals()["current_llm"].keys():
         del globals()["current_llm"][f"scenario_{scenario_id}"]
