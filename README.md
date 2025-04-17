@@ -18,7 +18,7 @@ Gen²KGBot can be used from the **command-line interface**, from **Langgraph Stu
 
 - [Envionment setup](#environment-setup)
 - [Startup instructions](#startup-instructions)
-- [Web API description](doc/api-description)
+- [Web API description](doc/api_description.md)
 - [Development Guidelines](doc/dev_guidelines.md)
 
 ## License
