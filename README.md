@@ -1,15 +1,24 @@
 # Gen²KGBot - Generic Generative Knowledge Graph Robot
 
-Gen²KGBot addresses the problem of implementing GraphRAG applied to RDF knowledge graphs in a generic manner.
-It provides two components:
-- An application to generate a validation dataset, that is, a set of natural language questions and equivalent SPARQL queries.
-- A framework to query an RDF knowledge graph (KG) using natural language questions: this involves the generation of a SPARQL query, its execution and the interpretation of the SPARQL results.
+Gen²KGBot intends to allow users to "speak to a knowledge graph", that is, **use natural language to query knowledge graphs** in a generic manner, with the help of generative large language models (LLM).
 
+It provides a generic framework to translate a natural-language (NL) question into its counterpart SPARQL query, execute the query and interpret the SPARQL results.
+
+Several steps are involved, depending on the scenario selected:
+- explore the schema of the KG, including the used ontolgies;
+- generate a textual description of the ontology classes and turn them into text embeddings
+- generate a description of how the ontology classes are used in the KG. This description can follow 3 formats: Turtle, tuples, natural language.
+- ask an LLM to translate a NL question into a SPARQL query using a context including the textual description of the ontology classes related to the question, and how these classes are used in this KG.
+- if the SPARQL query is invalid, as the LLM to fix it;
+- execute the SPARQL query against the KG and ask an LLM to interpret the results.
+
+Gen²KGBot can be used from the **command-line interface**, from **Langgraph Studio**, or remotely through a **Web API**.
 
 ## Documentation
 
 - [Envionment setup](#environment-setup)
 - [Startup instructions](#startup-instructions)
+- [Web API description](doc/api-description)
 - [Development Guidelines](doc/dev_guidelines.md)
 
 ## License
@@ -17,12 +26,9 @@ It provides two components:
 See the [LICENSE file](LICENSE).
 
 
-## KGQueryForge: (NL question, SPARQL query) generator
+## Scenarios
 
-
-## NL2sparql translation and execution
-
-Gen²KGBot implements multiple scenarios of increasing complexity to translate natural language questions into SPARQL, and refining the generated query.
+Gen²KGBot implements multiple scenarios of increasing complexity to translate NL questions into SPARQL, and refine the generated query.
 
 ### Scenario 1
 Simply ask the user's question to the language model. This naive scenario is used to figure out what the language model "knows" about the topic. The KG is not involved.
@@ -34,7 +40,7 @@ This scenario is used to figure out what the language model may "know" about the
 It can be used as a baseline for the construction of a SPARQL query.
 
 ### Scenario 3
-Ask the language model to generate a SPARQL query based on the **user's question** and a context containing a **list of classes related to the question**.
+Ask the language model to translayte the user's question into a SPARQL query based on a context containing a **list of classes related to the question**.
 These classes are selected using a **similarity search between the question and the class descriptions**.
 
 This involves a preprocessing step where a **textual description of the classes** used in the KG is generated, and **text embeddings** of the descriptions are computed.
@@ -48,7 +54,7 @@ or in natural language like _"Instances of class 'class' have property 'prop' (l
 ### Scenario 5
 Extends the Scenario 4 with a **retry mechanism if the generated SPARQL query is not syntactically correct**.
 
-In this case the language model is provided with the previously generated query, and asked to reformulate it.
+In this case the language model is provided with the previously generated query, the parsing error, and asked to reformulate it.
 
 ### Scenario 6
 Extends the context in Scenario 5 with some **example SPARQL queries** related to the question.
@@ -57,7 +63,7 @@ These queries are selected using a **similarity search with the question**.
 This involves a preprocessing step where existing SPARQL queries are provided, and **text embeddings** thereof are computed.
 
 ### Scenario 7
-Extends the Scenario 6 with a **query judge** component that can evaluates the quality of the generated SPARQL and may start a **query improvement cycle**.
+Extends the Scenario 6 with a **query judge component that can evaluates the quality of the generated SPARQL** and may start a **query improvement cycle**.
 
 
 
@@ -80,12 +86,17 @@ ollama pull nomic-embed-text
 ```
 
 4) Gen²KGBot relies on LangChain. Set up environment variable `LANGCHAIN_API_KEY` with your own key.
-Also, set up the environment variables providing your own keys for using the LLMs and services of your choice.
+
+5) Set up the environment variables providing your own keys for using the LLMs and services of your choice.
 Currently, Gen²KGBot supports the following ones: `OPENAI_API_KEY`, `OVHCLOUD_API_KEY`, `HF_TOKEN`, `GOOGLE_API_KEY`, `DEEPSEEK_API_KEY`.
 
 
 
 ## Startup instructions
+
+### Adapt the configuration for your KG
+
+[TBC]
 
 ### KG preprocessing
 
@@ -95,9 +106,9 @@ Currently, Gen²KGBot supports the following ones: `OPENAI_API_KEY`, `OVHCLOUD_A
 
 Each scenario can be run in the terminal. 
 
-Option `-q|--question` allows to set a custom NL question. Otherwise a default NL question.
+Option `-q|--question` sets a custom NL question. Otherwise a default NL question.
 
-Option `-p|--params` allows to set a custom configuration faile. Otherwise file `config/params.yml` is used.
+Option `-p|--params` sets a custom configuration file. Otherwise file `config/params.yml` is used.
 
 Use python's option `-m` to run one of the scenarios. For instance:
 
