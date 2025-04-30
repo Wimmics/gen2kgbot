@@ -9,7 +9,7 @@ from app.api.requests.create_config import CreateConfig
 from app.api.requests.generate_competency_question import GenerateCompetencyQuestion
 from app.api.requests.refine_query import RefineQuery
 from app.api.services.answer_question import answer_question
-from app.api.services.config_manager import add_missing_config_params
+from app.api.services.config_manager import add_missing_config_params, save_query_examples_to_file
 from app.api.services.generate_competency_question import generate_competency_questions
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.services.graph_mermaid import get_scenarios_schema
@@ -193,6 +193,12 @@ def create_config_endpoint(config_request: CreateConfig):
                 ),
                 media_type="application/json",
             )
+
+        # Save the query examples locally to be used in the embedding
+        save_query_examples_to_file(
+            kg_short_name=config_request.kg_short_name,
+            query_examples=config_request.queryExamples,
+        )
 
         # Create the configuration dictionary from the request
         with open(config_path, "w", encoding="utf-8") as file:

@@ -1,6 +1,16 @@
 from pydantic import BaseModel
 
 
+class QueryExample(BaseModel):
+    """
+    Attributes:
+        question (str): The competency question.
+        query (str): The SPARQL query corresponding to the competency question.
+    """
+    question: str
+    query: str
+
+
 class CreateConfig(BaseModel):
     """
     Attributes:
@@ -30,3 +40,4 @@ class CreateConfig(BaseModel):
     expand_similar_classes: bool
     class_context_format: str
     excluded_classes_namespaces: list[str]
+    queryExamples: list[QueryExample]
