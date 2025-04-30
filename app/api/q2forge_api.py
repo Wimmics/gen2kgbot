@@ -43,7 +43,7 @@ app.add_middleware(
 )
 
 
-@app.post("/api/dataset_forge/judge_query")
+@app.post("/api/q2forge/judge_query")
 async def judge_query_endpoint(refine_query_request: RefineQuery):
     """
     This endpoint is used to judge the answer of a question based on the given SPARQL query.
@@ -68,7 +68,7 @@ async def judge_query_endpoint(refine_query_request: RefineQuery):
     )
 
 
-@app.post("/api/dataset_forge/generate-question")
+@app.post("/api/q2forge/generate-question")
 async def generate_question_endpoint(
     generate_competency_question_request: GenerateCompetencyQuestion,
 ):
@@ -97,7 +97,7 @@ async def generate_question_endpoint(
     )
 
 
-@app.post("/api/dataset_forge/answer_question")
+@app.post("/api/q2forge/answer_question")
 def answer_question_endpoint(answer_question_request: AnswerQuestion):
     """
     This endpoint is used to answer questions about a given Knowledge Graph
@@ -128,7 +128,7 @@ def answer_question_endpoint(answer_question_request: AnswerQuestion):
     )
 
 
-@app.get("/api/dataset_forge/scenarios_graph_schema")
+@app.get("/api/q2forge/scenarios_graph_schema")
 def get_scenario_schema_endpoint():
     """
     This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
@@ -143,14 +143,14 @@ def get_scenario_schema_endpoint():
     return get_scenarios_schema()
 
 
-@app.get("/api/dataset_forge/default_config")
+@app.get("/api/q2forge/default_config")
 def get_active_config_endpoint():
     """
-    This endpoint is used to get the default configuration of the dataset forge API.
+    This endpoint is used to get the default configuration of the Q²Forge API.
 
     Returns:
         dict:
-            A dictionary containing the default configuration of the dataset forge API.
+            A dictionary containing the default configuration of the Q²Forge API.
     """
     args = setup_cli()
     read_configuration(args=args)
@@ -159,7 +159,7 @@ def get_active_config_endpoint():
     return json.dumps(yaml_data, indent=4)
 
 
-@app.post("/api/dataset_forge/config/create")
+@app.post("/api/q2forge/config/create")
 def create_config_endpoint(config_request: CreateConfig):
     """
     This endpoint is used to create a new configuration Yaml file.
@@ -221,7 +221,7 @@ def create_config_endpoint(config_request: CreateConfig):
         )
 
 
-@app.post("/api/dataset_forge/config/activate")
+@app.post("/api/q2forge/config/activate")
 def activate_config_endpoint(config_request: ActivateConfig):
     """
     This endpoint is used to create a new configuration Yaml file.
@@ -283,7 +283,7 @@ def activate_config_endpoint(config_request: ActivateConfig):
         )
 
 
-@app.post("/api/dataset_forge/config/kg_descriptions")
+@app.post("/api/q2forge/config/kg_descriptions")
 def generate_kg_descriptions_endpoint(
     config_request: ActivateConfig,
 ):
@@ -323,7 +323,7 @@ def generate_kg_descriptions_endpoint(
         )
 
 
-@app.post("/api/dataset_forge/config/kg_embeddings")
+@app.post("/api/q2forge/config/kg_embeddings")
 def generate_kg_embeddings_endpoint(
     config_request: ActivateConfig,
 ):

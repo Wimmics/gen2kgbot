@@ -40,7 +40,7 @@ This scenario is used to figure out what the language model may "know" about the
 It can be used as a baseline for the construction of a SPARQL query.
 
 ### Scenario 3
-Ask the language model to translayte the user's question into a SPARQL query based on a context containing a **list of classes related to the question**.
+Ask the language model to translate the user's question into a SPARQL query based on a context containing a **list of classes related to the question**.
 These classes are selected using a **similarity search between the question and the class descriptions**.
 
 This involves a preprocessing step where a **textual description of the classes** used in the KG is generated, and **text embeddings** of the descriptions are computed.
