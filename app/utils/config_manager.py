@@ -52,12 +52,7 @@ def setup_cli() -> Namespace:
         default="What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?",
     )
     parser.add_argument("-p", "--params", type=str, help="Custom configuration file")
-    parser.add_argument(
-        "--prod",
-        action="store_true",
-        help="Load the production configuration file",
-        default=False,
-    )
+
     parser.add_argument("app.api.q2forge_api:app", nargs="?", help="Run the API")
     parser.add_argument("--reload", nargs="?", help="Debug mode")
     return parser.parse_args()
@@ -85,12 +80,6 @@ def read_configuration(args: Namespace = None):
     elif args.params:
         config_path = args.params
         logger.info(f"Loading custom configuration file: {config_path}")
-
-    elif args.__contains__("prod") and args.prod:
-        config_path = (
-            Path(__file__).resolve().parent.parent.parent / "config" / "params_prod.yml"
-        )
-        logger.info(f"Loading configuration file: {config_path}")
 
     else:
         # Set the default configuration file
