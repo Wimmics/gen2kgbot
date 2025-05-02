@@ -42,25 +42,27 @@ def setup_cli() -> Namespace:
     parser.add_argument(
         "--classes",
         type=str,
-        help='File with the description of the classes. Must be located in "{data_directory}/{KG short name}/preprocessing". Example: "classes_with_instances_description.txt"',
+        help='File with the description of the classes. Must be located in "{data_directory}/{KG short name}/preprocessing". For example: "classes_with_instances_description.txt"',
     )
     parser.add_argument(
         "--properties",
         type=str,
-        help='File with the description of the properties. Must be located in "{data_directory}/{KG short name}/preprocessing". Example: "properties_description.txt"',
+        help='File with the description of the properties. Must be located in "{data_directory}/{KG short name}/preprocessing". For example: "properties_description.txt"',
     )
     parser.add_argument(
         "--sparql",
         type=str,
-        help='Sub-directory containing the example SPARQL queries. Must be located in "{data_directory}/{KG short name}". Example: "sparql_queries"',
+        help='Sub-directory containing the example SPARQL queries. Must be located in "{data_directory}/{KG short name}". For example: "example_queries"',
     )
+    parser.add_argument("app.api.q2forge_api:app", nargs="?", help="Run the API")
+    parser.add_argument("--reload", nargs="?", help="Debug mode")
     return parser.parse_args()
 
 
 def chunks(lst: list, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i : i + n]
+        yield lst[i:i + n]
 
 
 def get_vector_store(embed_name: str) -> VectorStore:
@@ -162,9 +164,15 @@ def compute_embeddings_from_directory(embed_name: str, directory: str, output_di
     vectorstore.save_local(output_dir)
 
 
-def start_compute_embeddings():
+def start_compute_embeddings(is_api_call: bool = False):
     # Parse the command line arguments
     args = setup_cli()
+
+    # If the script is called from the API, set the parameters to default values
+    if is_api_call:
+        args.classes = "classes_with_instances_description.txt"
+        args.properties = "properties_description.txt"
+        args.sparql = "example_queries"
 
     # Load the configuration
     config.read_configuration(args)

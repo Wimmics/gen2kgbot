@@ -187,6 +187,8 @@ def setup_cli() -> Namespace:
         help='Output file for the description of the properties. Will be created in "{data_directory}/{KG short name}/preprocessing". Default: "properties_description.txt"',
         default="properties_description.txt",
     )
+    parser.add_argument("app.api.q2forge_api:app", nargs="?", help="Run the API")
+    parser.add_argument("--reload", nargs="?", help="Debug mode")
     return parser.parse_args()
 
 

@@ -200,10 +200,14 @@ def create_config_endpoint(config_request: CreateConfig):
             query_examples=config_request.queryExamples,
         )
 
+
         # Create the configuration dictionary from the request
         with open(config_path, "w", encoding="utf-8") as file:
             # Convert the request to a dictionary
             config_dict = config_request.model_dump()
+
+            # Remove the query examples from the request to avoid adding them to the config file
+            del config_dict['queryExamples']
 
             # Add missing parameters to the configuration
             updated_config = add_missing_config_params(config_dict)
@@ -345,7 +349,7 @@ def generate_kg_embeddings_endpoint(
     """
     try:
 
-        start_compute_embeddings()
+        start_compute_embeddings(is_api_call=True)
 
         return Response(
             status_code=200,
