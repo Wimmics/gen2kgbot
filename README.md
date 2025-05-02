@@ -23,7 +23,7 @@ Gen²KGBot can be used from the **command-line interface**, from **Langgraph Stu
 
 ## License
 
-See the [LICENSE file](LICENSE).
+AGPLv3: see the [LICENSE file](LICENSE).
 
 
 ## Scenarios
