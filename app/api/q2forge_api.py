@@ -9,7 +9,10 @@ from app.api.requests.create_config import CreateConfig
 from app.api.requests.generate_competency_question import GenerateCompetencyQuestion
 from app.api.requests.refine_query import RefineQuery
 from app.api.services.answer_question import answer_question
-from app.api.services.config_manager import add_missing_config_params, save_query_examples_to_file
+from app.api.services.config_manager import (
+    add_missing_config_params,
+    save_query_examples_to_file,
+)
 from app.api.services.generate_competency_question import generate_competency_questions
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.services.graph_mermaid import get_scenarios_schema
@@ -57,9 +60,7 @@ async def judge_query_endpoint(refine_query_request: RefineQuery):
 
     return StreamingResponse(
         refine_query(
-            base_uri=refine_query_request.base_uri,
-            model_provider=refine_query_request.modelProvider,
-            model_name=refine_query_request.modelName,
+            model_config_id=refine_query_request.model_config_id,
             question=refine_query_request.question,
             sparql_query=refine_query_request.sparql_query,
             sparql_query_context=refine_query_request.sparql_query_context,
@@ -84,9 +85,7 @@ async def generate_question_endpoint(
 
     return StreamingResponse(
         generate_competency_questions(
-            base_uri=generate_competency_question_request.base_uri,
-            model_provider=generate_competency_question_request.model_provider,
-            model_name=generate_competency_question_request.model_name,
+            model_config_id=generate_competency_question_request.model_config_id,
             number_of_questions=generate_competency_question_request.number_of_questions,
             additional_context=generate_competency_question_request.additional_context,
             kg_description=generate_competency_question_request.kg_description,
@@ -200,14 +199,13 @@ def create_config_endpoint(config_request: CreateConfig):
             query_examples=config_request.queryExamples,
         )
 
-
         # Create the configuration dictionary from the request
         with open(config_path, "w", encoding="utf-8") as file:
             # Convert the request to a dictionary
             config_dict = config_request.model_dump()
 
             # Remove the query examples from the request to avoid adding them to the config file
-            del config_dict['queryExamples']
+            del config_dict["queryExamples"]
 
             # Add missing parameters to the configuration
             updated_config = add_missing_config_params(config_dict)

@@ -1,18 +1,13 @@
-import os
-from langchain_openai import ChatOpenAI
-from langchain_deepseek import ChatDeepSeek
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.language_models import BaseChatModel
-from langchain_ollama import ChatOllama
 from app.api.services.prompts.refine_query import refine_query_prompt
 import json
 from app.api.services.utils import serialize_aimessagechunk
+import app.utils.config_manager as config
 
 
 async def refine_query(
-    model_provider: str,
-    model_name: str,
-    base_uri: str,
+    model_config_id: str,
     question: str,
     sparql_query: str,
     sparql_query_context: str,
@@ -21,9 +16,7 @@ async def refine_query(
     Judge the sparql query correctness given a question and the sparql query context using a language model.
 
     Args:
-        model_provider (str): The provider of the language model
-        model_name (str): The name of the language model
-        base_uri (str): The base URI of the language model
+        model_config_id (str): The ID of the selected model configuration
         question (str): The asked question to be judged in natural language
         sparql_query (str): The sparql query to be judged
         sparql_query_context (str): The list of QNames and Full QNames used in the sparql query with some additional context e.g. rdfs:label, rdfs:comment
@@ -33,25 +26,7 @@ async def refine_query(
     """
     query_test_prompt_template = ChatPromptTemplate.from_template(refine_query_prompt)
 
-    llm: BaseChatModel
-
-    if model_provider == "Ollama-local":
-        llm = ChatOllama(base_url="http://localhost:11434", model=model_name)
-    elif model_provider == "DeepSeek":
-        llm = ChatDeepSeek(model=model_name, api_key=os.getenv("DEEPSEEK_API_KEY"))
-    elif model_provider == "Ovh":
-        llm = ChatOpenAI(
-            model=model_name,
-            base_url=base_uri,
-            api_key=os.getenv("OVHCLOUD_API_KEY"),
-        )
-    elif model_provider == "OpenAI":
-        llm = ChatOpenAI(
-            model=model_name,
-            api_key=os.getenv("OPENAI_API_KEY"),
-        )
-    else:
-        raise ValueError("Unsupported LLM provider")
+    llm: BaseChatModel = config.get_seq2seq_model_by_config_id(model_config_id)
 
     chain_for_json_mode = query_test_prompt_template | llm
 

@@ -332,7 +332,30 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
         return current_llm[scenario_id][node_name]
 
     llm_id = config[scenario_id][node_name]
-    llm_config = config["seq2seq_models"][llm_id]
+
+    llm_config = get_seq2seq_model_by_config_id(llm_id)
+
+    logger.info(
+        f"Seq2Seq model initialized for {scenario_id} and Node: {node_name} with config: {llm_config}"
+    )
+
+    globals()["current_llm"].setdefault(scenario_id, {}).update({node_name: llm_config})
+    logger.debug(f"Current LLM config used: {current_llm}")
+
+    return llm_config
+
+
+def get_seq2seq_model_by_config_id(model_config_id: str) -> BaseChatModel:
+    """
+    Create a seq2seq LLM based on the model configuration ID
+
+    Args:
+        model_config_id (str): model configuration ID
+    Returns:
+        BaseChatModel: instantiated LLM with the given configuration
+    """
+
+    llm_config = config["seq2seq_models"][model_config_id]
 
     server_type = llm_config["server_type"]
     model_id = llm_config["id"]
@@ -468,13 +491,6 @@ def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
     else:
         logger.error(f"Unsupported type of seq2seq model: {server_type}")
         raise Exception(f"Unsupported type of seq2seq model: {server_type}")
-
-    logger.info(
-        f"Seq2Seq model initialized for {scenario_id} and Node: {node_name} with: {server_type} - {model_id} "
-    )
-
-    globals()["current_llm"].setdefault(scenario_id, {}).update({node_name: llm_config})
-    logger.debug(f"Current LLM config used: {current_llm}")
 
     return llm_config
 
