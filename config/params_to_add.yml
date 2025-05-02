@@ -13,6 +13,18 @@ queries_embeddings_subdir: "sparql_queries_nomic"
 temp_directory: "./tmp"
 
 
+# Max number of classes similar to the user's question (optional)
+# Default: 10
+max_similar_classes: 10
+
+# Expand the initial list of classes similar to the question with additional classes connected to them (optional)
+# Default: false
+expand_similar_classes: false
+
+# Format of the classes context: one of "turtle", "tuple" or "nl" for natural language (optional)
+# Default: "turtle"
+class_context_format: turtle
+
 # -----------------------------------------------------------
 # LLM configurations
 

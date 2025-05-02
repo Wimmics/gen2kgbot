@@ -22,9 +22,6 @@ class CreateConfig(BaseModel):
         properties_qnames_info (list[str]): A list of property QNames information.
         prefixes (dict[str, str]): A dictionary of prefixes and their corresponding URIs.
         ontology_named_graphs (list[str]): A list of ontology named graphs.
-        max_similar_classes (int): The maximum number of similar classes to retrieve.
-        expand_similar_classes (bool): Whether to expand similar classes or not.
-        class_context_format (str): The format for class context.
         excluded_classes_namespaces (list[str]): A list of excluded class namespaces.
     """
 
@@ -36,8 +33,5 @@ class CreateConfig(BaseModel):
     properties_qnames_info: list[str]
     prefixes: dict[str, str]
     ontology_named_graphs: list[str]
-    max_similar_classes: int
-    expand_similar_classes: bool
-    class_context_format: str
     excluded_classes_namespaces: list[str]
     queryExamples: list[QueryExample]
