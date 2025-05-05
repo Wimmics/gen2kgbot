@@ -27,13 +27,17 @@ from app.utils.logger_manager import setup_logger
 from app.preprocessing.compute_embeddings import start_compute_embeddings
 from app.preprocessing.gen_descriptions import generate_descriptions
 import app.utils.config_manager as config
+import uvicorn
 
 
 # setup logger
 logger = setup_logger(__package__, __file__)
 
 # setup FastAPI
-app = FastAPI()
+app = FastAPI(
+    docs_url=None,
+    redoc_url="/q2forge/docs",
+)
 
 origins = ["*"]
 
@@ -44,87 +48,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.post("/api/q2forge/judge_query")
-async def judge_query_endpoint(refine_query_request: RefineQuery):
-    """
-    This endpoint is used to judge the answer of a question based on the given SPARQL query.
-
-    Args:
-        refine_query_request (RefineQuery): The request object containing the necessary information to judge the answer.
-
-    Returns:
-        StreamingResponse: The stream of the model judgement.
-    """
-
-    return StreamingResponse(
-        refine_query(
-            model_config_id=refine_query_request.model_config_id,
-            question=refine_query_request.question,
-            sparql_query=refine_query_request.sparql_query,
-            sparql_query_context=refine_query_request.sparql_query_context,
-        ),
-        media_type="application/json",
-    )
-
-
-@app.post("/api/q2forge/generate-question")
-async def generate_question_endpoint(
-    generate_competency_question_request: GenerateCompetencyQuestion,
-):
-    """
-    This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
-
-    Args:
-        generate_competency_question_request (GenerateCompetencyQuestion): The request object containing the necessary information to generate competency questions.
-
-    Returns:
-        StreamingResponse: The stream of the generated questions.
-    """
-
-    return StreamingResponse(
-        generate_competency_questions(
-            model_config_id=generate_competency_question_request.model_config_id,
-            number_of_questions=generate_competency_question_request.number_of_questions,
-            additional_context=generate_competency_question_request.additional_context,
-            kg_description=generate_competency_question_request.kg_description,
-            kg_schema=generate_competency_question_request.kg_schema,
-            enforce_structured_output=generate_competency_question_request.enforce_structured_output,
-        ),
-        media_type="application/json",
-    )
-
-
-@app.post("/api/q2forge/answer_question")
-def answer_question_endpoint(answer_question_request: AnswerQuestion):
-    """
-    This endpoint is used to answer questions about a given Knowledge Graph
-
-    Args:
-        answer_question_request (AnswerQuestion): The request object containing the necessary information to answer a question.
-
-    Returns:
-        StreamingResponse: the stream of the answer to the question.
-    """
-    set_custom_scenario_configuration(
-        scenario_id=answer_question_request.scenario_id,
-        validate_question_model=answer_question_request.validate_question_model,
-        ask_question_model=answer_question_request.ask_question_model,
-        generate_query_model=answer_question_request.generate_query_model,
-        judge_query_model=answer_question_request.judge_query_model,
-        judge_regenerate_query_model=answer_question_request.judge_regenerate_query_model,
-        interpret_results_model=answer_question_request.interpret_results_model,
-        text_embedding_model=answer_question_request.text_embedding_model,
-    )
-    return StreamingResponse(
-        answer_question(
-            scenario_id=answer_question_request.scenario_id,
-            question=answer_question_request.question,
-        ),
-        # media_type="text/event-stream",
-        media_type="application/json",
-    )
 
 
 @app.get("/api/q2forge/scenarios_graph_schema")
@@ -161,7 +84,7 @@ def get_active_config_endpoint():
 @app.post("/api/q2forge/config/create")
 def create_config_endpoint(config_request: CreateConfig):
     """
-    This endpoint is used to create a new configuration Yaml file.
+    This endpoint is used to create a new configuration file.
 
     Args:
         config_request (CreateConfig): The request object containing the necessary information to create a configuration.
@@ -232,7 +155,7 @@ def create_config_endpoint(config_request: CreateConfig):
 @app.post("/api/q2forge/config/activate")
 def activate_config_endpoint(config_request: ActivateConfig):
     """
-    This endpoint is used to create a new configuration Yaml file.
+    This endpoint is used to activate a configuration file.
 
     Args:
         config_request (ActivateConfig): The request object containing the necessary information to activate a configuration.
@@ -363,7 +286,85 @@ def generate_kg_embeddings_endpoint(
         )
 
 
-if __name__ == "__main__":
-    import uvicorn
+@app.post("/api/q2forge/generate-question")
+async def generate_question_endpoint(
+    generate_competency_question_request: GenerateCompetencyQuestion,
+):
+    """
+    This endpoint is used to generate questions about a given Knowledge Graph using a given LLM.
 
+    Args:
+        generate_competency_question_request (GenerateCompetencyQuestion): The request object containing the necessary information to generate competency questions.
+
+    Returns:
+        StreamingResponse: The stream of the generated questions.
+    """
+
+    return StreamingResponse(
+        generate_competency_questions(
+            model_config_id=generate_competency_question_request.model_config_id,
+            number_of_questions=generate_competency_question_request.number_of_questions,
+            additional_context=generate_competency_question_request.additional_context,
+            kg_description=generate_competency_question_request.kg_description,
+            kg_schema=generate_competency_question_request.kg_schema,
+            enforce_structured_output=generate_competency_question_request.enforce_structured_output,
+        ),
+        media_type="application/json",
+    )
+
+
+@app.post("/api/q2forge/answer_question")
+def answer_question_endpoint(answer_question_request: AnswerQuestion):
+    """
+    This endpoint is used to answer questions about a given Knowledge Graph
+
+    Args:
+        answer_question_request (AnswerQuestion): The request object containing the necessary information to answer a question.
+
+    Returns:
+        StreamingResponse: the stream of the answer to the question.
+    """
+    set_custom_scenario_configuration(
+        scenario_id=answer_question_request.scenario_id,
+        validate_question_model=answer_question_request.validate_question_model,
+        ask_question_model=answer_question_request.ask_question_model,
+        generate_query_model=answer_question_request.generate_query_model,
+        judge_query_model=answer_question_request.judge_query_model,
+        judge_regenerate_query_model=answer_question_request.judge_regenerate_query_model,
+        interpret_results_model=answer_question_request.interpret_results_model,
+        text_embedding_model=answer_question_request.text_embedding_model,
+    )
+    return StreamingResponse(
+        answer_question(
+            scenario_id=answer_question_request.scenario_id,
+            question=answer_question_request.question,
+        ),
+        # media_type="text/event-stream",
+        media_type="application/json",
+    )
+
+
+@app.post("/api/q2forge/judge_query")
+async def judge_query_endpoint(refine_query_request: RefineQuery):
+    """
+    This endpoint is used to judge the answer of a question based on the given SPARQL query.
+
+    Args:
+        refine_query_request (RefineQuery): The request object containing the necessary information to judge the answer.
+
+    Returns:
+        StreamingResponse: The stream of the model judgement.
+    """
+
+    return StreamingResponse(
+        refine_query(
+            model_config_id=refine_query_request.model_config_id,
+            question=refine_query_request.question,
+            sparql_query=refine_query_request.sparql_query,
+            sparql_query_context=refine_query_request.sparql_query_context,
+        ),
+        media_type="application/json",
+    )
+
+if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
