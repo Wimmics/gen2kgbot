@@ -14,7 +14,7 @@ class GenerateCompetencyQuestion(BaseModel):
     """
     model_config_id: str = Field(..., description="The ID of the selected model configuration.")
     kg_description: str = Field(..., description="The description of the knowledge graph in natural language.")
-    kg_schema: Optional[str] = Field(description="The schema of the knowledge graph.")
-    additional_context: Optional[str] = Field(description="Some additional context  e.g. abstract of the paper presenting the KG.")
+    kg_schema: Optional[str] = Field(default=None, description="The schema of the knowledge graph.")
+    additional_context: Optional[str] = Field(default=None, description="Some additional context  e.g. abstract of the paper presenting the KG.")
     number_of_questions: int = Field(..., description="The number of questions to generate.")
     enforce_structured_output: bool = Field(..., description="A flag to enforce structured output in JSON with a predified schema.")

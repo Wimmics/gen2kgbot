@@ -655,7 +655,7 @@ def get_scenario_module(scenario_id: int):
 
 
 def set_custom_scenario_configuration(
-    scenario_id: int,
+    scenario_id: str,
     validate_question_model: str,
     ask_question_model: str,
     generate_query_model: str,
