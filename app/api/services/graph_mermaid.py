@@ -1,7 +1,8 @@
+from app.api.responses.scenario_schema import ScenarioSchema
 from app.utils.config_manager import get_configuration, get_scenario_module
 
 
-def get_scenarios_schema():
+def get_scenarios_schema() -> list[ScenarioSchema]:
     """
     Get the schema for all scenarios.
 
@@ -18,10 +19,10 @@ def get_scenarios_schema():
     scenarios_schema = []
     for scenario_id in scenario_ids:
         scenarios_schema.append(
-            {
-                "scenario_id": scenario_id,
-                "schema": "```mermaid\n" + get_graph_schema(scenario_id) + "\n```",
-            }
+            ScenarioSchema(
+                scenario_id=str(scenario_id),
+                graph_schema="```mermaid\n" + get_graph_schema(scenario_id) + "\n```",
+            )
         )
     return scenarios_schema
 
