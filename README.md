@@ -96,11 +96,47 @@ Currently, Gen²KGBot supports the following ones: `OPENAI_API_KEY`, `OVHCLOUD_A
 
 ### Adapt the configuration for your KG
 
-[TBC]
+To create a new configuration, follow these steps:
+
+1) Copy [this existing config](./config/params.yml) as a starting point.
+
+2) Modify these fields:
+- `kg_full_name`: The full name of the knowledge graph.
+- `kg_short_name`: The short name of the knowledge graph.
+- `kg_description`: A description of the knowledge graph.
+- `kg_sparql_endpoint_url`: The URL of the SPARQL endpoint for the knowledge graph.
+- `ontologies_sparql_endpoint_url`: The URL of the SPARQL endpoint for the ontologies.
+- `properties_qnames_info`: A list of property QNames information.
+- `prefixes`: A dictionary of prefixes and their corresponding URIs.
+- `ontology_named_graphs`: A list of ontology named graphs.
+- `excluded_classes_namespaces`: A list of excluded class namespaces.
+
+3) Optionally, if you want to use **scenarios 6+**, you will need a list of (question, SPARQL query) examples. Put each of the pair in a file under `{data_directory}/{kg_short_name}/example_queries`. It should have the following format: 
+
+```
+# {question}
+
+{query}
+```
 
 ### KG preprocessing
 
-[TBC]
+The KG preprocessing consists of two steps:
+1) **Generate the KG descriptions**:
+
+In the terminal, run the command: `python -m app.preprocessing.gen_descriptions -p="path/to/your/config"`
+
+2) **Compute the classes and examples embeddings**:
+
+In the terminal, run the command: `python -m app.preprocessing.compute_embeddings {+parameters}`
+
+The parameters are:
+
+- **--params**: Custom configuration file. Default: `config/params.yaml`
+- **--model**: Embedding model description in the configuration file. Default: `nomic-embed-text_faiss@local`
+- **--classes**  File with the description of the classes. Must be located in `{data_directory}/{KG short name}/preprocessing`. For example: `classes_with_instances_description.txt`
+- **--properties** : File with the description of the properties. Must be located in `{data_directory}/{KG short name}/preprocessing`. For example: `properties_description.txt`
+- **--sparql**: Sub-directory containing the example SPARQL queries. Must be located in `{data_directory}/{KG short name}`. For example:                        `example_queries`
 
 ### Running scenarios using CLI
 
