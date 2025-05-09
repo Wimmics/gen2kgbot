@@ -39,7 +39,8 @@ logger = setup_logger(__package__, __file__)
 app = FastAPI(
     title="Q²Forge API",
     docs_url=None,
-    redoc_url="/q2forge/docs",
+    openapi_url="/api/q2forge/openapi.json",
+    redoc_url="/api/q2forge/docs",
     description=(
         "**Q²Forge** is a resource that addresses the challenge of generating new competency questions for a KG and corresponding SPARQL queries that reflect those questions. It iteratively validates those queries with human "
         + "feedback and LLM as a judge. Q²Forge is open source, extensible and modular, meaning that different parts of the system (CQ generation, query generation and query refinement) can be used as a whole or as parts depending on the context, "
