@@ -46,6 +46,7 @@ app = FastAPI(
         + "feedback and LLM as a judge. Q²Forge is open source, extensible and modular, meaning that different parts of the system (CQ generation, query generation and query refinement) can be used as a whole or as parts depending on the context, "
         + "or replaced by alternative services. The end result is a complete pipeline from competency question formulation to query evaluation, supporting the creation of reference query sets for any target KG."
     ),
+    version="1.0",
 )
 
 origins = ["*"]
