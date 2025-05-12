@@ -665,8 +665,7 @@ judge_builder.add_edge("judge_regenerate_query", "validate_sparql_syntax")
 # Main graph for generating and executing the query
 builder = StateGraph(
     state_schema=OverallState, input=InputState, output=OverallState
-)  # TODO to put back
-# builder = StateGraph(state_schema=OverallState, input=OverallState, output=OverallState)  # TODO remove
+)
 
 builder.add_node("preprocessing_subgraph", prepro_builder.compile())
 builder.add_node("create_prompt", create_prompt)
@@ -679,7 +678,6 @@ builder.add_edge(START, "preprocessing_subgraph")
 builder.add_conditional_edges("preprocessing_subgraph", preprocessing_subgraph_router)
 builder.add_edge("create_prompt", "generate_query")
 builder.add_edge("generate_query", "judging_subgraph")
-# builder.add_edge(START, "judging_subgraph")  # TODO to remove
 builder.add_conditional_edges("judging_subgraph", judging_subgraph_router)
 builder.add_conditional_edges("run_query", run_query_router)
 builder.add_edge("interpret_results", END)
@@ -729,6 +727,5 @@ def langsmith_setup():
 
 
 if __name__ == "__main__":
-    asyncio.run(config.main(graph))  # TODO to put back
+    asyncio.run(config.main(graph))
     # langsmith_setup()
-    # asyncio.run(custom_main(graph))  # TODO to put back

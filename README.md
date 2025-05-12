@@ -25,6 +25,21 @@ Gen²KGBot can be used from the **command-line interface**, from **Langgraph Stu
 
 AGPLv3: see the [LICENSE file](LICENSE).
 
+## Cite this work
+
+Yousouf TAGHZOUTI, Franck MICHEL, Tao JIANG, Louis-Félix NOTHIAS, Fabien GANDON (2025). **Gen²KGBot - Generic Generative Knowledge Graph Robot**. <https://github.com/Wimmics/gen2kgbot> 
+
+
+<details>
+<summary>See BibTex</summary>
+@software{taghzouti_gen2kgbot:2025,
+    author = {TAGHZOUTI, Yousouf and MICHEL, Franck and JIANG, Tao and NOTHIAS, Louis-Félix , and GANDON Fabien},
+    title = {{Gen²KGBot - Generic Generative Knowledge Graph Robot}},
+    url = {https://github.com/Wimmics/gen2kgbot},
+    version = {1.0},
+    year = {2025}
+}
+</details>
 
 ## Scenarios
 
