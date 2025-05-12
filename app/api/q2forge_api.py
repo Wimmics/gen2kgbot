@@ -589,7 +589,7 @@ def activate_config_endpoint(config_request: ActivateConfig):
     summary="Generate KG descriptions",
     description=(
         "This endpoint generates KG descriptions of a given Knowledge Graph. "
-        + "The KG descriptions are used to create the KG embeddings."
+        + "The KG descriptions are used to create KG embeddings, which are then used to provide the language model with more context through a RAG technique."
     ),
     responses={
         200: {
@@ -648,7 +648,7 @@ def generate_kg_descriptions_endpoint(config_request: ActivateConfig):
     path="/api/q2forge/config/kg_embeddings",
     summary="Generate KG embeddings",
     description=(
-        "This endpoint generates KG embeddings of a given Knowledge Graph. "
+        "This endpoint generates the embedding of the textual description of the ontology classes used in the KG. "
         + "The KG embeddings are used in the different scenarios to generate "
         + "SPARQL queries from questions in natural language."
     ),
