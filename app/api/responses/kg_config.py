@@ -11,6 +11,7 @@ class KGConfig(BaseModel):
     kg_description: str = Field(..., description="A brief description of the Knowledge Graph.")
     kg_sparql_endpoint_url: str = Field(..., description="The SPARQL endpoint URL of the Knowledge Graph.")
     ontologies_sparql_endpoint_url: str = Field(..., description="The SPARQL endpoint URL for the ontologies.")
+    ontology_named_graphs: list[str] = Field(default=None, description="Named graphs where to look for ontology definitions (optional)")
     properties_qnames_info: list[str] = Field(..., description="A list of property QNames used in the Knowledge Graph.")
     prefixes: dict = Field(..., description="A dictionary of prefixes used in the Knowledge Graph.")
     excluded_classes_namespaces: list[str] = Field(..., description="A list of excluded class namespaces.")
