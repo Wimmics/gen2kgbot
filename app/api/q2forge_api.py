@@ -14,6 +14,7 @@ from app.api.services.answer_question import answer_question
 from app.api.services.config_manager import (
     add_missing_config_params,
     save_query_examples_to_file,
+    get_available_configurations
 )
 from app.api.services.generate_competency_question import generate_competency_questions
 from fastapi.middleware.cors import CORSMiddleware
@@ -89,6 +90,30 @@ app.add_middleware(
 )
 def get_scenario_schema_endpoint() -> list[ScenarioSchema]:
     return get_scenarios_schema()
+
+
+@app.get(
+    path="/api/q2forge/config/available",
+    summary="Get the Available Configurations",
+    description=(
+        "This endpoint returns the short name of each available configuration that can be used by the Q²Forge resource."
+    ),
+    responses={
+        200: {
+            "description": "A list of the configuration short names.",
+            "content": {
+                "application/json": {
+                    "example": [
+                        "idsm",
+                        "d2kab"
+                    ]
+                }
+            },
+        }
+    },
+)
+def get_available_configurations_endpoint() -> list[str]:
+    return get_available_configurations()
 
 
 @app.get(
