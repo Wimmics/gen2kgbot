@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from fastapi import FastAPI, Response
 from fastapi.responses import StreamingResponse
+from fastapi_mcp import FastApiMCP
 import yaml
 from app.api.requests.activate_config import ActivateConfig
 from app.api.requests.answer_question import AnswerQuestion
@@ -14,7 +15,7 @@ from app.api.services.answer_question import answer_question
 from app.api.services.config_manager import (
     add_missing_config_params,
     save_query_examples_to_file,
-    get_available_configurations
+    get_available_configurations,
 )
 from app.api.services.generate_competency_question import generate_competency_questions
 from fastapi.middleware.cors import CORSMiddleware
@@ -64,6 +65,7 @@ app.add_middleware(
 @app.get(
     path="/api/q2forge/scenarios_graph_schema",
     summary="Get the scenarios graph schemas",
+    operation_id="get_scenarios_graph_schema",
     description=(
         "This endpoint returns the different scenarios graph schemas. "
         + "The schemas are represented in a mermaid format, which can be used to visualize the flow of the scenarios."
@@ -95,20 +97,14 @@ def get_scenario_schema_endpoint() -> list[ScenarioSchema]:
 @app.get(
     path="/api/q2forge/config/available",
     summary="Get the Available Configurations",
+    operation_id="get_available_configurations",
     description=(
         "This endpoint returns the short name of each available configuration that can be used by the Q²Forge resource."
     ),
     responses={
         200: {
             "description": "A list of the configuration short names.",
-            "content": {
-                "application/json": {
-                    "example": [
-                        "idsm",
-                        "d2kab"
-                    ]
-                }
-            },
+            "content": {"application/json": {"example": ["idsm", "d2kab"]}},
         }
     },
 )
@@ -118,6 +114,7 @@ def get_available_configurations_endpoint() -> list[str]:
 
 @app.get(
     path="/api/q2forge/config/active",
+    operation_id="get_active_config",
     summary="Get the currently active configuration",
     description=(
         "This endpoint returns the currently active configuration of the Q²Forge API. "
@@ -375,6 +372,7 @@ def get_active_config_endpoint() -> KGConfig:
 
 @app.post(
     path="/api/q2forge/config/create",
+    operation_id="create_config",
     summary="Create a new configuration",
     description=(
         "This endpoint creates a new configuration file to be used by the Q²Forge resource. "
@@ -529,6 +527,7 @@ def create_config_endpoint(config_request: CreateConfig) -> CreateConfig:
 
 @app.post(
     path="/api/q2forge/config/activate",
+    operation_id="activate_config",
     summary="Activate a configuration",
     description=(
         "This endpoint activates a configuration file to be used by the Q²Forge resource. "
@@ -611,6 +610,7 @@ def activate_config_endpoint(config_request: ActivateConfig):
 
 @app.post(
     path="/api/q2forge/config/kg_descriptions",
+    operation_id="generate_kg_descriptions",
     summary="Generate KG descriptions",
     description=(
         "This endpoint generates KG descriptions of a given Knowledge Graph. "
@@ -671,6 +671,7 @@ def generate_kg_descriptions_endpoint(config_request: ActivateConfig):
 
 @app.post(
     path="/api/q2forge/config/kg_embeddings",
+    operation_id="generate_kg_embeddings",
     summary="Generate KG embeddings",
     description=(
         "This endpoint generates the embedding of the textual description of the ontology classes used in the KG. "
@@ -719,6 +720,7 @@ def generate_kg_embeddings_endpoint(config_request: ActivateConfig):
 
 @app.post(
     path="/api/q2forge/generate_questions",
+    operation_id="generate_questions",
     summary="Generate competency questions",
     description=(
         "This endpoint generates competency questions about a given Knowledge Graph using a given LLM. "
@@ -770,6 +772,7 @@ async def generate_question_endpoint(
 
 @app.post(
     path="/api/q2forge/answer_question",
+    operation_id="answer_question",
     summary="Generate and Execute a SPARQL query",
     description=(
         "This endpoint answers a question about a given Knowledge Graph using a given LLMs configuration."
@@ -828,6 +831,7 @@ def answer_question_endpoint(answer_question_request: AnswerQuestion):
 
 @app.post(
     path="/api/q2forge/judge_query",
+    operation_id="judge_query",
     summary="Judge a SPARQL query",
     description=(
         "This endpoint judges a SPARQL query given a natural language question using a given LLM."
@@ -852,9 +856,7 @@ def answer_question_endpoint(answer_question_request: AnswerQuestion):
             "description": "An error occurred while judging the query",
             "content": {
                 "application/json": {
-                    "example": {
-                        "error": "Error judging query: <error_message>"
-                    }
+                    "example": {"error": "Error judging query: <error_message>"}
                 }
             },
         },
@@ -871,6 +873,12 @@ async def judge_query_endpoint(refine_query_request: RefineQuery):
         media_type="application/json",
     )
 
+
+# Add MCP server to FastAPI app
+mcp = FastApiMCP(fastapi=app, name="Q2Forge")
+
+# Mount the MCP server directly to your FastAPI app
+mcp.mount()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)

@@ -42,3 +42,5 @@ dependencies:
     - spacy==3.*
     - spacy-legacy==3.*
     - spacy-loggers
+    - fastapi-mcp==0.3.*
+    - mcp==1.7.*
