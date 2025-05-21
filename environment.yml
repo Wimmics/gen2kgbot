@@ -27,6 +27,9 @@ dependencies:
   - requests=2.*
   - SPARQLWrapper=2.*
   - flake8=7.*
+  - python-jose[cryptography]=3.3.*
+  - pymongo=4.8.*
+  - passlib[bcrypt]=1.7.*
 
   - pip:
     - https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0.tar.gz

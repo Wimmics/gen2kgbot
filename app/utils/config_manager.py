@@ -22,6 +22,8 @@ from app.utils.envkey_manager import (
 )
 from app.utils.graph_state import InputState
 from app.utils.logger_manager import setup_logger
+from pymongo import MongoClient
+from pymongo.database import Database
 
 logger = setup_logger(__package__, __file__)
 
@@ -38,6 +40,9 @@ classes_vector_db = {}
 # Vector db that contains the example SPARQL queries and associated questions.
 # Dictionary with the scenario id as key
 queries_vector_db = {}
+
+# Database connection
+db: Database = None
 
 
 def setup_cli() -> Namespace:
@@ -703,6 +708,20 @@ def set_custom_scenario_configuration(
     logger.debug(
         f"The custom configuration for scenario_{scenario_id} is : {config[f"scenario_{scenario_id}"]}"
     )
+
+
+def init_db():
+    """
+    Initialize the MongoDB connection
+    """
+    try:
+        client = MongoClient(os.getenv("MONGODB_CONNECTION_STRING"))
+        globals()["db"] = client["q2forge"]
+    except Exception as e:
+        print("MongoDB connection failed", e)
+
+
+init_db()
 
 
 async def main(graph: CompiledStateGraph):

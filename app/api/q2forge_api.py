@@ -1,9 +1,13 @@
+from datetime import timedelta
 import json
 from pathlib import Path
-from fastapi import FastAPI, Response
+from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mcp import FastApiMCP
 import yaml
+from app.api.models.token import Token
+from app.api.models.user import UserResponse, UserSignUp
 from app.api.requests.activate_config import ActivateConfig
 from app.api.requests.answer_question import AnswerQuestion
 from app.api.requests.create_config import CreateConfig
@@ -12,6 +16,13 @@ from app.api.requests.refine_query import RefineQuery
 from app.api.responses.kg_config import KGConfig
 from app.api.responses.scenario_schema import ScenarioSchema
 from app.api.services.answer_question import answer_question
+from app.api.services.auth import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    authenticate_user,
+    create_access_token,
+    create_new_user,
+    get_current_active_user,
+)
 from app.api.services.config_manager import (
     add_missing_config_params,
     save_query_examples_to_file,
@@ -872,6 +883,128 @@ async def judge_query_endpoint(refine_query_request: RefineQuery):
         ),
         media_type="application/json",
     )
+
+
+@app.post(
+    path="/api/q2forge/token",
+    response_model=Token,
+    operation_id="generate_access_token",
+    summary="Generate an access token",
+    description="This endpoint verifies the submitted credentials and generates an access token",
+    responses={
+        200: {
+            "description": "The generated access token",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "<access_token>",
+                        "token_type": "bearer",
+                        "expires_in": 30,
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Invalid credentials",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Incorrect username or password"}
+                }
+            },
+        },
+    },
+)
+async def generate_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = authenticate_user(form_data.username, form_data.password)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES,
+    }
+
+
+@app.get(
+    path="/api/q2forge/me",
+    response_model=UserResponse,
+    operation_id="get_current_user_info",
+    summary="Get current user information",
+    description="This endpoint returns the current user's username, active configuration",
+    responses={
+        200: {
+            "description": "The current user's information",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "username": "<username>",
+                        "disabled": False,
+                        "active_config_id": 1,
+                    }
+                }
+            },
+        },
+        401: {
+            "description": "Unauthorized",
+            "content": {
+                "application/json": {"example": {"detail": "Not authenticated"}}
+            },
+        },
+    },
+)
+async def read_users_me(current_user: UserResponse = Depends(get_current_active_user)):
+    return current_user
+
+
+@app.post(
+    path="/api/q2forge/sign-up",
+    response_model=Token,
+    operation_id="register_user",
+    summary="Register a new user",
+    description="This endpoint registers a new user and generates an access token for them",
+    responses={
+        201: {
+            "description": "The generated access token",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "<access_token>",
+                        "token_type": "bearer",
+                        "expires_in": 30,
+                    }
+                }
+            },
+        },
+        400: {
+            "description": "User already exists",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Username already registered"}
+                }
+            },
+        },
+    },
+)
+async def register_user(new_user: UserSignUp):
+
+    access_token = create_new_user(new_user=new_user)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES,
+    }
 
 
 # Add MCP server to FastAPI app
