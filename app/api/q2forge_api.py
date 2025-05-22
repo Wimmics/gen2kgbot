@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mcp import FastApiMCP
 import yaml
+from app.api.database.configuration import get_available_configurations, get_user_active_config
 from app.api.models.token import Token
 from app.api.models.user import UserResponse, UserSignUp
 from app.api.requests.activate_config import ActivateConfig
@@ -26,7 +27,7 @@ from app.api.services.auth import (
 from app.api.services.config_manager import (
     add_missing_config_params,
     save_query_examples_to_file,
-    get_available_configurations,
+    # get_available_configurations,
 )
 from app.api.services.generate_competency_question import generate_competency_questions
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,7 +52,7 @@ logger = setup_logger(__package__, __file__)
 # setup FastAPI
 app = FastAPI(
     title="Q²Forge API",
-    docs_url=None,
+    docs_url="/api/q2forge/swagger",
     openapi_url="/api/q2forge/openapi.json",
     redoc_url="/api/q2forge/docs",
     description=(
@@ -373,12 +374,22 @@ def get_available_configurations_endpoint() -> list[str]:
         }
     },
 )
-def get_active_config_endpoint() -> KGConfig:
+def get_active_config_endpoint(
+    current_user: UserResponse = Depends(get_current_active_user),
+) -> KGConfig:
 
-    args = setup_cli()
-    read_configuration(args=args)
-    yaml_data = get_configuration()
-    return yaml_data
+    # TODO delete old code
+ 
+    # args = setup_cli()
+    # read_configuration(args=args)
+    # yaml_data = get_configuration()
+    # return yaml_data
+
+    active_config = get_user_active_config(current_user.username)
+    if active_config is None:
+        raise HTTPException(status_code=400, detail="No active configuration found")
+
+    return active_config
 
 
 @app.post(
@@ -963,7 +974,7 @@ async def generate_access_token(form_data: OAuth2PasswordRequestForm = Depends()
         },
     },
 )
-async def read_users_me(current_user: UserResponse = Depends(get_current_active_user)):
+async def read_user_data(current_user: UserResponse = Depends(get_current_active_user)):
     return current_user
 
 

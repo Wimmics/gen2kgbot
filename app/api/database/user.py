@@ -23,7 +23,7 @@ def get_user(username: str) -> UserInDB:
 def add_user(user: UserInDB) -> UserInDB:
     """
     Add a new user to the database.
-    
+
     Args:
         user (UserInDB): The user object to add.
     Returns:

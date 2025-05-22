@@ -11,7 +11,7 @@ from app.api.models.user import UserInDB, UserSignUp
 
 SECRET_KEY = os.getenv("Q2FORGE_SECRET_KEY")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 1
+ACCESS_TOKEN_EXPIRE_MINUTES = 3600
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
