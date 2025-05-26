@@ -1,20 +1,32 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserResponse(BaseModel):
+    id: str | None = Field(
+        default=None, alias="_id", description="The unique identifier of the user."
+    )
     username: str = Field(..., description="The username of the user.")
     disabled: bool | None = Field(
         default=None, description="Indicates if the user's account is disabled or not."
     )
-    active_config_id: int | None = Field(
+    active_config_id: str | None = Field(
         default=None, description="The ID of the active configuration for the user."
     )
 
+    @classmethod
+    def from_mongo(cls, doc: dict):
+        """Convert MongoDB document to Pydantic model"""
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
+        if "active_config_id" in doc:
+            doc["active_config_id"] = str(doc["active_config_id"])
+        return cls(**doc)
+
+    model_config = ConfigDict(populate_by_name=True)
+
 
 class UserInDB(UserResponse):
-    hashed_password: str = Field(
-        ..., description="The hashed password of the user."
-    )
+    hashed_password: str = Field(..., description="The hashed password of the user.")
 
 
 class UserSignUp(BaseModel):

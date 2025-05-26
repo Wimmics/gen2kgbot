@@ -6,7 +6,11 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mcp import FastApiMCP
 import yaml
-from app.api.database.configuration import get_available_configurations, get_user_active_config
+from app.api.database.configuration import (
+    get_available_configurations,
+    get_user_active_config,
+)
+from app.api.database.user import update_active_config
 from app.api.models.token import Token
 from app.api.models.user import UserResponse, UserSignUp
 from app.api.requests.activate_config import ActivateConfig
@@ -27,17 +31,13 @@ from app.api.services.auth import (
 from app.api.services.config_manager import (
     add_missing_config_params,
     save_query_examples_to_file,
-    # get_available_configurations,
 )
 from app.api.services.generate_competency_question import generate_competency_questions
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.services.graph_mermaid import get_scenarios_schema
 from app.api.services.refine_query import refine_query
 from app.utils.config_manager import (
-    get_configuration,
-    read_configuration,
     set_custom_scenario_configuration,
-    setup_cli,
 )
 from app.utils.logger_manager import setup_logger
 from app.preprocessing.compute_embeddings import start_compute_embeddings
@@ -378,13 +378,6 @@ def get_active_config_endpoint(
     current_user: UserResponse = Depends(get_current_active_user),
 ) -> KGConfig:
 
-    # TODO delete old code
- 
-    # args = setup_cli()
-    # read_configuration(args=args)
-    # yaml_data = get_configuration()
-    # return yaml_data
-
     active_config = get_user_active_config(current_user.username)
     if active_config is None:
         raise HTTPException(status_code=400, detail="No active configuration found")
@@ -579,55 +572,70 @@ def create_config_endpoint(config_request: CreateConfig) -> CreateConfig:
         },
     },
 )
-def activate_config_endpoint(config_request: ActivateConfig):
+def activate_config_endpoint(
+    config_request: ActivateConfig,
+    current_user: UserResponse = Depends(get_current_active_user),
+) -> KGConfig:
     try:
-
-        logger.debug(f"Configuration to activate: {config_request}")
-
-        config_to_activate_path = (
-            Path(__file__).resolve().parent.parent.parent
-            / "config"
-            / f"params_{config_request.kg_short_name}.yml"
+        logger.info(
+            f"starting activation of configuration {config_request.kg_short_name}"
         )
-
-        # Check if the file already exists
-        if not config_to_activate_path.exists():
-            logger.error(
-                f"Configuration file does not exist at {config_to_activate_path}"
-            )
-            return Response(
-                status_code=400,
-                content=json.dumps(
-                    {
-                        "error": f"Configuration file does not exist {config_request.kg_short_name}"
-                    }
-                ),
-                media_type="application/json",
-            )
-
-        active_config_path = (
-            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
-        )
-
-        with open(config_to_activate_path, "r", encoding="utf-8") as file_to_activate:
-            config_data = yaml.safe_load(file_to_activate)
-
-            # Activate the configuration
-            with open(active_config_path, "w", encoding="utf-8") as active_file:
-                yaml.safe_dump(config_data, active_file)
-                logger.info(f"Configuration file activated at {active_file}")
-                return Response(
-                    status_code=200,
-                    content=config_request.model_dump_json(),
-                    media_type="application/json",
-                )
+        newConfig = update_active_config(current_user, config_request.kg_short_name)
+        logger.info(f"Configuration file activated: {config_request.kg_short_name}")
+        return newConfig
     except Exception as e:
-        logger.error(f"Error activating configuration file: {str(e)}")
-        return Response(
+        raise HTTPException(
             status_code=500,
-            content={"error": f"Error activating configuration file: {str(e)}"},
-            media_type="application/json",
+            detail=str(e),
         )
+    # try:
+
+    #     logger.debug(f"Configuration to activate: {config_request}")
+
+    #     config_to_activate_path = (
+    #         Path(__file__).resolve().parent.parent.parent
+    #         / "config"
+    #         / f"params_{config_request.kg_short_name}.yml"
+    #     )
+
+    #     # Check if the file already exists
+    #     if not config_to_activate_path.exists():
+    #         logger.error(
+    #             f"Configuration file does not exist at {config_to_activate_path}"
+    #         )
+    #         return Response(
+    #             status_code=400,
+    #             content=json.dumps(
+    #                 {
+    #                     "error": f"Configuration file does not exist {config_request.kg_short_name}"
+    #                 }
+    #             ),
+    #             media_type="application/json",
+    #         )
+
+    #     active_config_path = (
+    #         Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+    #     )
+
+    #     with open(config_to_activate_path, "r", encoding="utf-8") as file_to_activate:
+    #         config_data = yaml.safe_load(file_to_activate)
+
+    #         # Activate the configuration
+    #         with open(active_config_path, "w", encoding="utf-8") as active_file:
+    #             yaml.safe_dump(config_data, active_file)
+    #             logger.info(f"Configuration file activated at {active_file}")
+    #             return Response(
+    #                 status_code=200,
+    #                 content=config_request.model_dump_json(),
+    #                 media_type="application/json",
+    #             )
+    # except Exception as e:
+    #     logger.error(f"Error activating configuration file: {str(e)}")
+    #     return Response(
+    #         status_code=500,
+    #         content={"error": f"Error activating configuration file: {str(e)}"},
+    #         media_type="application/json",
+    #     )
 
 
 @app.post(

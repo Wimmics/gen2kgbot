@@ -1,5 +1,11 @@
-from app.api.models.user import UserInDB
+from bson import ObjectId
+from app.api.models.user import UserInDB, UserResponse
+from app.api.responses.kg_config import KGConfig
 from app.utils.config_manager import db
+from app.utils.logger_manager import setup_logger
+
+# setup logger
+logger = setup_logger(__package__, __file__)
 
 
 def get_user(username: str) -> UserInDB:
@@ -13,11 +19,11 @@ def get_user(username: str) -> UserInDB:
     Raises:
         Exception: If there is an error retrieving the user from the database.
     """
-    user = db["users"].find_one({"username": username})
-    if not user:
+    doc = db["users"].find_one({"username": username})
+    if not doc:
         return None
 
-    return UserInDB(**user)
+    return UserInDB.from_mongo(doc)
 
 
 def add_user(user: UserInDB) -> UserInDB:
@@ -31,8 +37,35 @@ def add_user(user: UserInDB) -> UserInDB:
     Raises:
         Exception: If there is an error adding the user to the database.
     """
-    insertedUser = db["users"].insert_one(user.model_dump())
+    insertedUser = db["users"].insert_one(user.model_dump(by_alias=True, exclude_none=True))
     if not insertedUser:
         return None
 
     return user
+
+
+def update_active_config(user: UserResponse, kg_short_name: str) -> KGConfig:
+
+    logger.info(f"Updating user: {user.username} active config")
+    try:
+        config = db["configurations"].find_one({"kg_short_name": kg_short_name})
+        selected_config = KGConfig.from_mongo(config)
+
+        if config is None:
+            raise Exception("No config found matching the given short name")
+
+        results = db["users"].update_one(
+            {"username": user.username},
+            [{"$set": {"active_config_id": ObjectId(selected_config.id)}}],
+        )
+
+        if results.matched_count > 0:
+            updated_user = db["users"].find_one({"username": user.username})
+
+            if UserInDB.from_mongo(updated_user).active_config_id != user.active_config_id:
+                return selected_config
+
+        raise Exception("The operation did not succeed")
+
+    except Exception as e:
+        raise Exception(f"Error updating user's active config: {e}")

@@ -11,7 +11,7 @@ def get_user_active_config(username: str) -> KGConfig:
                 "$lookup": {
                     "from": "configurations",
                     "localField": "active_config_id",
-                    "foreignField": "config_id",
+                    "foreignField": "_id",
                     "as": "active_config",
                 }
             },
@@ -19,8 +19,11 @@ def get_user_active_config(username: str) -> KGConfig:
     )
 
     try:
-        active_config = results.next()["active_config"][0]
-        return KGConfig(**active_config)
+        doc = results.next()["active_config"][0]
+        if not doc:
+            return None
+
+        return KGConfig.from_mongo(doc)
     except Exception:
         return None
 

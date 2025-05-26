@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class KGConfig(BaseModel):
     """
     This class represents the configuration of a Knowledge Graph (KG) used in the application.
     """
-
+    id: str = Field(..., alias="_id", description="The unique identifier of the Knowledge Graph.")
     kg_full_name: str = Field(..., description="The full name of the Knowledge Graph.")
     kg_short_name: str = Field(..., description="The short name of the Knowledge Graph.")
     kg_description: str = Field(..., description="A brief description of the Knowledge Graph.")
@@ -24,3 +24,12 @@ class KGConfig(BaseModel):
     scenario_5: dict = Field(default=None, description="Configuration for scenario 5.")
     scenario_6: dict = Field(default=None, description="Configuration for scenario 6.")
     scenario_7: dict = Field(default=None, description="Configuration for scenario 7.")
+
+    @classmethod
+    def from_mongo(cls, doc: dict):
+        """Convert MongoDB document to Pydantic model"""
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
+        return cls(**doc)
+
+    model_config = ConfigDict(populate_by_name=True)
