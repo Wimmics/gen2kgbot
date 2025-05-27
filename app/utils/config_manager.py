@@ -23,6 +23,8 @@ from app.utils.envkey_manager import (
 from app.utils.graph_state import InputState
 from app.utils.logger_manager import setup_logger
 
+logger = setup_logger(__package__, __file__)
+
 
 class ConfigManager:
 
@@ -31,7 +33,6 @@ class ConfigManager:
         self.current_llm = {}
         self.classes_vector_db = {}
         self.queries_vector_db = {}
-        self.logger = setup_logger(__package__, __file__)
 
         # Load the default config file.
         # Necessary when using Langragraph Studio as it loads the scenarios without CLI arguments.
@@ -90,18 +91,18 @@ class ConfigManager:
             config_path = (
                 Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
             )
-            self.logger.info(f"Loading default configuration file: {config_path}")
+            logger.info(f"Loading default configuration file: {config_path}")
 
         elif args.params:
             config_path = args.params
-            self.logger.info(f"Loading custom configuration file: {config_path}")
+            logger.info(f"Loading custom configuration file: {config_path}")
 
         else:
             # Set the default configuration file
             config_path = (
                 Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
             )
-            self.logger.info(f"Loading default configuration file: {config_path}")
+            logger.info(f"Loading default configuration file: {config_path}")
 
         with open(config_path, "rt", encoding="utf8") as f:
             config = yaml.safe_load(f.read())
@@ -300,7 +301,7 @@ class ConfigManager:
         """
         Create a seq2seq LLM based on the scenario configuration
         """
-        self.logger.debug(
+        logger.debug(
             f"Getting seq2seq model for scenario: {scenario_id} and Node: {node_name}"
         )
 
@@ -310,21 +311,21 @@ class ConfigManager:
             and node_name in dict(self.current_llm[scenario_id]).keys()
             and self.current_llm[scenario_id][node_name] is not None
         ):
-            self.logger.debug(f"Using cached current_llm for scenario: {self.current_llm}")
+            logger.debug(f"Using cached current_llm for scenario: {self.current_llm}")
             return self.current_llm[scenario_id][node_name]
 
         llm_id = self.config[scenario_id][node_name]
 
         llm_config = self.get_seq2seq_model_by_config_id(llm_id)
 
-        self.logger.info(
+        logger.info(
             f"Seq2Seq model initialized for {scenario_id} and Node: {node_name} with config: {llm_config}"
         )
 
         self.current_llm.setdefault(scenario_id, {}).update(
             {node_name: llm_config}
         )
-        self.logger.debug(f"Current LLM config used: {self.current_llm}")
+        logger.debug(f"Current LLM config used: {self.current_llm}")
 
         return llm_config
 
@@ -472,7 +473,7 @@ class ConfigManager:
             )
 
         else:
-            self.logger.error(f"Unsupported type of seq2seq model: {server_type}")
+            logger.error(f"Unsupported type of seq2seq model: {server_type}")
             raise Exception(f"Unsupported type of seq2seq model: {server_type}")
 
         return llm_config
@@ -499,10 +500,10 @@ class ConfigManager:
             embeddings = OpenAIEmbeddings(model=model_id)
 
         else:
-            self.logger.error(f"Unsupported type of embedding model: {server_type}")
+            logger.error(f"Unsupported type of embedding model: {server_type}")
             raise Exception(f"Unsupported type of embedding model: {server_type}")
 
-        self.logger.info(f"Text embedding model initialized: {server_type} - {model_id} ")
+        logger.info(f"Text embedding model initialized: {server_type} - {model_id} ")
         return embeddings
 
     def get_embedding_model_by_scenario(self, scenario_id: str) -> Embeddings:
@@ -545,7 +546,7 @@ class ConfigManager:
                 persist_directory=embeddings_directory, embedding_function=embeddings
             )
         else:
-            self.logger.error(f"Unsupported type of vector DB: {vector_db_name}")
+            logger.error(f"Unsupported type of vector DB: {vector_db_name}")
             raise Exception(f"Unsupported type of vector DB: {vector_db_name}")
 
         return db
@@ -573,7 +574,7 @@ class ConfigManager:
         embeddings_directory = (
             f"{self.get_embeddings_directory(vector_db_name)}/{embeddings_dir_name}"
         )
-        self.logger.debug(f"Embeddings directory: {embeddings_directory}")
+        logger.debug(f"Embeddings directory: {embeddings_directory}")
 
         embeddings = self.get_embedding_model_by_scenario(scenario_id)
 
@@ -601,7 +602,7 @@ class ConfigManager:
         db = self.create_vector_db_by_scenario(
             scenario_id, self.config["class_embeddings_subdir"]
         )
-        self.logger.info("Classes context vector DB initialized.")
+        logger.info("Classes context vector DB initialized.")
         self.classes_vector_db[scenario_id] = db
         return db
 
@@ -627,7 +628,7 @@ class ConfigManager:
         db = self.create_vector_db_by_scenario(
             scenario_id, self.config["queries_embeddings_subdir"]
         )
-        self.logger.info("SPARQL queries vector DB initialized.")
+        logger.info("SPARQL queries vector DB initialized.")
         self.queries_vector_db[scenario_id] = db
         return db
 
@@ -687,33 +688,34 @@ class ConfigManager:
             if f"scenario_{scenario_id}" in self.queries_vector_db.keys():
                 self.queries_vector_db[f"scenario_{scenario_id}"]
 
-        self.logger.info(f"Custom configuration set for scenario_{scenario_id}")
-        self.logger.debug(
+        logger.info(f"Custom configuration set for scenario_{scenario_id}")
+        logger.debug(
             f"The custom configuration for scenario_{scenario_id} is : {self.config[f"scenario_{scenario_id}"]}"
         )
 
-    async def main(self, graph: CompiledStateGraph):
-        """
-        Entry point when invoked from the CLI
 
-        Args:
-            graph (CompiledStateGraph): Langraph compiled state graph
-        """
+async def main(config: ConfigManager, graph: CompiledStateGraph):
+    """
+    Entry point when invoked from the CLI
 
-        # Parse the command line arguments
-        args = self.setup_cli()
+    Args:
+        graph (CompiledStateGraph): Langraph compiled state graph
+    """
 
-        # Load the configuration file and assign to global variable 'config'
-        self.read_configuration(args)
+    # Parse the command line arguments
+    args = config.setup_cli()
 
-        question = args.question
-        self.logger.info(f"Users' question: {question}")
-        state = await graph.ainvoke(input=InputState({"initial_question": question}))
+    # Load the configuration file and assign to global variable 'config'
+    config.read_configuration(args)
 
-        self.logger.info("==============================================================")
-        for m in state["messages"]:
-            self.logger.info(m.pretty_repr())
-        if "last_generated_query" in state:
-            self.logger.info("==============================================================")
-            self.logger.info("last_generated_query: " + state["last_generated_query"])
-        self.logger.info("==============================================================")
+    question = args.question
+    logger.info(f"Users' question: {question}")
+    state = await graph.ainvoke(input=InputState({"initial_question": question}))
+
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")
