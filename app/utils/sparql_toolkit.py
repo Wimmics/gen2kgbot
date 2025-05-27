@@ -3,14 +3,16 @@ from rdflib import Graph
 from rdflib.exceptions import ParserError
 from rdflib.plugins.stores import sparqlstore
 import re
+from app.utils.config_manager import ConfigManager
 from app.utils.logger_manager import setup_logger
-import app.utils.config_manager as config
 
 
 logger = setup_logger(__package__, __file__)
 
 
-def run_sparql_query(query: str, endpoint_url: str = None) -> str:
+def run_sparql_query(
+    config: ConfigManager, query: str, endpoint_url: str = None
+) -> str:
     """
     Submit a SPARQL query to the endpoint and return the result in CSV SPARQL Results format.
 

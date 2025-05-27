@@ -3,6 +3,7 @@ from typing import Literal
 from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.scenarios.scenario_2.prompt import system_prompt_template
+from app.utils.config_manager import ConfigManager
 from app.utils.graph_nodes import (
     interpret_results,
     run_query,
@@ -10,10 +11,10 @@ from app.utils.graph_nodes import (
 )
 from app.utils.graph_routers import generate_query_router, run_query_router
 from app.utils.graph_state import InputState, OverallState
-import app.utils.config_manager as config
 from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
+config = ConfigManager()
 
 SCENARIO = "scenario_2"
 

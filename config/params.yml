@@ -49,13 +49,13 @@ property_embeddings_subdir: properties_nomic
 queries_embeddings_subdir: sparql_queries_nomic
 scenario_1:
   ask_question: llama3_2-1b@local
-  validate_question: deepseek-reasoner@hf
+  validate_question: gemma-3_4b@local
 scenario_2:
-  generate_query: llama-3_1-70B@ovh
+  generate_query: gemma-3_4b@local
   interpret_results: llama3_2-1b@local
   validate_question: llama3_2-1b@local
 scenario_3:
-  generate_query: llama-3_1-70B@ovh
+  generate_query: gemma-3_4b@local
   interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
   validate_question: llama3_2-1b@local
@@ -63,26 +63,26 @@ scenario_4:
   generate_query: llama3_2-1b@local
   interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
-  validate_question: llama-3_1-70B@ovh
+  validate_question: gemma-3_4b@local
 scenario_5:
   generate_query: llama3_2-1b@local
-  interpret_results: llama-3_1-70B@ovh
+  interpret_results: gemma-3_4b@local
   text_embedding_model: nomic-embed-text_faiss@local
   validate_question: llama3_2-1b@local
 scenario_6:
   generate_query: deepseek-r1_1_5b@local
   interpret_results: llama3_2-1b@local
   text_embedding_model: nomic-embed-text_faiss@local
-  validate_question: llama-3_1-70B@ovh
+  validate_question: gemma-3_4b@local
 scenario_7:
-  generate_query: llama-3_1-70B@ovh
-  interpret_results: llama-3_1-70B@ovh
-  judge_query: llama-3_1-70B@ovh
-  judge_regenerate_query: llama-3_1-70B@ovh
+  generate_query: gemma-3_4b@local
+  interpret_results: gemma-3_4b@local
+  judge_query: gemma-3_4b@local
+  judge_regenerate_query: gemma-3_4b@local
   judging_grade_threshold_retry: 8
   judging_grade_threshold_run: 5
   text_embedding_model: nomic-embed-text_faiss@local
-  validate_question: llama3_2-1b@local
+  validate_question: gemma-3_4b@local
 seq2seq_models:
   deepseek-chat@deepseek:
     base_url: https://api.deepseek.com

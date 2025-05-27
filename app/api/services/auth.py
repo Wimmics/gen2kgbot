@@ -149,7 +149,7 @@ async def get_current_active_user(current_user: UserInDB = Depends(get_current_u
 def create_new_user(new_user: UserSignUp):
     """
     Create a new user and return an access token.
-    
+
     Args:
         new_user (UserSignUp): The user object containing the username and password.
     Returns:

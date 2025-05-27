@@ -1,11 +1,11 @@
 import json
 from app.api.services.utils import serialize_aimessagechunk
-from app.utils.config_manager import get_scenario_module
 from langgraph.graph.state import CompiledStateGraph
+from app.utils.config_manager import ConfigManager
 from app.utils.graph_state import EnumEncoder
 
 
-async def answer_question(scenario_id: int, question: str):
+async def answer_question(config: ConfigManager, scenario_id: int, question: str):
     """
     Asynchronously answers a question based on the provided scenario ID and a question.
     Args:
@@ -15,7 +15,7 @@ async def answer_question(scenario_id: int, question: str):
         str: A JSON string containing the event type, node name, and relevant data.
     """
 
-    graph: CompiledStateGraph = get_scenario_module(scenario_id).graph
+    graph: CompiledStateGraph = config.get_scenario_module(scenario_id).graph
 
     state_nodes_filter = [
         "init",
@@ -51,7 +51,10 @@ async def answer_question(scenario_id: int, question: str):
         {"initial_question": question}, version="v2"
     ):
         if event["event"] == "on_chat_model_stream" and "metadata" in event:
-            if event["metadata"]["langgraph_node"] in chat_nodes_filter and "chunk" in event["data"]:
+            if (
+                event["metadata"]["langgraph_node"] in chat_nodes_filter
+                and "chunk" in event["data"]
+            ):
                 chunk_content = serialize_aimessagechunk(event["data"]["chunk"])
                 response_part = {
                     "event": "on_chat_model_stream",

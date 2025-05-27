@@ -1,6 +1,7 @@
 import asyncio
 from langgraph.graph import StateGraph, START, END
 from app.scenarios.scenario_3.prompt import system_prompt_template
+from app.utils.config_manager import ConfigManager
 from app.utils.graph_nodes import (
     preprocess_question,
     select_similar_classes,
@@ -12,9 +13,9 @@ from app.utils.graph_nodes import (
 )
 from app.utils.graph_routers import generate_query_router, run_query_router, validate_question_router
 from app.utils.graph_state import InputState, OverallState
-import app.utils.config_manager as config
 from app.utils.logger_manager import setup_logger
 
+config = ConfigManager()
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_3"

@@ -21,11 +21,12 @@ The configuration file (default: `config/params.yaml`) prodives the SPARQL endpo
 
 from argparse import Namespace, ArgumentParser
 import os
-import app.utils.config_manager as config
+from app.utils.config_manager import ConfigManager
 from app.utils.construct_util import run_sparql_query, fulliri_to_prefixed
+from app.utils.logger_manager import setup_logger
 
 
-logger = config.setup_logger(__package__, __file__)
+logger = setup_logger(__package__, __file__)
 
 
 get_classes_query = """
@@ -241,7 +242,7 @@ def make_classes_description() -> list[tuple]:
 
                 results.append(
                     (
-                        fulliri_to_prefixed(result["class"]["value"]),
+                        fulliri_to_prefixed(config, result["class"]["value"]),
                         label,
                         descr,
                     )
@@ -291,7 +292,7 @@ def make_properties_description() -> list[tuple]:
                     if "domain" in result.keys():
                         domain += result["domain"]["value"]
                 if domain.strip() != "":
-                    domain_range += f"The subject of this property is a {fulliri_to_prefixed(domain.strip())}. "
+                    domain_range += f"The subject of this property is a {fulliri_to_prefixed(config, domain.strip())}. "
 
                 range = ""
                 if "range_lbl" in result.keys():
@@ -302,7 +303,7 @@ def make_properties_description() -> list[tuple]:
                     if "range" in result.keys():
                         range += result["range"]["value"]
                 if range.strip() != "":
-                    domain_range += f"The object of this property is a {fulliri_to_prefixed(range.strip())}."
+                    domain_range += f"The object of this property is a {fulliri_to_prefixed(config, range.strip())}."
 
                 label = ""
                 if result["label"]["value"] != "None":
@@ -318,7 +319,7 @@ def make_properties_description() -> list[tuple]:
 
                 results.append(
                     (
-                        fulliri_to_prefixed(result["prop"]["value"]),
+                        fulliri_to_prefixed(config, result["prop"]["value"]),
                         label,
                         descr,
                     )
@@ -349,13 +350,13 @@ def get_classes_with_instances() -> list[str]:
     if _sparql_results is not None:
         for result in _sparql_results:
             if "class" in result.keys():
-                results.append(fulliri_to_prefixed(result["class"]["value"]))
+                results.append(fulliri_to_prefixed(config, result["class"]["value"]))
             else:
                 logger.warning(f"Unexpected SPARQL result format: {result}")
     return results
 
 
-def generate_descriptions():
+def generate_descriptions(config: ConfigManager):
 
     # Parse the command line arguments
     args = setup_cli()
@@ -432,4 +433,5 @@ def generate_descriptions():
 
 
 if __name__ == "__main__":
-    generate_descriptions()
+    config = ConfigManager()
+    generate_descriptions(config)

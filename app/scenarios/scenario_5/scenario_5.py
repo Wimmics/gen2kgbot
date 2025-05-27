@@ -4,6 +4,7 @@ from app.scenarios.scenario_5.prompt import (
     system_prompt_template,
     retry_system_prompt_template,
 )
+from app.utils.config_manager import ConfigManager
 from app.utils.graph_nodes import (
     preprocess_question,
     select_similar_classes,
@@ -23,10 +24,10 @@ from app.utils.graph_routers import (
     run_query_router,
 )
 from app.utils.graph_state import InputState, OverallState
-import app.utils.config_manager as config
 from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
+config = ConfigManager()
 
 SCENARIO = "scenario_5"
 
@@ -60,10 +61,9 @@ builder.add_node("create_retry_prompt", create_retry_prompt)
 builder.add_node("interpret_results", interpret_results)
 
 builder.add_edge(START, "init")
-builder.add_edge("init", "preprocess_question")
-# builder.add_edge("init", "validate_question")
-builder.add_edge("init", "preprocess_question")
-# builder.add_conditional_edges("validate_question", validate_question_router)
+builder.add_edge("init", "validate_question")
+# builder.add_edge("init", "preprocess_question")
+builder.add_conditional_edges("validate_question", validate_question_router)
 builder.add_edge("preprocess_question", "select_similar_classes")
 builder.add_conditional_edges("select_similar_classes", get_class_context_router)
 builder.add_edge("get_context_class_from_cache", "create_prompt")

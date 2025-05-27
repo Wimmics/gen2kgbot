@@ -5,10 +5,11 @@ This module implements the Langgraph nodes that are common to multiple scenarios
 from datetime import timezone, datetime
 from langchain_core.messages import SystemMessage, AIMessage, HumanMessage
 from langchain_core.prompts import PromptTemplate
+from app.utils.config_manager import ConfigManager
 from app.utils.graph_state import JudgeStatus, OverallState
 from app.utils.question_preprocessing import extract_relevant_entities_spacy
 from app.utils.sparql_toolkit import find_sparql_queries, run_sparql_query
-import app.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
 from app.utils.construct_util import (
     get_class_context,
     get_connected_classes,
@@ -24,7 +25,8 @@ from rdflib import Graph
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.algebra import translateQuery
 
-logger = config.setup_logger(__package__, __file__)
+config = ConfigManager()
+logger = setup_logger(__package__, __file__)
 
 SPARQL_QUERY_EXEC_ERROR = "Error when running the SPARQL query"
 
@@ -85,7 +87,7 @@ def select_similar_classes(state: OverallState) -> OverallState:
     for doc in db.similarity_search(
         ", ".join(relevant_entities_list), k=config.get_max_similar_classes()
     ):
-        classes_str.append(fulliri_to_prefixed(doc.page_content))
+        classes_str.append(fulliri_to_prefixed(config, doc.page_content))
 
     classes_str = list(set(classes_str))
     logger.info(f"Found {len(classes_str)} classes related to the question.")
@@ -96,10 +98,10 @@ def select_similar_classes(state: OverallState) -> OverallState:
     # Extend the initial list of classes by retrieving, from the KG, additional classes connected to the initial ones
     if config.expand_similar_classes():
         classes_uris = [eval(cls)[0] for cls in classes_str]
-        for cls, label, description in get_connected_classes(classes_uris):
+        for cls, label, description in get_connected_classes(config, classes_uris):
             if cls not in classes_uris:
                 cls_tuple = (cls, label, description)
-                classes_str.append(f"{fulliri_to_prefixed(str(cls_tuple))}")
+                classes_str.append(f"{fulliri_to_prefixed(config, str(cls_tuple))}")
         logger.info(f"Expanded to {len(classes_str)} classes related to the question.")
 
     classes_str = list(set(classes_str))
@@ -148,7 +150,7 @@ def get_class_context_from_kg(cls: tuple) -> OverallState:
         dict: state with selected_classes_context.
             These will be added to the current context.
     """
-    return {"selected_classes_context": [get_class_context(cls)]}
+    return {"selected_classes_context": [get_class_context(config, cls)]}
 
 
 def select_similar_query_examples(state: OverallState) -> OverallState:
@@ -243,7 +245,7 @@ def create_query_generation_prompt(
         selected_classes_str = ""
         for item in state["selected_classes"]:
             selected_classes_str += (
-                f"\n{class_description_tuple_to_nl(fulliri_to_prefixed(item))}"
+                f"\n{class_description_tuple_to_nl(fulliri_to_prefixed(config, item))}"
             )
         template = template.partial(selected_classes=selected_classes_str)
 
@@ -264,7 +266,7 @@ def create_query_generation_prompt(
             # This is the first attempt, merge all class contexts together
             if config.get_class_context_format() == "turtle":
                 # Load all the class contexts in a common graph
-                merged_graph = get_empty_graph_with_prefixes()
+                merged_graph = get_empty_graph_with_prefixes(config)
                 for cls_context in state["selected_classes_context"]:
                     merged_graph = merged_graph + Graph().parse(data=cls_context)
                 # save_full_context(merged_graph)
@@ -277,13 +279,15 @@ def create_query_generation_prompt(
                 merged_cls_context = "Format is: ('class uri', 'property uri', 'property label', 'value type')\n"
                 for cls_context in state["selected_classes_context"]:
                     if cls_context not in ["", "\n"]:
-                        merged_cls_context += f"\n{fulliri_to_prefixed(cls_context)}"
+                        merged_cls_context += (
+                            f"\n{fulliri_to_prefixed(config, cls_context)}"
+                        )
 
             elif config.get_class_context_format() == "nl":
                 merged_cls_context = ""
                 for cls_context in state["selected_classes_context"]:
                     if cls_context not in ["", "\n"]:
-                        merged_cls_context += f"\n{class_context_tuple_to_nl(fulliri_to_prefixed(cls_context))}"
+                        merged_cls_context += f"\n{class_context_tuple_to_nl(fulliri_to_prefixed(config, cls_context))}"
 
             else:
                 raise ValueError(
@@ -373,7 +377,7 @@ def verify_query(state: OverallState) -> OverallState:
         query = queries[0]
         logger.info("Query generation task produced a SPARQL query.")
         logger.debug(f"Generated SPARQL query:\n{query}")
-        translateQuery(parseQuery(add_known_prefixes_to_query(queries[0])))
+        translateQuery(parseQuery(add_known_prefixes_to_query(config, queries[0])))
     except Exception as e:
         logger.warning(f"The generated SPARQL query is invalid: {e}")
         return {
@@ -416,7 +420,7 @@ def run_query(state: OverallState) -> OverallState:
 
     logger.info("Submitting the generated SPARQL query to the endpoint...")
     try:
-        csv_result = run_sparql_query(query=query)
+        csv_result = run_sparql_query(config=config, query=query)
         logger.info("SPARQL execution completed.")
         logger.debug(f"Query execution results:\n{csv_result}")
         return {"last_generated_query": query, "last_query_results": csv_result}

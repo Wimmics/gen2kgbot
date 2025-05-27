@@ -1,8 +1,8 @@
 from app.api.responses.scenario_schema import ScenarioSchema
-from app.utils.config_manager import get_configuration, get_scenario_module
+from app.utils.config_manager import ConfigManager
 
 
-def get_scenarios_schema() -> list[ScenarioSchema]:
+def get_scenarios_schema(config: ConfigManager) -> list[ScenarioSchema]:
     """
     Get the schema for all scenarios.
 
@@ -11,23 +11,21 @@ def get_scenarios_schema() -> list[ScenarioSchema]:
             (schema) in a mermaid code block.
     """
 
-    config = get_configuration()
-
     scenario_ids = [
-        int(id.split("_")[1]) for id in config.keys() if id.startswith("scenario_")
+        int(id.split("_")[1]) for id in config.get_configuration().keys() if id.startswith("scenario_")
     ]
     scenarios_schema = []
     for scenario_id in scenario_ids:
         scenarios_schema.append(
             ScenarioSchema(
                 scenario_id=str(scenario_id),
-                graph_schema="```mermaid\n" + get_graph_schema(scenario_id) + "\n```",
+                graph_schema="```mermaid\n" + get_graph_schema(config, scenario_id) + "\n```",
             )
         )
     return scenarios_schema
 
 
-def get_graph_schema(scenario_id: int) -> str:
+def get_graph_schema(config: ConfigManager, scenario_id: int) -> str:
     """
     Get the graph schema for a given scenario.
     Args:
@@ -36,5 +34,5 @@ def get_graph_schema(scenario_id: int) -> str:
         str: The graph schema in mermaid format.
     """
 
-    scenario_module = get_scenario_module(scenario_id)
+    scenario_module = config.get_scenario_module(scenario_id)
     return scenario_module.graph.get_graph(xray=1).draw_mermaid()

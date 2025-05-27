@@ -12,6 +12,7 @@ from app.scenarios.scenario_7.prompt import (
     retry_system_prompt_template,
     judge_query_prompt,
 )
+from app.utils.config_manager import ConfigManager
 from app.utils.construct_util import (
     add_known_prefixes_to_query,
     fulliri_to_prefixed,
@@ -46,7 +47,6 @@ from app.utils.graph_state import (
     JudgeStatus,
     OverallState,
 )
-import app.utils.config_manager as config
 from app.utils.logger_manager import setup_logger
 from rdflib.plugins.sparql.parser import parseQuery
 from rdflib.plugins.sparql.algebra import translateQuery
@@ -54,7 +54,7 @@ from langchain_core.messages import AIMessage, SystemMessage
 from app.utils.sparql_toolkit import find_json, find_sparql_queries
 from langsmith import Client
 
-
+config = ConfigManager()
 logger = setup_logger(__package__, __file__)
 
 SCENARIO = "scenario_7"
@@ -282,7 +282,7 @@ def validate_sparql_syntax(state: OverallState) -> OverallState:
         query = queries[0]
         logger.info("Query generation task produced a SPARQL query.")
         logger.debug(f"Generated SPARQL query:\n{query}")
-        translateQuery(parseQuery(add_known_prefixes_to_query(queries[0])))
+        translateQuery(parseQuery(add_known_prefixes_to_query(config, queries[0])))
     except Exception as e:
         logger.warning(f"The generated SPARQL query is invalid: {e}")
         query_judgement = JudgeState(
@@ -504,7 +504,7 @@ def create_query_generation_prompt(
         selected_classes_str = ""
         for item in state["selected_classes"]:
             selected_classes_str += (
-                f"\n{class_description_tuple_to_nl(fulliri_to_prefixed(item))}"
+                f"\n{class_description_tuple_to_nl(config, fulliri_to_prefixed(config, item))}"
             )
         template = template.partial(selected_classes=selected_classes_str)
 
@@ -525,7 +525,7 @@ def create_query_generation_prompt(
             # This is the first attempt, merge all class contexts together
             if config.get_class_context_format() == "turtle":
                 # Load all the class contexts in a common graph
-                merged_graph = get_empty_graph_with_prefixes()
+                merged_graph = get_empty_graph_with_prefixes(config)
                 for cls_context in state["selected_classes_context"]:
                     merged_graph = merged_graph + Graph().parse(data=cls_context)
                 # save_full_context(merged_graph)
@@ -538,7 +538,7 @@ def create_query_generation_prompt(
                 # merged_cls_context = "Format is: ('class uri', 'property uri', 'property label', 'value type')\n"
                 for cls_context in state["selected_classes_context"]:
                     if cls_context not in ["", "\n"]:
-                        merged_cls_context += f"\n{class_context_tuple_to_nl(fulliri_to_prefixed(cls_context))}"
+                        merged_cls_context += f"\n{class_context_tuple_to_nl(fulliri_to_prefixed(config, cls_context))}"
 
             else:
                 raise ValueError(
@@ -663,9 +663,7 @@ judge_builder.add_edge("judge_regenerate_query", "validate_sparql_syntax")
 
 
 # Main graph for generating and executing the query
-builder = StateGraph(
-    state_schema=OverallState, input=InputState, output=OverallState
-)
+builder = StateGraph(state_schema=OverallState, input=InputState, output=OverallState)
 
 builder.add_node("preprocessing_subgraph", prepro_builder.compile())
 builder.add_node("create_prompt", create_prompt)

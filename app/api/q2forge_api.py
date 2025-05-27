@@ -36,13 +36,10 @@ from app.api.services.generate_competency_question import generate_competency_qu
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.services.graph_mermaid import get_scenarios_schema
 from app.api.services.refine_query import refine_query
-from app.utils.config_manager import (
-    set_custom_scenario_configuration,
-)
+from app.utils.config_manager import ConfigManager
 from app.utils.logger_manager import setup_logger
 from app.preprocessing.compute_embeddings import start_compute_embeddings
 from app.preprocessing.gen_descriptions import generate_descriptions
-import app.utils.config_manager as config
 import uvicorn
 
 
@@ -103,7 +100,8 @@ app.add_middleware(
     },
 )
 def get_scenario_schema_endpoint() -> list[ScenarioSchema]:
-    return get_scenarios_schema()
+    config = ConfigManager()
+    return get_scenarios_schema(config=config)
 
 
 @app.get(
@@ -675,8 +673,8 @@ def activate_config_endpoint(
 )
 def generate_kg_descriptions_endpoint(config_request: ActivateConfig):
     try:
-        generate_descriptions()
-
+        config = ConfigManager()
+        generate_descriptions(config=config)
         directory = config.get_preprocessing_directory()
         generated_files = {}
         for file in directory.iterdir():
@@ -732,7 +730,8 @@ def generate_kg_descriptions_endpoint(config_request: ActivateConfig):
 def generate_kg_embeddings_endpoint(config_request: ActivateConfig):
     try:
 
-        start_compute_embeddings(is_api_call=True)
+        config = ConfigManager()
+        start_compute_embeddings(config=config, is_api_call=True)
 
         return Response(
             status_code=200,
@@ -786,9 +785,10 @@ def generate_kg_embeddings_endpoint(config_request: ActivateConfig):
 async def generate_question_endpoint(
     generate_competency_question_request: GenerateCompetencyQuestion,
 ) -> StreamingResponse:
-
+    config = ConfigManager()
     return StreamingResponse(
         generate_competency_questions(
+            config=config,
             model_config_id=generate_competency_question_request.model_config_id,
             number_of_questions=generate_competency_question_request.number_of_questions,
             additional_context=generate_competency_question_request.additional_context,
@@ -838,8 +838,8 @@ async def generate_question_endpoint(
     },
 )
 def answer_question_endpoint(answer_question_request: AnswerQuestion):
-
-    set_custom_scenario_configuration(
+    config = ConfigManager()
+    config.set_custom_scenario_configuration(
         scenario_id=answer_question_request.scenario_id,
         validate_question_model=answer_question_request.validate_question_model,
         ask_question_model=answer_question_request.ask_question_model,
@@ -851,6 +851,7 @@ def answer_question_endpoint(answer_question_request: AnswerQuestion):
     )
     return StreamingResponse(
         answer_question(
+            config=config,
             scenario_id=answer_question_request.scenario_id,
             question=answer_question_request.question,
         ),
@@ -893,8 +894,10 @@ def answer_question_endpoint(answer_question_request: AnswerQuestion):
     },
 )
 async def judge_query_endpoint(refine_query_request: RefineQuery):
+    config = ConfigManager()
     return StreamingResponse(
         refine_query(
+            config=config,
             model_config_id=refine_query_request.model_config_id,
             question=refine_query_request.question,
             sparql_query=refine_query_request.sparql_query,

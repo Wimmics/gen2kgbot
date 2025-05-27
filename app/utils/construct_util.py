@@ -4,7 +4,7 @@ import re
 from typing import List, Tuple
 from SPARQLWrapper import JSON, TURTLE, SPARQLWrapper, POST
 from rdflib import Graph, URIRef, BNode, RDF, RDFS, OWL, term
-import app.utils.config_manager as config
+from app.utils.config_manager import ConfigManager
 from app.utils.logger_manager import setup_logger
 
 
@@ -64,7 +64,7 @@ LIMIT 20
 """
 
 
-def get_class_context(class_label_description: tuple) -> str:
+def get_class_context(config: ConfigManager, class_label_description: tuple) -> str:
     """
     Retrieve a class context from the KG, format it according to parameter class_context_format, and save it to the cache.
     The context contains the properties used by instances of the class and their value types:
@@ -84,9 +84,9 @@ def get_class_context(class_label_description: tuple) -> str:
 
     class_uri = class_label_description[0]
     endpoint_url = config.get_kg_sparql_endpoint_url()
-    properties_results = get_class_properties_and_val_types(class_uri, endpoint_url)
+    properties_results = get_class_properties_and_val_types(config, class_uri, endpoint_url)
 
-    dest_file = generate_context_filename(class_uri)
+    dest_file = generate_context_filename(config, class_uri)
     format = config.get_class_context_format()
 
     if format == "turtle":
@@ -95,7 +95,7 @@ def get_class_context(class_label_description: tuple) -> str:
 
         subj = BNode()
         # Function URIRef() takes a full IRI, so we need to convert a possible prefixed IRI to a full IRI
-        class_ref = URIRef(prefixed_to_fulliri(class_uri))
+        class_ref = URIRef(prefixed_to_fulliri(config, class_uri))
 
         # First triple: [] rdf:type [ a <CLS> ]
         graph.add((subj, RDF.type, class_ref))
@@ -141,7 +141,7 @@ def get_class_context(class_label_description: tuple) -> str:
 
 
 def get_class_properties_and_val_types(
-    class_uri: str, endpoint_url: str
+    config: ConfigManager, class_uri: str, endpoint_url: str
 ) -> List[Tuple[str, str, str]]:
     """
     Retrieve what properties are used with instances of a given class, and the types of their values.
@@ -204,7 +204,7 @@ def isPrefixed(uri: str) -> bool:
     return not uri.startswith("http:") and not uri.startswith("https:")
 
 
-def get_connected_classes(class_uris: list[str]) -> list[tuple]:
+def get_connected_classes(config: ConfigManager, class_uris: list[str]) -> list[tuple]:
     """
     Retrieve, from the KG, the classes connected to a list of "seed" classes, with their labels and descriptions,
 
@@ -228,7 +228,7 @@ def get_connected_classes(class_uris: list[str]) -> list[tuple]:
     for class_uri in class_uris:
 
         logger.debug(f"Retrieving classes connected to class {class_uri}")
-        dest_file = generate_context_filename(class_uri) + "_conntected_classes"
+        dest_file = generate_context_filename(config, class_uri) + "_conntected_classes"
 
         if os.path.exists(dest_file):
             logger.debug(f"Connected classes found in cache: {dest_file}.")
@@ -332,7 +332,7 @@ def run_sparql_construct(query, filename, endpoint_url):
     return results
 
 
-def generate_context_filename(uri: str) -> str:
+def generate_context_filename(config: ConfigManager, uri: str) -> str:
     """
     Generate a file name for a resource given by its uri.
     Example:
@@ -346,12 +346,12 @@ def generate_context_filename(uri: str) -> str:
             and the ":" replaced with a "_"
     """
 
-    class_name = re.sub(r"[:/\\#]", "_", fulliri_to_prefixed(uri))
+    class_name = re.sub(r"[:/\\#]", "_", fulliri_to_prefixed(config, uri))
     context_directory = Path(config.get_class_context_cache_directory())
     return f"{context_directory}/{class_name}"
 
 
-def add_known_prefixes_to_query(query: str) -> str:
+def add_known_prefixes_to_query(config: ConfigManager, query: str) -> str:
     """
     Insert the prefix definitions (from the config file) before the SPARQL query
     """
@@ -364,7 +364,7 @@ def add_known_prefixes_to_query(query: str) -> str:
     return final_query
 
 
-def get_empty_graph_with_prefixes() -> Graph:
+def get_empty_graph_with_prefixes(config: ConfigManager) -> Graph:
     """
     Creates an empty RDF graph with predefined prefixes.
     """
@@ -376,7 +376,7 @@ def get_empty_graph_with_prefixes() -> Graph:
     return g
 
 
-def fulliri_to_prefixed(uri: str) -> str:
+def fulliri_to_prefixed(config: ConfigManager, uri: str) -> str:
     """
     Transform a string containing full IRIs into their equivalent prefixed names
     """
@@ -385,7 +385,7 @@ def fulliri_to_prefixed(uri: str) -> str:
     return uri
 
 
-def prefixed_to_fulliri(uri: str) -> str:
+def prefixed_to_fulliri(config: ConfigManager, uri: str) -> str:
     """
     Transform a string containing prefixed IRIs into their equivalent full IRIs
     """

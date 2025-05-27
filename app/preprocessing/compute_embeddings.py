@@ -15,7 +15,7 @@ from tqdm import tqdm
 from langchain_community.vectorstores import FAISS, VectorStore
 from langchain_community.docstore import InMemoryDocstore
 from langchain_chroma import Chroma
-import app.utils.config_manager as config
+from app.utils.config_manager import ConfigManager
 from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
@@ -62,10 +62,10 @@ def setup_cli() -> Namespace:
 def chunks(lst: list, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+        yield lst[i: i + n]
 
 
-def get_vector_store(embed_name: str) -> VectorStore:
+def get_vector_store(config: ConfigManager, embed_name: str) -> VectorStore:
     """
     Create a vector store based on the configuration of the embedding model.
 
@@ -98,7 +98,9 @@ def get_vector_store(embed_name: str) -> VectorStore:
     return db
 
 
-def compute_embeddings_from_file(embed_name: str, text_file: str, output_dir: str):
+def compute_embeddings_from_file(
+    config: ConfigManager, embed_name: str, text_file: str, output_dir: str
+):
     """
     Compute the embeddings for each line of a text file, and save them to a file.
 
@@ -107,7 +109,7 @@ def compute_embeddings_from_file(embed_name: str, text_file: str, output_dir: st
         text_file: file where each line represents a text to compute the embedding for
     """
     # Create a vector store
-    vectorstore = get_vector_store(embed_name)
+    vectorstore = get_vector_store(config, embed_name)
 
     # Load the descriptions
     if not os.path.exists(text_file):
@@ -130,7 +132,9 @@ def compute_embeddings_from_file(embed_name: str, text_file: str, output_dir: st
     vectorstore.save_local(output_dir)
 
 
-def compute_embeddings_from_directory(embed_name: str, directory: str, output_dir: str):
+def compute_embeddings_from_directory(
+    config: ConfigManager, embed_name: str, directory: str, output_dir: str
+):
     """
     Compute the embeddings for the text files of a directory, and save them to a file.
 
@@ -139,7 +143,7 @@ def compute_embeddings_from_directory(embed_name: str, directory: str, output_di
         directory: where the text files are located
     """
     # Create a vector store
-    vectorstore = get_vector_store(embed_name)
+    vectorstore = get_vector_store(config, embed_name)
 
     # Load the descriptions
     if not os.path.exists(directory):
@@ -164,7 +168,7 @@ def compute_embeddings_from_directory(embed_name: str, directory: str, output_di
     vectorstore.save_local(output_dir)
 
 
-def start_compute_embeddings(is_api_call: bool = False):
+def start_compute_embeddings(config: ConfigManager, is_api_call: bool = False):
     # Parse the command line arguments
     args = setup_cli()
 
@@ -189,7 +193,7 @@ def start_compute_embeddings(is_api_call: bool = False):
             config.get_embeddings_directory(vector_db_name)
             / config.get_class_embeddings_subdir()
         )
-        compute_embeddings_from_file(embed_name, description_file, embeddings_dir)
+        compute_embeddings_from_file(config, embed_name, description_file, embeddings_dir)
 
     # Compute and save the embeddings of the property descriptions
     if args.properties is not None:
@@ -198,7 +202,7 @@ def start_compute_embeddings(is_api_call: bool = False):
             config.get_embeddings_directory(vector_db_name)
             / config.get_property_embeddings_subdir()
         )
-        compute_embeddings_from_file(embed_name, description_file, embeddings_dir)
+        compute_embeddings_from_file(config, embed_name, description_file, embeddings_dir)
 
     # Compute and save the embeddings of the example SPARQL queries
     if args.sparql is not None:
@@ -208,4 +212,5 @@ def start_compute_embeddings(is_api_call: bool = False):
 
 
 if __name__ == "__main__":
-    start_compute_embeddings()
+    config = ConfigManager()
+    start_compute_embeddings(config)

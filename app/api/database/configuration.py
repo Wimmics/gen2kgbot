@@ -1,5 +1,5 @@
 from app.api.responses.kg_config import KGConfig
-from app.utils.config_manager import db
+from app.utils.database_manager import db
 
 
 def get_user_active_config(username: str) -> KGConfig:

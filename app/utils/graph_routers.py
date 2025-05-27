@@ -6,8 +6,9 @@ that are common to multiple scenarios
 import ast
 from typing import Literal
 import os
+from app.utils.config_manager import ConfigManager
 from app.utils.graph_state import OverallState
-import app.utils.config_manager as config
+from app.utils.logger_manager import setup_logger
 from app.utils.sparql_toolkit import find_sparql_queries
 from app.utils.construct_util import generate_context_filename
 from app.utils.graph_nodes import SPARQL_QUERY_EXEC_ERROR
@@ -15,8 +16,8 @@ from langgraph.graph import END
 from langgraph.constants import Send
 
 
-logger = config.setup_logger(__package__, __file__)
-
+logger = setup_logger(__package__, __file__)
+config = ConfigManager()
 MAX_NUMBER_OF_TRIES: int = 3
 
 
@@ -44,7 +45,7 @@ def get_class_context_router(
 
     for item in state["selected_classes"]:
         cls = ast.literal_eval(item)
-        cls_path = generate_context_filename(cls[0])
+        cls_path = generate_context_filename(config, cls[0])
 
         if os.path.exists(cls_path):
             logger.debug(f"Class context found in cache: {cls_path}.")
