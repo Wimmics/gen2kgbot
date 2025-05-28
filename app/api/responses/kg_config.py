@@ -25,6 +25,16 @@ class KGConfig(BaseModel):
     scenario_6: dict = Field(default=None, description="Configuration for scenario 6.")
     scenario_7: dict = Field(default=None, description="Configuration for scenario 7.")
 
+    # TODO create separate model for the following fields
+    data_directory: str = Field(default=None, description="Root path for the cache of classes context and pre-computed embeddings.")
+    class_embeddings_subdir: str = Field(default=None, description="Name of the subdirectoty that contain the pre-computed embeddings of classes.")
+    property_embeddings_subdir: str = Field(default=None, description="Name of the subdirectoty that contain the pre-computed embeddings of properties.")
+    queries_embeddings_subdir: str = Field(default=None, description="Name of the subdirectoty that contain the pre-computed embeddings of queries.")
+    temp_directory: str = Field(default=None, description="Path to a usable temporary directory.")
+    max_similar_classes: int = Field(default=10, description="Max number of classes similar to the user's question.")
+    expand_similar_classes: bool = Field(default=False, description="Expand the initial list of classes similar to the question with additional classes connected to them.")
+    class_context_format: str = Field(default="turtle", description="Format of the classes context: one of `turtle`, `tuple` or `nl` for natural language.")
+
     @classmethod
     def from_mongo(cls, doc: dict):
         """Convert MongoDB document to Pydantic model"""
