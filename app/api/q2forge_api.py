@@ -72,8 +72,6 @@ app.add_middleware(
 )
 
 
-
-
 @app.get(
     path="/api/q2forge/config/available",
     summary="Get the Available Configurations",
@@ -88,7 +86,9 @@ app.add_middleware(
         }
     },
 )
-def get_available_configurations_endpoint() -> list[str]:
+def get_available_configurations_endpoint(
+    current_user: UserResponse = Depends(get_current_active_user),
+) -> list[str]:
     return get_available_configurations()
 
 
@@ -351,6 +351,7 @@ def get_active_config_endpoint(
         raise HTTPException(status_code=400, detail="No active configuration found")
 
     return active_config
+
 
 @app.get(
     path="/api/q2forge/scenarios_graph_schema",
@@ -790,9 +791,11 @@ def generate_kg_embeddings_endpoint(config_request: ActivateConfig):
 )
 async def generate_question_endpoint(
     generate_competency_question_request: GenerateCompetencyQuestion,
+    active_configuration: KGConfig = Depends(get_active_config_endpoint),
 ) -> StreamingResponse:
     config = ConfigManager()
-    config.read_configuration()
+    config.set_configuration(active_configuration.model_dump())
+
     return StreamingResponse(
         generate_competency_questions(
             config=config,
@@ -850,7 +853,6 @@ def answer_question_endpoint(
 ):
 
     config = ConfigManager()
-    # config.read_configuration()
     config.set_configuration(active_configuration.model_dump())
 
     config.set_custom_scenario_configuration(
@@ -869,7 +871,6 @@ def answer_question_endpoint(
             scenario_id=answer_question_request.scenario_id,
             question=answer_question_request.question,
         ),
-        # media_type="text/event-stream",
         media_type="application/json",
     )
 
@@ -907,8 +908,13 @@ def answer_question_endpoint(
         },
     },
 )
-async def judge_query_endpoint(refine_query_request: RefineQuery):
+async def judge_query_endpoint(
+    refine_query_request: RefineQuery,
+    active_configuration: KGConfig = Depends(get_active_config_endpoint),
+):
     config = ConfigManager()
+    config.set_configuration(active_configuration.model_dump())
+
     return StreamingResponse(
         refine_query(
             config=config,
