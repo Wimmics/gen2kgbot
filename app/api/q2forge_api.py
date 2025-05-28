@@ -39,7 +39,8 @@ from app.api.services.refine_query import refine_query
 from app.utils.config_manager import ConfigManager
 from app.utils.logger_manager import setup_logger
 from app.preprocessing.compute_embeddings import start_compute_embeddings
-from app.preprocessing.gen_descriptions import generate_descriptions
+
+# from app.preprocessing.gen_descriptions import generate_descriptions
 import uvicorn
 
 
@@ -71,37 +72,6 @@ app.add_middleware(
 )
 
 
-@app.get(
-    path="/api/q2forge/scenarios_graph_schema",
-    summary="Get the scenarios graph schemas",
-    operation_id="get_scenarios_graph_schema",
-    description=(
-        "This endpoint returns the different scenarios graph schemas. "
-        + "The schemas are represented in a mermaid format, which can be used to visualize the flow of the scenarios."
-    ),
-    responses={
-        200: {
-            "description": "A list containing the different scenarios schemas",
-            "content": {
-                "application/json": {
-                    "example": [
-                        {
-                            "scenario_id": 1,
-                            "schema": "```mermaid\n%%{init: {'flowchart': {'curve': 'linear'}}}%%\ngraph TD;\n\t__start__([<p>__start__</p>]):::first\n\tinit(init)\n\tvalidate_question(validate_question)\n\task_question(ask_question)\n\t__end__([<p>__end__</p>]):::last\n\t__start__ --> init;\n\task_question --> __end__;\n\tinit --> validate_question;\n\tvalidate_question -.-> ask_question;\n\tvalidate_question -.-> __end__;\n\tclassDef default fill:#f2f0ff,line-height:1.2\n\tclassDef first fill-opacity:0\n\tclassDef last fill:#bfb6fc\n\n```",
-                        },
-                        {
-                            "scenario_id": 2,
-                            "schema": "```mermaid\n ...```",
-                        },
-                    ]
-                }
-            },
-        }
-    },
-)
-def get_scenario_schema_endpoint() -> list[ScenarioSchema]:
-    config = ConfigManager()
-    return get_scenarios_schema(config=config)
 
 
 @app.get(
@@ -381,6 +351,42 @@ def get_active_config_endpoint(
         raise HTTPException(status_code=400, detail="No active configuration found")
 
     return active_config
+
+@app.get(
+    path="/api/q2forge/scenarios_graph_schema",
+    summary="Get the scenarios graph schemas",
+    operation_id="get_scenarios_graph_schema",
+    description=(
+        "This endpoint returns the different scenarios graph schemas. "
+        + "The schemas are represented in a mermaid format, which can be used to visualize the flow of the scenarios."
+    ),
+    responses={
+        200: {
+            "description": "A list containing the different scenarios schemas",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "scenario_id": 1,
+                            "schema": "```mermaid\n%%{init: {'flowchart': {'curve': 'linear'}}}%%\ngraph TD;\n\t__start__([<p>__start__</p>]):::first\n\tinit(init)\n\tvalidate_question(validate_question)\n\task_question(ask_question)\n\t__end__([<p>__end__</p>]):::last\n\t__start__ --> init;\n\task_question --> __end__;\n\tinit --> validate_question;\n\tvalidate_question -.-> ask_question;\n\tvalidate_question -.-> __end__;\n\tclassDef default fill:#f2f0ff,line-height:1.2\n\tclassDef first fill-opacity:0\n\tclassDef last fill:#bfb6fc\n\n```",
+                        },
+                        {
+                            "scenario_id": 2,
+                            "schema": "```mermaid\n ...```",
+                        },
+                    ]
+                }
+            },
+        }
+    },
+)
+def get_scenario_schema_endpoint(
+    active_configuration: KGConfig = Depends(get_active_config_endpoint),
+) -> list[ScenarioSchema]:
+
+    config = ConfigManager()
+    config.set_configuration(active_configuration.model_dump())
+    return get_scenarios_schema(config=config)
 
 
 @app.post(
@@ -674,7 +680,7 @@ def activate_config_endpoint(
 def generate_kg_descriptions_endpoint(config_request: ActivateConfig):
     try:
         config = ConfigManager()
-        generate_descriptions(config=config)
+        # generate_descriptions(config=config)
         directory = config.get_preprocessing_directory()
         generated_files = {}
         for file in directory.iterdir():
@@ -786,6 +792,7 @@ async def generate_question_endpoint(
     generate_competency_question_request: GenerateCompetencyQuestion,
 ) -> StreamingResponse:
     config = ConfigManager()
+    config.read_configuration()
     return StreamingResponse(
         generate_competency_questions(
             config=config,
@@ -837,8 +844,15 @@ async def generate_question_endpoint(
         },
     },
 )
-def answer_question_endpoint(answer_question_request: AnswerQuestion):
+def answer_question_endpoint(
+    answer_question_request: AnswerQuestion,
+    active_configuration: KGConfig = Depends(get_active_config_endpoint),
+):
+
     config = ConfigManager()
+    # config.read_configuration()
+    config.set_configuration(active_configuration.model_dump())
+
     config.set_custom_scenario_configuration(
         scenario_id=answer_question_request.scenario_id,
         validate_question_model=answer_question_request.validate_question_model,

@@ -1,8 +1,19 @@
+import importlib
 import json
 from app.api.services.utils import serialize_aimessagechunk
 from langgraph.graph.state import CompiledStateGraph
 from app.utils.config_manager import ConfigManager
 from app.utils.graph_state import EnumEncoder
+
+
+def get_scenario_instance(class_name: str, module_name: str, config: ConfigManager):
+    module = importlib.import_module(module_name)
+    scenario_class = getattr(module, class_name)
+    return scenario_class(config)
+
+
+def get_scenario_module_str(scenario_id: int):
+    return f"app.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
 
 
 async def answer_question(config: ConfigManager, scenario_id: int, question: str):
@@ -15,7 +26,11 @@ async def answer_question(config: ConfigManager, scenario_id: int, question: str
         str: A JSON string containing the event type, node name, and relevant data.
     """
 
-    graph: CompiledStateGraph = config.get_scenario_module(scenario_id).graph
+    scenario = get_scenario_instance(
+        f"Scenario{scenario_id}", get_scenario_module_str(scenario_id=scenario_id), config
+    )
+    # Scenario1(config_manager=config)
+    graph: CompiledStateGraph = scenario.construct_graph()
 
     state_nodes_filter = [
         "init",

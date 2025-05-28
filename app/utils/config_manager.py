@@ -37,46 +37,13 @@ class ConfigManager:
         # Load the default config file.
         # Necessary when using Langragraph Studio as it loads the scenarios without CLI arguments.
         # If calling from CLI, the default config will be overridden.
-        self.read_configuration()
-
-        # # Global config. Shall be initialized by read_configuration()
-        # config = None
-
-        # # Selected seq2seq LLM. Dictionary with the scenario id as key
-        # current_llm = {}
-
-        # # Vector db that contains the documents describing the classes in the form: "(uri, label, description)".
-        # # Dictionary with the scenario id as key
-        # classes_vector_db = {}
-
-        # # Vector db that contains the example SPARQL queries and associated questions.
-        # # Dictionary with the scenario id as key
-        # queries_vector_db = {}
-
-        # # Database connection
-        # db: Database = None
-
-    def setup_cli(self) -> Namespace:
-        parser = ArgumentParser(
-            description="Process the scenario with the predifined or custom question and configuration."
-        )
-        parser.add_argument(
-            "-q",
-            "--question",
-            type=str,
-            help='User\'s question. Defaults to "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"',
-            default="What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?",
-        )
-        parser.add_argument(
-            "-p", "--params", type=str, help="Custom configuration file"
-        )
-
-        parser.add_argument("app.api.q2forge_api:app", nargs="?", help="Run the API")
-        parser.add_argument("--reload", nargs="?", help="Debug mode")
-        return parser.parse_args()
+        # self.read_configuration()
 
     def get_configuration(self) -> dict:
         return self.config
+
+    def set_configuration(self, config: dict) -> dict:
+        self.config = config
 
     def read_configuration(self, args: Namespace = None):
         """
@@ -322,9 +289,7 @@ class ConfigManager:
             f"Seq2Seq model initialized for {scenario_id} and Node: {node_name} with config: {llm_config}"
         )
 
-        self.current_llm.setdefault(scenario_id, {}).update(
-            {node_name: llm_config}
-        )
+        self.current_llm.setdefault(scenario_id, {}).update({node_name: llm_config})
         logger.debug(f"Current LLM config used: {self.current_llm}")
 
         return llm_config
@@ -653,13 +618,17 @@ class ConfigManager:
         Set a custom configuration to use in a scenario
         """
 
-        self.config[f"scenario_{scenario_id}"]["validate_question"] = validate_question_model
+        self.config[f"scenario_{scenario_id}"][
+            "validate_question"
+        ] = validate_question_model
 
         if ask_question_model is not None:
             self.config[f"scenario_{scenario_id}"]["ask_question"] = ask_question_model
 
         if generate_query_model is not None:
-            self.config[f"scenario_{scenario_id}"]["generate_query"] = generate_query_model
+            self.config[f"scenario_{scenario_id}"][
+                "generate_query"
+            ] = generate_query_model
 
         if judge_query_model is not None:
             self.config[f"scenario_{scenario_id}"]["judge_query"] = judge_query_model
@@ -694,6 +663,26 @@ class ConfigManager:
         )
 
 
+def setup_cli() -> Namespace:
+    parser = ArgumentParser(
+        description="Process the scenario with the predifined or custom question and configuration."
+    )
+    parser.add_argument(
+        "-q",
+        "--question",
+        type=str,
+        help='User\'s question. Defaults to "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"',
+        default="What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?",
+    )
+    parser.add_argument(
+        "-p", "--params", type=str, help="Custom configuration file"
+    )
+
+    parser.add_argument("app.api.q2forge_api:app", nargs="?", help="Run the API")
+    parser.add_argument("--reload", nargs="?", help="Debug mode")
+    return parser.parse_args()
+
+
 async def main(config: ConfigManager, graph: CompiledStateGraph):
     """
     Entry point when invoked from the CLI
@@ -703,7 +692,7 @@ async def main(config: ConfigManager, graph: CompiledStateGraph):
     """
 
     # Parse the command line arguments
-    args = config.setup_cli()
+    args = setup_cli()
 
     # Load the configuration file and assign to global variable 'config'
     config.read_configuration(args)

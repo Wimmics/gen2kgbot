@@ -50,9 +50,7 @@ def update_active_config(user: UserResponse, kg_short_name: str) -> KGConfig:
 
     logger.info(f"Updating user: {user.username} active config")
     try:
-        config = db["configurations"].find_one(
-            {"kg_short_name": kg_short_name}
-        )
+        config = db["configurations"].find_one({"kg_short_name": kg_short_name})
         selected_config = KGConfig.from_mongo(config)
 
         if config is None:
@@ -64,15 +62,20 @@ def update_active_config(user: UserResponse, kg_short_name: str) -> KGConfig:
         )
 
         if results.matched_count > 0:
-            updated_user = db["users"].find_one(
-                {"username": user.username}
-            )
+            updated_user = db["users"].find_one({"username": user.username})
 
             if (
                 UserInDB.from_mongo(updated_user).active_config_id
                 != user.active_config_id
             ):
                 return selected_config
+            else:
+                logger.info(
+                    f"User {user.username} already has the active config set to {kg_short_name}"
+                )
+                raise Exception(
+                    f"User {user.username} already has the active config set to {kg_short_name}"
+                )
 
         raise Exception("The operation did not succeed")
 

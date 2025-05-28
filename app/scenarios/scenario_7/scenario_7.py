@@ -13,32 +13,15 @@ from app.scenarios.scenario_7.prompt import (
     judge_query_prompt,
 )
 from app.utils import config_manager
-from app.utils.config_manager import ConfigManager
+from app.utils.config_manager import ConfigManager, setup_cli
 from app.utils.construct_util import (
-    add_known_prefixes_to_query,
-    fulliri_to_prefixed,
-    get_empty_graph_with_prefixes,
+    ConstructUtil,
     run_sparql_query,
 )
-from app.utils.graph_nodes import (
-    class_context_tuple_to_nl,
-    class_description_tuple_to_nl,
-    preprocess_question,
-    select_similar_classes,
-    get_class_context_from_cache,
-    get_class_context_from_kg,
-    select_similar_query_examples,
-    generate_query,
-    validate_question,
-    run_query,
-    interpret_results,
-)
+from app.utils.graph_nodes import GraphNodes
 from app.utils.graph_routers import (
-    get_class_context_router,
-    preprocessing_subgraph_router,
-    validate_question_router,
-    run_query_router,
     MAX_NUMBER_OF_TRIES,
+    GraphRouters,
 )
 from langchain_core.prompts import PromptTemplate
 from app.utils.graph_state import (
@@ -60,9 +43,12 @@ logger = setup_logger(__package__, __file__)
 
 class Scenario7:
 
-    def __init__(self):
-        self.config = None
+    def __init__(self, config_manager: ConfigManager = None):
         self.SCENARIO = "scenario_7"
+        self.config = ConfigManager() if config_manager is None else config_manager
+        self.constructUtil = ConstructUtil(self.config)
+        self.graphNodes = GraphNodes(self.config, self.constructUtil)
+        self.graphRouters = GraphRouters(self.config, self.constructUtil)
 
     # Routers
 
@@ -143,8 +129,10 @@ class Scenario7:
 
             else:
 
-                judging_grade_threshold_run = self.config.get_judging_grade_threshold_run(
-                    scenario_id=self.SCENARIO
+                judging_grade_threshold_run = (
+                    self.config.get_judging_grade_threshold_run(
+                        scenario_id=self.SCENARIO
+                    )
                 )
 
                 if "judging_grade" in state["query_judgements"][-1]:
@@ -172,7 +160,6 @@ class Scenario7:
     # Nodes
 
     def init(self, state: OverallState) -> OverallState:
-        self.config = self.get_config()
         logger.info(f"Running scenario: {self.SCENARIO}")
         return OverallState({"scenario_id": self.SCENARIO})
 
@@ -280,7 +267,7 @@ class Scenario7:
             query = queries[0]
             logger.info("Query generation task produced a SPARQL query.")
             logger.debug(f"Generated SPARQL query:\n{query}")
-            translateQuery(parseQuery(add_known_prefixes_to_query(self.config, queries[0])))
+            translateQuery(parseQuery(self.constructUtil.add_known_prefixes_to_query(queries[0])))
         except Exception as e:
             logger.warning(f"The generated SPARQL query is invalid: {e}")
             query_judgement = JudgeState(
@@ -418,7 +405,9 @@ class Scenario7:
             dict: state updated with the judgement of the generated query
         """
 
-        llm = self.config.get_seq2seq_model(scenario_id=self.SCENARIO, node_name="judge_query")
+        llm = self.config.get_seq2seq_model(
+            scenario_id=self.SCENARIO, node_name="judge_query"
+        )
         judging_grade_threshold_retry = self.config.get_judging_grade_threshold_retry(
             scenario_id=self.SCENARIO
         )
@@ -502,7 +491,7 @@ class Scenario7:
         ):
             selected_classes_str = ""
             for item in state["selected_classes"]:
-                selected_classes_str += f"\n{class_description_tuple_to_nl(fulliri_to_prefixed(self.config, item))}"
+                selected_classes_str += f"\n{self.graphNodes.class_description_tuple_to_nl(self.constructUtil.fulliri_to_prefixed(item))}"
             template = template.partial(selected_classes=selected_classes_str)
 
         if (
@@ -524,7 +513,7 @@ class Scenario7:
                 # This is the first attempt, merge all class contexts together
                 if self.config.get_class_context_format() == "turtle":
                     # Load all the class contexts in a common graph
-                    merged_graph = get_empty_graph_with_prefixes(self.config)
+                    merged_graph = self.constructUtil.get_empty_graph_with_prefixes()
                     for cls_context in state["selected_classes_context"]:
                         merged_graph = merged_graph + Graph().parse(data=cls_context)
                     # save_full_context(merged_graph)
@@ -537,7 +526,7 @@ class Scenario7:
                     # merged_cls_context = "Format is: ('class uri', 'property uri', 'property label', 'value type')\n"
                     for cls_context in state["selected_classes_context"]:
                         if cls_context not in ["", "\n"]:
-                            merged_cls_context += f"\n{class_context_tuple_to_nl(fulliri_to_prefixed(self.config, cls_context))}"
+                            merged_cls_context += f"\n{self.graphNodes.class_context_tuple_to_nl(self.constructUtil.fulliri_to_prefixed(cls_context))}"
 
                 else:
                     raise ValueError(
@@ -621,25 +610,34 @@ class Scenario7:
 
         # Preprocessing graph for generating context with classes and examples queries
         prepro_builder.add_node("init", self.init)
-        prepro_builder.add_node("validate_question", validate_question)
-        prepro_builder.add_node("preprocess_question", preprocess_question)
-        prepro_builder.add_node("select_similar_classes", select_similar_classes)
+        prepro_builder.add_node("validate_question", self.graphNodes.validate_question)
         prepro_builder.add_node(
-            "get_context_class_from_cache", get_class_context_from_cache
+            "preprocess_question", self.graphNodes.preprocess_question
         )
-        prepro_builder.add_node("get_context_class_from_kg", get_class_context_from_kg)
         prepro_builder.add_node(
-            "select_similar_query_examples", select_similar_query_examples
+            "select_similar_classes", self.graphNodes.select_similar_classes
+        )
+        prepro_builder.add_node(
+            "get_context_class_from_cache", self.graphNodes.get_class_context_from_cache
+        )
+        prepro_builder.add_node(
+            "get_context_class_from_kg", self.graphNodes.get_class_context_from_kg
+        )
+        prepro_builder.add_node(
+            "select_similar_query_examples",
+            self.graphNodes.select_similar_query_examples,
         )
 
         prepro_builder.add_edge(START, "init")
         prepro_builder.add_edge("init", "validate_question")
-        prepro_builder.add_conditional_edges("validate_question", validate_question_router)
+        prepro_builder.add_conditional_edges(
+            "validate_question", self.graphRouters.validate_question_router
+        )
         prepro_builder.add_edge("preprocess_question", "select_similar_query_examples")
         prepro_builder.add_edge("preprocess_question", "select_similar_classes")
         prepro_builder.add_edge("select_similar_query_examples", END)
         prepro_builder.add_conditional_edges(
-            "select_similar_classes", get_class_context_router
+            "select_similar_classes", self.graphRouters.get_class_context_router
         )
         prepro_builder.add_edge("get_context_class_from_cache", END)
         prepro_builder.add_edge("get_context_class_from_kg", END)
@@ -655,7 +653,9 @@ class Scenario7:
         judge_builder.add_node("extract_query_qnames", self.extract_query_qnames)
         judge_builder.add_node("find_qnames_info", self.find_qnames_info)
         judge_builder.add_node("judge_query", self.judge_query)
-        judge_builder.add_node("judge_regeneration_prompt", self.judge_regeneration_prompt)
+        judge_builder.add_node(
+            "judge_regeneration_prompt", self.judge_regeneration_prompt
+        )
         judge_builder.add_node("judge_regenerate_query", self.judge_regenerate_query)
 
         judge_builder.add_edge(START, "validate_sparql_syntax")
@@ -675,26 +675,26 @@ class Scenario7:
 
         builder.add_node("preprocessing_subgraph", prepro_builder.compile())
         builder.add_node("create_prompt", self.create_prompt)
-        builder.add_node("generate_query", generate_query)
-        builder.add_node("run_query", run_query)
-        builder.add_node("interpret_results", interpret_results)
+        builder.add_node("generate_query", self.graphNodes.generate_query)
+        builder.add_node("run_query", self.graphNodes.run_query)
+        builder.add_node("interpret_results", self.graphNodes.interpret_results)
         builder.add_node("judging_subgraph", judge_builder.compile())
 
         builder.add_edge(START, "preprocessing_subgraph")
         builder.add_conditional_edges(
-            "preprocessing_subgraph", preprocessing_subgraph_router
+            "preprocessing_subgraph", self.graphRouters.preprocessing_subgraph_router
         )
         builder.add_edge("create_prompt", "generate_query")
         builder.add_edge("generate_query", "judging_subgraph")
         builder.add_conditional_edges("judging_subgraph", self.judging_subgraph_router)
-        builder.add_conditional_edges("run_query", run_query_router)
+        builder.add_conditional_edges("run_query", self.graphRouters.run_query_router)
         builder.add_edge("interpret_results", END)
 
         return builder.compile()
 
     async def custom_main(self, graph: StateGraph):
         # Parse the command line arguments
-        args = self.config.setup_cli()
+        args = setup_cli()
 
         # Load the configuration file and assign to global variable 'config'
         self.config.read_configuration(args)
@@ -711,15 +711,11 @@ class Scenario7:
         for m in state["messages"]:
             logger.info(m.pretty_repr())
         if "last_generated_query" in state:
-            logger.info("==============================================================")
+            logger.info(
+                "=============================================================="
+            )
             logger.info("last_generated_query: " + state["last_generated_query"])
         logger.info("==============================================================")
-
-    def get_config(self) -> ConfigManager:
-        if not self.config:
-            self.config = ConfigManager()
-
-        return self.config
 
 
 def langsmith_setup():
@@ -744,4 +740,4 @@ graph = scenario.construct_graph()
 
 
 if __name__ == "__main__":
-    asyncio.run(config_manager.main(scenario.get_config(), graph))
+    asyncio.run(config_manager.main(scenario.config, graph))

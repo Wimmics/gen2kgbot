@@ -4,7 +4,8 @@ from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, START, END
 from app.utils import config_manager
 from app.utils.config_manager import ConfigManager
-from app.utils.graph_nodes import validate_question
+from app.utils.construct_util import ConstructUtil
+from app.utils.graph_nodes import GraphNodes
 from app.utils.graph_state import InputState, OverallState
 from app.utils.logger_manager import setup_logger
 from app.scenarios.scenario_1.prompt import system_prompt_template
@@ -14,12 +15,13 @@ logger = setup_logger(__package__, __file__)
 
 class Scenario1:
 
-    def __init__(self):
-        self.config = None
+    def __init__(self, config_manager: ConfigManager = None):
         self.SCENARIO = "scenario_1"
+        self.config = ConfigManager() if config_manager is None else config_manager
+        self.constructUtil = ConstructUtil(self.config)
+        self.graphNodes = GraphNodes(self.config, self.constructUtil)
 
     def init(self, state: OverallState) -> OverallState:
-        self.config = self.get_config()
         logger.info(f"Running scenario: {self.SCENARIO}")
         return OverallState({"scenario_id": self.SCENARIO})
 
@@ -64,7 +66,7 @@ class Scenario1:
         )
 
         builder.add_node("init", self.init)
-        builder.add_node("validate_question", validate_question)
+        builder.add_node("validate_question", self.graphNodes.validate_question)
         builder.add_node("ask_question", self.ask_question)
 
         builder.add_edge(START, "init")
@@ -76,16 +78,10 @@ class Scenario1:
 
         return builder.compile()
 
-    def get_config(self) -> ConfigManager:
-        if not self.config:
-            self.config = ConfigManager()
-
-        return self.config
-
 
 scenario = Scenario1()
 graph = scenario.construct_graph()
 
 
 if __name__ == "__main__":
-    asyncio.run(config_manager.main(scenario.get_config(), graph))
+    asyncio.run(config_manager.main(scenario.config, graph))
