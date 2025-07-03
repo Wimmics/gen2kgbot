@@ -1,13 +1,13 @@
 from datetime import timedelta
 import json
-from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi_mcp import FastApiMCP
-import yaml
 from app.api.database.configuration import (
+    add_configuration,
     get_available_configurations,
+    get_configuration,
     get_user_active_config,
 )
 from app.api.database.user import update_active_config
@@ -480,25 +480,24 @@ def get_scenario_schema_endpoint() -> list[ScenarioSchema]:
         },
     },
 )
-def create_config_endpoint(config_request: CreateConfig) -> CreateConfig:
+def create_config_endpoint(
+    config_request: CreateConfig,
+    current_user: UserResponse = Depends(get_current_active_user),
+) -> CreateConfig:
     try:
 
         logger.debug(f"Received configuration request: {config_request}")
 
-        config_path = (
-            Path(__file__).resolve().parent.parent.parent
-            / "config"
-            / f"params_{config_request.kg_short_name}.yml"
-        )
+        config = get_configuration(config_request.kg_short_name)
 
-        # Check if the file already exists
-        if config_path.exists():
-            logger.error(f"Configuration file already exists at {config_path}")
+        # Check if the config already exists
+        if config is not None:
+            logger.error(f"Configuration with short name {config_request.kg_short_name} already exists")
             return Response(
                 status_code=400,
                 content=json.dumps(
                     {
-                        "error": f"Configuration file already exists: {config_request.kg_short_name}"
+                        "error": f"Configuration with the same short name already exists: {config_request.kg_short_name}"
                     }
                 ),
                 media_type="application/json",
@@ -510,27 +509,25 @@ def create_config_endpoint(config_request: CreateConfig) -> CreateConfig:
             query_examples=config_request.queryExamples,
         )
 
-        # Create the configuration dictionary from the request
-        with open(config_path, "w", encoding="utf-8") as file:
-            # Convert the request to a dictionary
-            config_dict = config_request.model_dump()
+        # Convert the request to a dictionary
+        config_dict = config_request.model_dump()
 
-            # Remove the query examples from the request to avoid adding them to the config file
-            del config_dict["queryExamples"]
+        # Remove the query examples from the request to avoid adding them to the config file
+        del config_dict["queryExamples"]
 
-            # Add missing parameters to the configuration
-            updated_config = add_missing_config_params(config_dict)
+        # Add missing parameters to the configuration
+        updated_config = add_missing_config_params(config_dict)
 
-            # Write the configuration to the file
-            yaml.safe_dump(updated_config, file)
+        # Save the configuration to the database
+        add_configuration(updated_config)
 
-            logger.info(f"Configuration file created at {config_path}")
+        logger.info(f"Configuration saved successfully: {config_request.kg_short_name}")
 
-            return Response(
-                status_code=200,
-                content=config_request.model_dump_json(),
-                media_type="application/json",
-            )
+        return Response(
+            status_code=200,
+            content=config_request.model_dump_json(),
+            media_type="application/json",
+        )
     except Exception as e:
         logger.error(f"Error creating configuration file: {str(e)}")
         return Response(
