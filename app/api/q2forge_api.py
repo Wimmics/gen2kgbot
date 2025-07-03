@@ -36,9 +36,11 @@ from app.api.services.generate_competency_question import generate_competency_qu
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.services.graph_mermaid import get_scenarios_schema
 from app.api.services.refine_query import refine_query
+from app.preprocessing.gen_descriptions import GenDescriptions
 from app.utils.config_manager import ConfigManager
+from app.utils.construct_util import ConstructUtil
 from app.utils.logger_manager import setup_logger
-from app.preprocessing.compute_embeddings import start_compute_embeddings
+from app.preprocessing.compute_embeddings import ComputeEmbeddings
 
 # from app.preprocessing.gen_descriptions import generate_descriptions
 import uvicorn
@@ -670,10 +672,14 @@ def activate_config_endpoint(
         },
     },
 )
-def generate_kg_descriptions_endpoint(config_request: ActivateConfig):
+def generate_kg_descriptions_endpoint(active_configuration: KGConfig = Depends(get_active_config_endpoint)):
     try:
         config = ConfigManager()
-        # generate_descriptions(config=config)
+        config.set_configuration(active_configuration.model_dump())
+        constructUtil = ConstructUtil(config)
+        gen_descriptions = GenDescriptions(config=config, constructUtil=constructUtil)
+        gen_descriptions.generate_descriptions()
+
         directory = config.get_preprocessing_directory()
         generated_files = {}
         for file in directory.iterdir():
@@ -726,11 +732,12 @@ def generate_kg_descriptions_endpoint(config_request: ActivateConfig):
         },
     },
 )
-def generate_kg_embeddings_endpoint(config_request: ActivateConfig):
+def generate_kg_embeddings_endpoint(active_configuration: KGConfig = Depends(get_active_config_endpoint)):
     try:
-
         config = ConfigManager()
-        start_compute_embeddings(config=config, is_api_call=True)
+        config.set_configuration(active_configuration.model_dump())
+        compute_embeddings = ComputeEmbeddings(config=config)
+        compute_embeddings.start_compute_embeddings(is_api_call=True)
 
         return Response(
             status_code=200,
