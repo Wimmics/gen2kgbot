@@ -381,13 +381,8 @@ def get_active_config_endpoint(
         }
     },
 )
-def get_scenario_schema_endpoint(
-    active_configuration: KGConfig = Depends(get_active_config_endpoint),
-) -> list[ScenarioSchema]:
-
-    config = ConfigManager()
-    config.set_configuration(active_configuration.model_dump())
-    return get_scenarios_schema(config=config)
+def get_scenario_schema_endpoint() -> list[ScenarioSchema]:
+    return get_scenarios_schema()
 
 
 @app.post(

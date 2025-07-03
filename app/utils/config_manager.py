@@ -597,12 +597,6 @@ class ConfigManager:
         self.queries_vector_db[scenario_id] = db
         return db
 
-    def get_scenario_module(self, scenario_id: int):
-        scenario_module = importlib.import_module(
-            f"app.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
-        )
-        return scenario_module
-
     def set_custom_scenario_configuration(
         self,
         scenario_id: str,
@@ -681,6 +675,13 @@ def setup_cli() -> Namespace:
     parser.add_argument("app.api.q2forge_api:app", nargs="?", help="Run the API")
     parser.add_argument("--reload", nargs="?", help="Debug mode")
     return parser.parse_args()
+
+
+def get_scenario_module(scenario_id: int):
+    scenario_module = importlib.import_module(
+        f"app.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
+    )
+    return scenario_module
 
 
 async def main(config: ConfigManager, graph: CompiledStateGraph):
