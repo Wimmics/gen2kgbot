@@ -1,0 +1,48 @@
+# Retrieve genes that are mentioned proximal to the a given phenotype (resistance to leaf rust in this example).
+
+prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> 
+prefix xsd:     <http://www.w3.org/2001/XMLSchema#> 
+prefix schema:  <http://schema.org/> 
+prefix owl:     <http://www.w3.org/2002/07/owl#> 
+prefix skos:    <http://www.w3.org/2004/02/skos/core#> 
+prefix oa:      <http://www.w3.org/ns/oa#> 
+prefix ncbi:    <http://identifiers.org/taxonomy/> 
+prefix dct:     <http://purl.org/dc/terms/> 
+prefix frbr:    <http://purl.org/vocab/frbr/core#> 
+prefix fabio:   <http://purl.org/spar/fabio/> 
+prefix obo:     <http://purl.obolibrary.org/obo/> 
+prefix bibo:    <http://purl.org/ontology/bibo/> 
+prefix d2kab:   <http://ns.inria.fr/d2kab/> 
+prefix dc:      <http://purl.org/dc/terms/> 
+prefix d2kab_bsv:   <http://ontology.inrae.fr/bsv/ontology/>
+prefix dul: <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#>
+prefix dct:     <http://purl.org/dc/terms/> 
+prefix taxref: <http://taxref.mnhn.fr/lod/property/>
+
+SELECT ?GeneName (count(distinct ?paper) as ?NbOcc)
+FROM NAMED <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg>
+FROM NAMED <http://ns.inria.fr/d2kab/ontology/wto/v3>
+WHERE {
+  GRAPH <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg> { 
+     ?a1 a oa:Annotation; 
+      oa:hasTarget [ oa:hasSource ?source1 ] ;  
+      oa:hasBody ?WTOtraitURI .
+
+   ?source1 frbr:partOf+ ?paper .
+    
+   ?a a oa:Annotation ; 
+      oa:hasTarget [ oa:hasSource ?source ] ;
+      oa:hasBody [ a d2kab:Gene; skos:prefLabel ?GeneName ].
+
+   ?source frbr:partOf+ ?paper.
+
+   ?paper a fabio:ResearchPaper.
+}
+   GRAPH <http://ns.inria.fr/d2kab/ontology/wto/v3> {
+       ?WTOtraitURI skos:prefLabel "resistance to Leaf rust" .
+}
+}
+GROUP BY ?GeneName 
+HAVING (count(distinct ?paper) > 1)
+ORDER BY DESC(?NbOcc)
