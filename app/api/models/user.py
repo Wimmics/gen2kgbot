@@ -1,6 +1,33 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class ChatMessage(BaseModel):
+    sender: str = Field(..., description="The sender of the message.")
+    content: str = Field(..., description="The content of the message.")
+    eventType: str = Field(..., description="The type of the event, e.g., 'init'")
+
+
+class SparqlGenerationChat(BaseModel):
+    id: str | None = Field(
+        default=None, alias="_id", description="The unique identifier of the chat."
+    )
+    messages: list[ChatMessage] = Field(
+        default_factory=list, description="List of messages in the SPARQL generation chat."
+    )
+    created_at: str | None = Field(
+        default=None, description="The timestamp when the chat was created."
+    )
+
+    @classmethod
+    def from_mongo(cls, doc: dict):
+        """Convert MongoDB document to Pydantic model"""
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
+        return cls(**doc)
+
+    model_config = ConfigDict(populate_by_name=True)
+
+
 class UserResponse(BaseModel):
     id: str | None = Field(
         default=None, alias="_id", description="The unique identifier of the user."
@@ -12,6 +39,7 @@ class UserResponse(BaseModel):
     active_config_id: str | None = Field(
         default=None, description="The ID of the active configuration for the user."
     )
+    sparql_chats: list[SparqlGenerationChat] = Field(..., description="List of SPARQL generation chats history of the user.")
 
     @classmethod
     def from_mongo(cls, doc: dict):

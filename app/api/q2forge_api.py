@@ -10,9 +10,9 @@ from app.api.database.configuration import (
     get_configuration,
     get_user_active_config,
 )
-from app.api.database.user import update_active_config
+from app.api.database.user import update_active_config, update_user_chat_history
 from app.api.models.token import Token
-from app.api.models.user import UserResponse, UserSignUp
+from app.api.models.user import SparqlGenerationChat, UserResponse, UserSignUp
 from app.api.requests.activate_config import ActivateConfig
 from app.api.requests.answer_question import AnswerQuestion
 from app.api.requests.create_config import CreateConfig
@@ -494,7 +494,9 @@ def create_config_endpoint(
 
         # Check if the config already exists
         if config is not None:
-            logger.error(f"Configuration with short name {config_request.kg_short_name} already exists")
+            logger.error(
+                f"Configuration with short name {config_request.kg_short_name} already exists"
+            )
             return Response(
                 status_code=400,
                 content=json.dumps(
@@ -672,7 +674,9 @@ def activate_config_endpoint(
         },
     },
 )
-def generate_kg_descriptions_endpoint(active_configuration: KGConfig = Depends(get_active_config_endpoint)):
+def generate_kg_descriptions_endpoint(
+    active_configuration: KGConfig = Depends(get_active_config_endpoint),
+):
     try:
         config = ConfigManager()
         config.set_configuration(active_configuration.model_dump())
@@ -732,7 +736,9 @@ def generate_kg_descriptions_endpoint(active_configuration: KGConfig = Depends(g
         },
     },
 )
-def generate_kg_embeddings_endpoint(active_configuration: KGConfig = Depends(get_active_config_endpoint)):
+def generate_kg_embeddings_endpoint(
+    active_configuration: KGConfig = Depends(get_active_config_endpoint),
+):
     try:
         config = ConfigManager()
         config.set_configuration(active_configuration.model_dump())
@@ -992,6 +998,7 @@ async def generate_access_token(form_data: OAuth2PasswordRequestForm = Depends()
                         "username": "<username>",
                         "disabled": False,
                         "active_config_id": 1,
+                        "sparql_chats": [],
                     }
                 }
             },
@@ -1046,6 +1053,73 @@ async def register_user(new_user: UserSignUp):
         "token_type": "bearer",
         "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES,
     }
+
+
+@app.post(
+    path="/api/q2forge/user/sparql_chats",
+    operation_id="add_sparql_chat",
+    summary="Add a SPARQL chat to the user's chats history",
+    description=("This endpoint adds a SPARQL chat to the user's chats history."),
+    responses={
+        200: {
+            "description": "The updated SPARQL chat history of the user",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "_id": "550e8400-e29b-41d4-a716-446655440000",
+                        "created_at": "2025-10-01T12:00:00Z",
+                        "messages": [
+                            {
+                                "sender": "user",
+                                "content": "What wheat varieties are associated with the phenotype 'drought tolerance'?",
+                                "eventType": "user_message",
+                            },
+                            {
+                                "sender": "init",
+                                "content": "**Using the scenario:** scenario_1.",
+                                "eventType": "on_chain_end",
+                            },
+                        ],
+                    }
+                }
+            },
+        },
+        500: {
+            "description": "An error occurred while updating the chat history",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Failed to update chat history>"
+                    }
+                }
+            },
+        },
+    },
+)
+def save_sparql_chat_endpoint(
+    chat_request: SparqlGenerationChat,
+    current_user: UserResponse = Depends(get_current_active_user),
+) -> SparqlGenerationChat:
+    try:
+
+        logger.debug(f"Received chat: {chat_request}")
+
+        response = update_user_chat_history(current_user, chat_request)
+
+        if not response:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to update chat history",
+            )
+
+        logger.info(f"SPARQL chat history updated of user {current_user.username}")
+
+        return response
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
 
 
 # Add MCP server to FastAPI app

@@ -1,5 +1,5 @@
 from bson import ObjectId
-from app.api.models.user import UserInDB, UserResponse
+from app.api.models.user import SparqlGenerationChat, UserInDB, UserResponse
 from app.api.responses.kg_config import KGConfig
 from app.utils.database_manager import db
 from app.utils.logger_manager import setup_logger
@@ -81,3 +81,28 @@ def update_active_config(user: UserResponse, kg_short_name: str) -> KGConfig:
 
     except Exception as e:
         raise Exception(f"Error updating user's active config: {e}")
+
+
+def update_user_chat_history(
+    user: UserResponse, chat_request: SparqlGenerationChat
+) -> SparqlGenerationChat:
+
+    logger.info(f"Updating user: {user.username} SAPRQL chat history")
+    try:
+
+        user.sparql_chats.append(chat_request)
+
+        chats = [chat.model_dump() for chat in user.sparql_chats] 
+
+        results = db["users"].update_one(
+            {"username": user.username},
+            [{"$set": {"sparql_chats": chats}}],
+        )
+
+        if results.matched_count > 0:
+            return chat_request
+
+        raise Exception("The operation did not succeed")
+
+    except Exception as e:
+        raise Exception(f"Error updating user's SPARQL chat history: {e}")
