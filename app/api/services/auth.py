@@ -13,6 +13,10 @@ SECRET_KEY = os.getenv("Q2FORGE_SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 10080  # 7 days in minutes
 
+INITIAL_FREE_CQ_GENERATION = 5
+INITIAL_FREE_SPARQL_QUERY_ANSWERS = 1
+INITIAL_FREE_SPARQL_QUERY_JUDGING = 1
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth_2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -168,7 +172,10 @@ def create_new_user(new_user: UserSignUp):
             username=new_user.username,
             hashed_password=hashed_password,
             disabled=False,
-            sparql_chats=[]
+            sparql_chats=[],
+            free_cq_generation_left=INITIAL_FREE_CQ_GENERATION,
+            free_sparql_query_answers_left=INITIAL_FREE_SPARQL_QUERY_ANSWERS,
+            free_sparql_query_judging_left=INITIAL_FREE_SPARQL_QUERY_JUDGING,
         )
     )
 

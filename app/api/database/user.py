@@ -92,7 +92,7 @@ def update_user_chat_history(
 
         user.sparql_chats.append(chat_request)
 
-        chats = [chat.model_dump() for chat in user.sparql_chats] 
+        chats = [chat.model_dump() for chat in user.sparql_chats]
 
         results = db["users"].update_one(
             {"username": user.username},
@@ -115,7 +115,11 @@ def delete_user_chat_from_history(
     logger.info(f"Updating user: {user.username} SAPRQL chat history")
     try:
 
-        chats = [chat.model_dump() for chat in user.sparql_chats if chat.id != chat_request.id]
+        chats = [
+            chat.model_dump()
+            for chat in user.sparql_chats
+            if chat.id != chat_request.id
+        ]
 
         results = db["users"].update_one(
             {"username": user.username},
@@ -129,3 +133,72 @@ def delete_user_chat_from_history(
 
     except Exception as e:
         raise Exception(f"Error updating user's SPARQL chat history: {e}")
+
+
+def update_user_free_cq_quota(
+    user: UserResponse, number_of_questions: int
+) -> SparqlGenerationChat:
+
+    logger.info(f"Updating user: {user.username} free CQ generation quota")
+    try:
+
+        user.free_cq_generation_left -= number_of_questions
+
+        results = db["users"].update_one(
+            {"username": user.username},
+            [{"$set": {"free_cq_generation_left": user.free_cq_generation_left}}],
+        )
+
+        if results.matched_count > 0:
+            return user
+
+        raise Exception("The operation did not succeed")
+
+    except Exception as e:
+        raise Exception(f"Error updating user's free CQ generation quota: {e}")
+
+
+def update_user_free_sparql_generation_quota(
+    user: UserResponse,
+) -> SparqlGenerationChat:
+
+    logger.info(f"Updating user: {user.username} free SPARQL generation quota")
+    try:
+
+        user.free_sparql_query_answers_left -= 1
+
+        results = db["users"].update_one(
+            {"username": user.username},
+            [{"$set": {"free_sparql_query_answers_left": user.free_sparql_query_answers_left}}],
+        )
+
+        if results.matched_count > 0:
+            return user
+
+        raise Exception("The operation did not succeed")
+
+    except Exception as e:
+        raise Exception(f"Error updating user's free SPARQL generation quota: {e}")
+
+
+def update_user_free_sparql_judging_quota(
+    user: UserResponse,
+) -> SparqlGenerationChat:
+
+    logger.info(f"Updating user: {user.username} free SPARQL judging quota")
+    try:
+
+        user.free_sparql_query_judging_left -= 1
+
+        results = db["users"].update_one(
+            {"username": user.username},
+            [{"$set": {"free_sparql_query_judging_left": user.free_sparql_query_judging_left}}],
+        )
+
+        if results.matched_count > 0:
+            return user
+
+        raise Exception("The operation did not succeed")
+
+    except Exception as e:
+        raise Exception(f"Error updating user's free SPARQL judging quota: {e}")

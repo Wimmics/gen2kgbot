@@ -12,7 +12,8 @@ class SparqlGenerationChat(BaseModel):
         default=None, alias="_id", description="The unique identifier of the chat."
     )
     messages: list[ChatMessage] = Field(
-        default_factory=list, description="List of messages in the SPARQL generation chat."
+        default_factory=list,
+        description="List of messages in the SPARQL generation chat.",
     )
     created_at: str | None = Field(
         default=None, description="The timestamp when the chat was created."
@@ -39,7 +40,19 @@ class UserResponse(BaseModel):
     active_config_id: str | None = Field(
         default=None, description="The ID of the active configuration for the user."
     )
-    sparql_chats: list[SparqlGenerationChat] = Field(..., description="List of SPARQL generation chats history of the user.")
+    sparql_chats: list[SparqlGenerationChat] = Field(
+        ..., description="List of SPARQL generation chats history of the user."
+    )
+    free_cq_generation_left: int = Field(
+        ...,
+        description="The number of free SPARQL query generations left for the user.",
+    )
+    free_sparql_query_answers_left: int = Field(
+        ..., description="The number of free SPARQL query answers left for the user."
+    )
+    free_sparql_query_judging_left: int = Field(
+        ..., description="The number of free SPARQL query judgings left for the user."
+    )
 
     @classmethod
     def from_mongo(cls, doc: dict):

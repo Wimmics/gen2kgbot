@@ -10,7 +10,14 @@ from app.api.database.configuration import (
     get_configuration,
     get_user_active_config,
 )
-from app.api.database.user import delete_user_chat_from_history, update_active_config, update_user_chat_history
+from app.api.database.user import (
+    delete_user_chat_from_history,
+    update_active_config,
+    update_user_chat_history,
+    update_user_free_cq_quota,
+    update_user_free_sparql_generation_quota,
+    update_user_free_sparql_judging_quota,
+)
 from app.api.models.token import Token
 from app.api.models.user import SparqlGenerationChat, UserResponse, UserSignUp
 from app.api.requests.activate_config import ActivateConfig
@@ -782,6 +789,16 @@ def generate_kg_embeddings_endpoint(
                 }
             },
         },
+        403: {
+            "description": "Forbidden: Insufficient free competency question generation quota",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Your free competency question generation quota is 5, which is less than the requested number of questions: 10. Please upgrade your account to generate more questions."
+                    }
+                }
+            },
+        },
         500: {
             "description": "An error occurred while generating competency questions",
             "content": {
@@ -797,7 +814,24 @@ def generate_kg_embeddings_endpoint(
 async def generate_question_endpoint(
     generate_competency_question_request: GenerateCompetencyQuestion,
     active_configuration: KGConfig = Depends(get_active_config_endpoint),
+    current_user: UserResponse = Depends(get_current_active_user),
 ) -> StreamingResponse:
+
+    if (
+        current_user.free_cq_generation_left
+        < generate_competency_question_request.number_of_questions
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Your free competency question generation quota is {current_user.free_cq_generation_left},"
+            + f"which is less than the requested number of questions: {generate_competency_question_request.number_of_questions}. "
+            + "Please upgrade your account to generate more questions.",
+        )
+
+    update_user_free_cq_quota(
+        current_user, generate_competency_question_request.number_of_questions
+    )
+
     config = ConfigManager()
     config.set_configuration(active_configuration.model_dump())
 
@@ -855,7 +889,16 @@ async def generate_question_endpoint(
 def answer_question_endpoint(
     answer_question_request: AnswerQuestion,
     active_configuration: KGConfig = Depends(get_active_config_endpoint),
+    current_user: UserResponse = Depends(get_current_active_user),
 ):
+
+    if current_user.free_sparql_query_answers_left == 0:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your free SPARQL query answer quota is 0.",
+        )
+
+    update_user_free_sparql_generation_quota(current_user)
 
     config = ConfigManager()
     config.set_configuration(active_configuration.model_dump())
@@ -916,7 +959,17 @@ def answer_question_endpoint(
 async def judge_query_endpoint(
     refine_query_request: RefineQuery,
     active_configuration: KGConfig = Depends(get_active_config_endpoint),
+        current_user: UserResponse = Depends(get_current_active_user),
 ):
+
+    if current_user.free_sparql_query_judging_left == 0:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your free SPARQL query judging quota is 0.",
+        )
+
+    update_user_free_sparql_judging_quota(current_user)
+
     config = ConfigManager()
     config.set_configuration(active_configuration.model_dump())
 
@@ -1088,9 +1141,7 @@ async def register_user(new_user: UserSignUp):
             "description": "An error occurred while updating the chat history",
             "content": {
                 "application/json": {
-                    "example": {
-                        "error": "Failed to update chat history>"
-                    }
+                    "example": {"error": "Failed to update chat history>"}
                 }
             },
         },
@@ -1154,11 +1205,7 @@ def save_sparql_chat_endpoint(
         500: {
             "description": "An error occurred while deleting the chat",
             "content": {
-                "application/json": {
-                    "example": {
-                        "error": "Failed to delete a chat>"
-                    }
-                }
+                "application/json": {"example": {"error": "Failed to delete a chat>"}}
             },
         },
     },
