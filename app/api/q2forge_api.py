@@ -10,7 +10,7 @@ from app.api.database.configuration import (
     get_configuration,
     get_user_active_config,
 )
-from app.api.database.user import update_active_config, update_user_chat_history
+from app.api.database.user import delete_user_chat_from_history, update_active_config, update_user_chat_history
 from app.api.models.token import Token
 from app.api.models.user import SparqlGenerationChat, UserResponse, UserSignUp
 from app.api.requests.activate_config import ActivateConfig
@@ -1113,6 +1113,73 @@ def save_sparql_chat_endpoint(
             )
 
         logger.info(f"SPARQL chat history updated of user {current_user.username}")
+
+        return response
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
+
+@app.delete(
+    path="/api/q2forge/user/sparql_chats",
+    operation_id="delete_sparql_chat",
+    summary="Delete a SPARQL chat from the user's chats history",
+    description=("This endpoint deletes a SPARQL chat from the user's chats history."),
+    responses={
+        200: {
+            "description": "The deleted chat",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "_id": "550e8400-e29b-41d4-a716-446655440000",
+                        "created_at": "2025-10-01T12:00:00Z",
+                        "messages": [
+                            {
+                                "sender": "user",
+                                "content": "What wheat varieties are associated with the phenotype 'drought tolerance'?",
+                                "eventType": "user_message",
+                            },
+                            {
+                                "sender": "init",
+                                "content": "**Using the scenario:** scenario_1.",
+                                "eventType": "on_chain_end",
+                            },
+                        ],
+                    }
+                }
+            },
+        },
+        500: {
+            "description": "An error occurred while deleting the chat",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "error": "Failed to delete a chat>"
+                    }
+                }
+            },
+        },
+    },
+)
+def delete_sparql_chat_endpoint(
+    chat_request: SparqlGenerationChat,
+    current_user: UserResponse = Depends(get_current_active_user),
+) -> SparqlGenerationChat:
+    try:
+
+        logger.debug(f"Received chat: {chat_request}")
+
+        response = delete_user_chat_from_history(current_user, chat_request)
+
+        if not response:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to delete a chat",
+            )
+
+        logger.info(f"SPARQL chat history deleted for user {current_user.username}")
 
         return response
     except Exception as e:

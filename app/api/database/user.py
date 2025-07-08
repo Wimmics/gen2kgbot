@@ -106,3 +106,26 @@ def update_user_chat_history(
 
     except Exception as e:
         raise Exception(f"Error updating user's SPARQL chat history: {e}")
+
+
+def delete_user_chat_from_history(
+    user: UserResponse, chat_request: SparqlGenerationChat
+) -> SparqlGenerationChat:
+
+    logger.info(f"Updating user: {user.username} SAPRQL chat history")
+    try:
+
+        chats = [chat.model_dump() for chat in user.sparql_chats if chat.id != chat_request.id]
+
+        results = db["users"].update_one(
+            {"username": user.username},
+            [{"$set": {"sparql_chats": chats}}],
+        )
+
+        if results.matched_count > 0:
+            return chat_request
+
+        raise Exception("The operation did not succeed")
+
+    except Exception as e:
+        raise Exception(f"Error updating user's SPARQL chat history: {e}")

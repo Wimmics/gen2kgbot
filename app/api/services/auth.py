@@ -168,6 +168,7 @@ def create_new_user(new_user: UserSignUp):
             username=new_user.username,
             hashed_password=hashed_password,
             disabled=False,
+            sparql_chats=[]
         )
     )
 
