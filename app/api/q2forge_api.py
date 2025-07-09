@@ -48,8 +48,6 @@ from app.utils.config_manager import ConfigManager
 from app.utils.construct_util import ConstructUtil
 from app.utils.logger_manager import setup_logger
 from app.preprocessing.compute_embeddings import ComputeEmbeddings
-
-# from app.preprocessing.gen_descriptions import generate_descriptions
 import uvicorn
 
 
@@ -378,7 +376,9 @@ def get_active_config_endpoint(
                     "example": [
                         {
                             "scenario_id": 1,
-                            "schema": "```mermaid\n%%{init: {'flowchart': {'curve': 'linear'}}}%%\ngraph TD;\n\t__start__([<p>__start__</p>]):::first\n\tinit(init)\n\tvalidate_question(validate_question)\n\task_question(ask_question)\n\t__end__([<p>__end__</p>]):::last\n\t__start__ --> init;\n\task_question --> __end__;\n\tinit --> validate_question;\n\tvalidate_question -.-> ask_question;\n\tvalidate_question -.-> __end__;\n\tclassDef default fill:#f2f0ff,line-height:1.2\n\tclassDef first fill-opacity:0\n\tclassDef last fill:#bfb6fc\n\n```",
+                            "schema": "```mermaid\n%%{init: {'flowchart': {'curve': 'linear'}}}%%\ngraph TD;\n\t__start__([<p>__start__</p>]):::first\n\tinit(init)\n\tvalidate_question(validate_question)\n\task_question(ask_question)\n\t"
+                            + "__end__([<p>__end__</p>]):::last\n\t__start__ --> init;\n\task_question --> __end__;\n\tinit --> validate_question;\n\tvalidate_question -.-> ask_question;\n\tvalidate_question -.-> __end__;\n\t"
+                            + "classDef default fill:#f2f0ff,line-height:1.2\n\tclassDef first fill-opacity:0\n\tclassDef last fill:#bfb6fc\n\n```",
                         },
                         {
                             "scenario_id": 2,
@@ -410,7 +410,9 @@ def get_scenario_schema_endpoint() -> list[ScenarioSchema]:
                     "example": {
                         "kg_full_name": "WheatGenomic Scienctific Literature Knowledge Graph",
                         "kg_short_name": "d2kab",
-                        "kg_description": "The Wheat Genomics Scientific Literature Knowledge Graph (WheatGenomicsSLKG) is a FAIR knowledge graph that exploits the Semantic Web technologies to describe PubMed scientific articles on wheat genetics and genomics. It represents Named Entities (NE) about genes, phenotypes, taxa and varieties, mentioned in the title and the abstract of the articles, and the relationships between wheat mentions of varieties and phenotypes.",
+                        "kg_description": "The Wheat Genomics Scientific Literature Knowledge Graph (WheatGenomicsSLKG) is a FAIR knowledge graph that exploits the Semantic Web technologies to describe PubMed scientific articles on wheat genetics"
+                        + " and genomics. It represents Named Entities (NE) about genes, phenotypes, taxa and varieties, mentioned in the title and the abstract of the articles, and the relationships between wheat mentions of varieties"
+                        + " and phenotypes.",
                         "kg_sparql_endpoint_url": "http://d2kab.i3s.unice.fr/sparql",
                         "ontologies_sparql_endpoint_url": "http://d2kab.i3s.unice.fr/sparql",
                         "properties_qnames_info": [],
@@ -450,20 +452,17 @@ def get_scenario_schema_endpoint() -> list[ScenarioSchema]:
                         "queryExamples": [
                             {
                                 "question": "Retrieve genes that are mentioned proximal to the a given phenotype (resistance to leaf rust in this example).",
-                                "query": 'prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \nprefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> \nprefix xsd:     <http://www.w3.org/2001/XMLSchema#> \nprefix schema:  <http://schema.org/> \nprefix owl:     <http://www.w3.org/2002/07/owl#> \nprefix skos:    <http://www.w3.org/2004/02/skos/core#> \nprefix oa:      <http://www.w3.org/ns/oa#> \nprefix ncbi:    <http://identifiers.org/taxonomy/> \nprefix dct:     <http://purl.org/dc/terms/> \nprefix frbr:    <http://purl.org/vocab/frbr/core#> \nprefix fabio:   <http://purl.org/spar/fabio/> \nprefix obo:     <http://purl.obolibrary.org/obo/> \nprefix bibo:    <http://purl.org/ontology/bibo/> \nprefix d2kab:   <http://ns.inria.fr/d2kab/> \nprefix dc:      <http://purl.org/dc/terms/> \nprefix d2kab_bsv:   <http://ontology.inrae.fr/bsv/ontology/>\nprefix dul: <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#>\nprefix dct:     <http://purl.org/dc/terms/> \nprefix taxref: <http://taxref.mnhn.fr/lod/property/>\n\nSELECT ?GeneName (count(distinct ?paper) as ?NbOcc)\nFROM NAMED <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg>\nFROM NAMED <http://ns.inria.fr/d2kab/ontology/wto/v3>\nWHERE {\n  GRAPH <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg> { \n     ?a1 a oa:Annotation; \n      oa:hasTarget [ oa:hasSource ?source1 ] ;  \n      oa:hasBody ?WTOtraitURI .\n\n   ?source1 frbr:partOf+ ?paper .\n    \n   ?a a oa:Annotation ; \n      oa:hasTarget [ oa:hasSource ?source ] ;\n      oa:hasBody [ a d2kab:Gene; skos:prefLabel ?GeneName ].\n\n   ?source frbr:partOf+ ?paper.\n\n   ?paper a fabio:ResearchPaper.\n}\n   GRAPH <http://ns.inria.fr/d2kab/ontology/wto/v3> {\n       ?WTOtraitURI skos:prefLabel "resistance to Leaf rust" .\n}\n}\nGROUP BY ?GeneName \nHAVING (count(distinct ?paper) > 1)\nORDER BY DESC(?NbOcc)',
-                            },
-                            {
-                                "question": "Retrieve publications in which genes are mentioned proximal to wheat varieties and traits from a specific class, e.g., all wheat traits related to resistance to fungal pathogens.",
-                                "query": "prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \nprefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> \nprefix xsd:     <http://www.w3.org/2001/XMLSchema#> \nprefix schema:  <http://schema.org/> \nprefix owl:     <http://www.w3.org/2002/07/owl#> \nprefix skos:    <http://www.w3.org/2004/02/skos/core#> \nprefix oa:      <http://www.w3.org/ns/oa#> \nprefix ncbi:    <http://identifiers.org/taxonomy/> \nprefix dct:     <http://purl.org/dc/terms/> \nprefix frbr:    <http://purl.org/vocab/frbr/core#> \nprefix fabio:   <http://purl.org/spar/fabio/> \nprefix obo:     <http://purl.obolibrary.org/obo/> \nprefix bibo:    <http://purl.org/ontology/bibo/> \nprefix d2kab:   <http://ns.inria.fr/d2kab/> \nprefix dc:      <http://purl.org/dc/terms/> \nprefix d2kab_bsv:   <http://ontology.inrae.fr/bsv/ontology/>\nprefix dul: <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#>\nprefix dct:     <http://purl.org/dc/terms/> \nprefix taxref: <http://taxref.mnhn.fr/lod/property/>\n\nSELECT *\nFROM NAMED <http://ns.inria.fr/d2kab/ontology/wto/v3>\nWHERE {\n  GRAPH <http://ns.inria.fr/d2kab/ontology/wto/v3> {\n    { ?body a ?class ; skos:prefLabel ?WTOtrait.\n      ?class rdfs:subClassOf* <http://opendata.inrae.fr/wto/0000340>.\n    }\n    UNION\n    { ?body rdfs:label ?WTOtrait ;\n        rdfs:subClassOf* <http://opendata.inrae.fr/wto/0000340>.\n    }\n    UNION\n    { ?body skos:prefLabel ?WTOtrait ; skos:broader* ?concept .\n      ?concept a ?class.\n      ?class rdfs:subClassOf* <http://opendata.inrae.fr/wto/0000340>.\n    }\n  }\n}",
-                            },
-                            {
-                                "question": 'Retrieve genetic markers mentioned proximal to genes which are in turn mentioned proximal to a wheat phenotype ("resistance to Stripe rust" in this example) considering the same scientific publication.',
-                                "query": 'prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \nprefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> \nprefix xsd:     <http://www.w3.org/2001/XMLSchema#> \nprefix schema:  <http://schema.org/> \nprefix owl:     <http://www.w3.org/2002/07/owl#> \nprefix skos:    <http://www.w3.org/2004/02/skos/core#> \nprefix oa:      <http://www.w3.org/ns/oa#> \nprefix ncbi:    <http://identifiers.org/taxonomy/> \nprefix dct:     <http://purl.org/dc/terms/> \nprefix frbr:    <http://purl.org/vocab/frbr/core#> \nprefix fabio:   <http://purl.org/spar/fabio/> \nprefix obo:     <http://purl.obolibrary.org/obo/> \nprefix bibo:    <http://purl.org/ontology/bibo/> \nprefix d2kab:   <http://ns.inria.fr/d2kab/> \nprefix dc:      <http://purl.org/dc/terms/> \nprefix d2kab_bsv:   <http://ontology.inrae.fr/bsv/ontology/>\nprefix dul: <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#>\nprefix dct:     <http://purl.org/dc/terms/> \nprefix taxref: <http://taxref.mnhn.fr/lod/property/>\n\nSELECT (GROUP_CONCAT(distinct ?GeneName; SEPARATOR="-") as ?genes) \n(GROUP_CONCAT(distinct ?marker; SEPARATOR="-") as ?markers) \n?paper ?year ?WTOtrait\nFROM NAMED <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg>\nFROM NAMED <http://ns.inria.fr/d2kab/ontology/wto/v3>\nWHERE {\nVALUES ?WTOtrait { "resistance to Stripe rust" }\nGRAPH <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg> { \n?a1 a oa:Annotation ;\n    oa:hasTarget [ oa:hasSource ?source1 ];\n    oa:hasBody [ a d2kab:Gene ; skos:prefLabel ?GeneName].\n\n?source1 frbr:partOf+ ?paper .\n\n?a2 a oa:Annotation ;\n    oa:hasTarget [ oa:hasSource ?source2 ] ;\n    oa:hasBody [ a d2kab:Marker ; skos:prefLabel ?marker ]. \n\n?source2 frbr:partOf+ ?paper .\n\n?a3 a oa:Annotation; \n    oa:hasTarget [ oa:hasSource ?source3 ];\n    oa:hasBody ?WTOtraitURI.\n\n?source3 frbr:partOf+ ?paper . \n\n?paper a fabio:ResearchPaper; dct:title ?source3; dct:issued ?year .\nFILTER (?year >= "2010"^^xsd:gYear)\n}\nGRAPH <http://ns.inria.fr/d2kab/ontology/wto/v3> {\n       ?WTOtraitURI skos:prefLabel ?WTOtrait.\n}\n}\nGROUP BY ?paper ?year ?WTOtrait',
-                            },
-                            {
-                                "question": "Retrieves couples of scientific publications such as a first publication mentions a given phenotype and a gene and the second one mentions the same gene name with a genetic marker.",
-                                "query": 'prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \nprefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> \nprefix xsd:     <http://www.w3.org/2001/XMLSchema#> \nprefix schema:  <http://schema.org/> \nprefix owl:     <http://www.w3.org/2002/07/owl#> \nprefix skos:    <http://www.w3.org/2004/02/skos/core#> \nprefix oa:      <http://www.w3.org/ns/oa#> \nprefix ncbi:    <http://identifiers.org/taxonomy/> \nprefix dct:     <http://purl.org/dc/terms/> \nprefix frbr:    <http://purl.org/vocab/frbr/core#> \nprefix fabio:   <http://purl.org/spar/fabio/> \nprefix obo:     <http://purl.obolibrary.org/obo/> \nprefix bibo:    <http://purl.org/ontology/bibo/> \nprefix d2kab:   <http://ns.inria.fr/d2kab/> \nprefix dc:      <http://purl.org/dc/terms/> \nprefix d2kab_bsv:   <http://ontology.inrae.fr/bsv/ontology/>\nprefix dul: <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#>\nprefix dct:     <http://purl.org/dc/terms/> \nprefix taxref: <http://taxref.mnhn.fr/lod/property/>\n\nSELECT distinct ?paper1 ?WTOtrait ?Title1 ?geneName ?paper2 ?Title2 (GROUP_CONCAT(distinct ?marker; SEPARATOR="-") as ?markers) \nFROM <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg>\nFROM <http://ns.inria.fr/d2kab/ontology/wto/v3>\nWHERE {\n{\n\nSELECT distinct ?geneName ?gene ?paper1 ?Title1 ?WTOtrait WHERE \n{\n    VALUES ?WTOtrait { "resistance to Stripe rust" }\n    ?a1 a oa:Annotation ; \n        oa:hasTarget [ oa:hasSource ?source1 ] ;\n        oa:hasBody ?body .\n\n    GRAPH <http://ns.inria.fr/d2kab/ontology/wto/v3> {\n        ?body skos:prefLabel ?WTOtrait.\n    }\n\n    ?a2 a oa:Annotation ;\n        oa:hasTarget [ oa:hasSource ?source2 ] ;\n        oa:hasBody ?gene .\n        ?gene a d2kab:Gene ; skos:prefLabel ?geneName . \n        ?source1 frbr:partOf+ ?paper1 .\n        ?source2 frbr:partOf+ ?paper1 .\n        ?paper1 a fabio:ResearchPaper ; dct:title ?source1 .\n        ?source1 rdf:value ?Title1.\n}\nLIMIT 20\n}\n?a3 a oa:Annotation ;\n    oa:hasTarget [ oa:hasSource ?source3 ] ;\n    oa:hasBody [a d2kab:Marker ; skos:prefLabel ?marker ] .\n \n?a4 a oa:Annotation ;\n    oa:hasTarget [ oa:hasSource ?source4 ] ;\n    oa:hasBody ?gene .\n \n?source3 frbr:partOf+ ?paper2 .\n?source4 frbr:partOf+ ?paper2 .\n?paper2 a fabio:ResearchPaper ; dct:title ?titleURI .\n?titleURI rdf:value ?Title2.\nFILTER (URI(?paper1) != URI(?paper2))\n}\nGROUP BY ?WTOtrait ?geneName ?paper1 ?Title1 ?paper2 ?Title2\nLIMIT 50',
-                            },
+                                "query": "prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \nprefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> \nprefix xsd:     <http://www.w3.org/2001/XMLSchema#> \n"
+                                + "prefix schema:  <http://schema.org/> \nprefix owl:     <http://www.w3.org/2002/07/owl#> \nprefix skos:    <http://www.w3.org/2004/02/skos/core#> \nprefix oa:      <http://www.w3.org/ns/oa#> \n"
+                                + "prefix ncbi:    <http://identifiers.org/taxonomy/> \nprefix dct:     <http://purl.org/dc/terms/> \nprefix frbr:    <http://purl.org/vocab/frbr/core#> \nprefix fabio:   <http://purl.org/spar/fabio/> \n"
+                                + "prefix obo:     <http://purl.obolibrary.org/obo/> \nprefix bibo:    <http://purl.org/ontology/bibo/> \nprefix d2kab:   <http://ns.inria.fr/d2kab/> \nprefix dc:      <http://purl.org/dc/terms/> \n"
+                                + "prefix d2kab_bsv:   <http://ontology.inrae.fr/bsv/ontology/>\nprefix dul: <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#>\nprefix dct:     <http://purl.org/dc/terms/> \n"
+                                + "prefix taxref: <http://taxref.mnhn.fr/lod/property/>\n\nSELECT ?GeneName (count(distinct ?paper) as ?NbOcc)\nFROM NAMED <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg>\n"
+                                + "FROM NAMED <http://ns.inria.fr/d2kab/ontology/wto/v3>\nWHERE {\n  GRAPH <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg> { \n     ?a1 a oa:Annotation; \n      oa:hasTarget [ oa:hasSource ?source1 ] ;  \n"
+                                + "oa:hasBody ?WTOtraitURI .\n\n   ?source1 frbr:partOf+ ?paper .\n    \n   ?a a oa:Annotation ; \n      oa:hasTarget [ oa:hasSource ?source ] ;\n      oa:hasBody [ a d2kab:Gene; skos:prefLabel ?GeneName ].\n\n"
+                                + '?source frbr:partOf+ ?paper.\n\n   ?paper a fabio:ResearchPaper.\n}\n   GRAPH <http://ns.inria.fr/d2kab/ontology/wto/v3> {\n       ?WTOtraitURI skos:prefLabel "resistance to Leaf rust" .\n}\n}\n'
+                                + "GROUP BY ?GeneName \nHAVING (count(distinct ?paper) > 1)\nORDER BY DESC(?NbOcc)",
+                            }
                         ],
                     }
                 }
@@ -939,7 +938,8 @@ def answer_question_endpoint(
                         {"event": "on_chat_model_start"},
                         {
                             "event": "on_chat_model_stream",
-                            "data": "Grade: 8/10\nJustification: The student has attempted to retrieve publications in which genes are mentioned proximal to wheat varieties and traits from a specific class, e.g., all wheat traits related to resistance to fungal pathogens. The query is well-structured and uses the necessary prefixes for RDF data modeling.",
+                            "data": "Grade: 8/10\nJustification: The student has attempted to retrieve publications in which genes are mentioned proximal to wheat varieties and traits from a specific class,"
+                            + " e.g., all wheat traits related to resistance to fungal pathogens. The query is well-structured and uses the necessary prefixes for RDF data modeling.",
                         },
                         {"event": "on_chat_model_end"},
                     ]
@@ -959,7 +959,7 @@ def answer_question_endpoint(
 async def judge_query_endpoint(
     refine_query_request: RefineQuery,
     active_configuration: KGConfig = Depends(get_active_config_endpoint),
-        current_user: UserResponse = Depends(get_current_active_user),
+    current_user: UserResponse = Depends(get_current_active_user),
 ):
 
     if current_user.free_sparql_query_judging_left == 0:

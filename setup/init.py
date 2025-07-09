@@ -22,7 +22,8 @@ collections = [
                 "_id": ObjectId("686668b8b3daabccac9fce03"),
                 "kg_full_name": "WheatGenomic Scienctific Literature Knowledge Graph",
                 "kg_short_name": "d2kab",
-                "kg_description": "The Wheat Genomics Scientific Literature Knowledge Graph (WheatGenomicsSLKG) is a FAIR knowledge graph that exploits the Semantic Web technologies to describe PubMed scientific articles on wheat genetics and genomics. It represents Named Entities (NE) about genes, phenotypes, taxa and varieties, mentioned in the title and the abstract of the articles, and the relationships between wheat mentions of varieties and phenotypes.",
+                "kg_description": "The Wheat Genomics Scientific Literature Knowledge Graph (WheatGenomicsSLKG) is a FAIR knowledge graph that exploits the Semantic Web technologies to describe PubMed scientific articles on wheat genetics"
+                + " and genomics. It represents Named Entities (NE) about genes, phenotypes, taxa and varieties, mentioned in the title and the abstract of the articles, and the relationships between wheat mentions of varieties and phenotypes.",
                 "kg_sparql_endpoint_url": "http://d2kab.i3s.unice.fr/sparql",
                 "ontologies_sparql_endpoint_url": "http://d2kab.i3s.unice.fr/sparql",
                 "properties_qnames_info": [],
