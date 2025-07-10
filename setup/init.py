@@ -12,6 +12,10 @@ collections = [
                 "disabled": False,
                 "hashed_password": "$2b$12$yZMqaDhT.nlaAtYe4m0qFeQF1bM5fRMJ5A8viek5Z7Z6maXFH/r7i",
                 "active_config_id": ObjectId("686668b8b3daabccac9fce03"),
+                "sparql_chats": [],
+                "free_cq_generation_left": 15,
+                "free_sparql_query_answers_left": 1,
+                "free_sparql_query_judging_left": 1,
             }
         ],
     },
@@ -271,8 +275,8 @@ def initialize_database():
 
 
 def copy_default_embeddings():
-    source_folder = 'setup/data'
-    destination_folder = 'data'
+    source_folder = "setup/data"
+    destination_folder = "data"
 
     # This copies everything from source to destination
     shutil.copytree(source_folder, destination_folder, dirs_exist_ok=True)

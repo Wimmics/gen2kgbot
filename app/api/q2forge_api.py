@@ -1237,7 +1237,7 @@ def delete_sparql_chat_endpoint(
 
 
 # Add MCP server to FastAPI app
-mcp = FastApiMCP(fastapi=app, name="Q2Forge")
+mcp = FastApiMCP(fastapi=app, name="Gen²KGBot")
 
 # Mount the MCP server directly to your FastAPI app
 mcp.mount()
