@@ -823,8 +823,8 @@ async def generate_question_endpoint(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Your free competency question generation quota is {current_user.free_cq_generation_left},"
-            + f"which is less than the requested number of questions: {generate_competency_question_request.number_of_questions}. "
-            + "Please upgrade your account to generate more questions.",
+            + f" which is less than the requested number of questions: {generate_competency_question_request.number_of_questions}. "
+            + " Please contact the administrator to increase your quota or use the local version.",
         )
 
     update_user_free_cq_quota(
@@ -894,7 +894,8 @@ def answer_question_endpoint(
     if current_user.free_sparql_query_answers_left == 0:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your free SPARQL query answer quota is 0.",
+            detail="Your free SPARQL query answer quota is 0."
+            + " Please contact the administrator to increase your quota or use the local version.",
         )
 
     update_user_free_sparql_generation_quota(current_user)
@@ -965,7 +966,8 @@ async def judge_query_endpoint(
     if current_user.free_sparql_query_judging_left == 0:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your free SPARQL query judging quota is 0.",
+            detail="Your free SPARQL query judging quota is 0."
+            + " Please contact the administrator to increase your quota or use the local version.",
         )
 
     update_user_free_sparql_judging_quota(current_user)
