@@ -1,5 +1,6 @@
 import importlib
 import os
+import re
 from typing import Literal
 from pathlib import Path
 import yaml
@@ -22,6 +23,9 @@ from app.utils.envkey_manager import (
 )
 from app.utils.graph_state import InputState
 from app.utils.logger_manager import setup_logger
+from langfuse import Langfuse
+from langfuse.langchain import CallbackHandler
+from langfuse import get_client
 
 logger = setup_logger(__package__, __file__)
 
@@ -668,9 +672,7 @@ def setup_cli() -> Namespace:
         help='User\'s question. Defaults to "What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?"',
         default="What protein targets does donepezil (CHEBI_53289) inhibit with an IC50 less than 5 µM?",
     )
-    parser.add_argument(
-        "-p", "--params", type=str, help="Custom configuration file"
-    )
+    parser.add_argument("-p", "--params", type=str, help="Custom configuration file")
 
     parser.add_argument("app.api.q2forge_api:app", nargs="?", help="Run the API")
     parser.add_argument("--reload", nargs="?", help="Debug mode")
@@ -682,6 +684,18 @@ def get_scenario_module(scenario_id: int):
         f"app.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
     )
     return scenario_module
+
+
+def setup_langfuse() -> bool:
+    langfuse = get_client()
+
+    # Verify connection
+    if langfuse.auth_check():
+        logger.info("Langfuse client is authenticated and ready!")
+        return True
+    else:
+        logger.warning("Langfuse Authentication failed. Please check your credentials and host.")
+        return False
 
 
 async def main(config: ConfigManager, graph: CompiledStateGraph):
@@ -700,7 +714,12 @@ async def main(config: ConfigManager, graph: CompiledStateGraph):
 
     question = args.question
     logger.info(f"Users' question: {question}")
-    state = await graph.ainvoke(input=InputState({"initial_question": question}))
+
+    if (setup_langfuse()):
+        langfuse_handler = CallbackHandler()
+        state = await graph.ainvoke(input=InputState({"initial_question": question}), config={"callbacks": [langfuse_handler]})
+    else:
+        state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
     logger.info("==============================================================")
     for m in state["messages"]:

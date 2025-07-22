@@ -267,10 +267,10 @@ scenario_6:
 
 scenario_7:
   generate_query: llama-3_1-70B@ovh
-  interpret_results: llama-3_1-70B@ovh
+  interpret_results: gemma-3_4b@local
   judge_query: llama-3_1-70B@ovh
   judge_regenerate_query: llama-3_1-70B@ovh
   judging_grade_threshold_retry: 8
   judging_grade_threshold_run: 5
   text_embedding_model: nomic-embed-text_faiss@local
-  validate_question: llama-3_1-70B@ovh
+  validate_question: gemma-3_4b@local
