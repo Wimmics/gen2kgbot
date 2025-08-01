@@ -9,6 +9,7 @@ The output is saved to the directory defined respectively in configuration param
 """
 
 from argparse import Namespace, ArgumentParser
+import time
 import faiss
 import os
 from tqdm import tqdm
@@ -210,7 +211,13 @@ class ComputeEmbeddings:
 
 
 if __name__ == "__main__":
+    start_time = time.time()
+
     config = ConfigManager()
     config.read_configuration(setup_cli())
     compute_embeddings = ComputeEmbeddings(config=config)
     compute_embeddings.start_compute_embeddings()
+
+    end_time = time.time()
+    execution_time_ms = (end_time - start_time) * 1000
+    logger.info(f"Execution time: {execution_time_ms:.1f} ms")

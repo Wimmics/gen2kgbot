@@ -104,6 +104,7 @@ class Scenario2:
 
 scenario = Scenario2()
 graph = scenario.construct_graph()
+config_manager.setup_langgraph_studio(scenario.config)
 
 
 if __name__ == "__main__":

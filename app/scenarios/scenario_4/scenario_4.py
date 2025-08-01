@@ -81,7 +81,7 @@ class Scenario4:
 
 scenario = Scenario4()
 graph = scenario.construct_graph()
-
+config_manager.setup_langgraph_studio(scenario.config)
 
 if __name__ == "__main__":
     asyncio.run(config_manager.main(scenario.config, graph))

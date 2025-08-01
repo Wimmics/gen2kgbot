@@ -21,6 +21,7 @@ The configuration file (default: `config/params.yaml`) prodives the SPARQL endpo
 
 from argparse import Namespace, ArgumentParser
 import os
+import time
 from app.utils.config_manager import ConfigManager
 from app.utils.construct_util import ConstructUtil, run_sparql_query
 from app.utils.logger_manager import setup_logger
@@ -439,8 +440,14 @@ class GenDescriptions:
 
 
 if __name__ == "__main__":
+    start_time = time.time()
+
     config = ConfigManager()
     config.read_configuration(setup_cli())
     constructUtil = ConstructUtil(config)
     gen_descriptions = GenDescriptions(config=config, constructUtil=constructUtil)
     gen_descriptions.generate_descriptions()
+    
+    end_time = time.time()
+    execution_time_ms = (end_time - start_time) * 1000
+    logger.info(f"Execution time: {execution_time_ms:.1f} ms")

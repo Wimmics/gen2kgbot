@@ -1,6 +1,6 @@
 import importlib
 import os
-import re
+import sys
 from typing import Literal
 from pathlib import Path
 import yaml
@@ -23,7 +23,6 @@ from app.utils.envkey_manager import (
 )
 from app.utils.graph_state import InputState
 from app.utils.logger_manager import setup_logger
-from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 from langfuse import get_client
 
@@ -37,11 +36,6 @@ class ConfigManager:
         self.current_llm = {}
         self.classes_vector_db = {}
         self.queries_vector_db = {}
-
-        # Load the default config file.
-        # Necessary when using Langragraph Studio as it loads the scenarios without CLI arguments.
-        # If calling from CLI, the default config will be overridden.
-        # self.read_configuration()
 
     def get_configuration(self) -> dict:
         return self.config
@@ -687,15 +681,28 @@ def get_scenario_module(scenario_id: int):
 
 
 def setup_langfuse() -> bool:
-    langfuse = get_client()
+    try:
+        langfuse = get_client()
 
-    # Verify connection
-    if langfuse.auth_check():
-        logger.info("Langfuse client is authenticated and ready!")
-        return True
-    else:
-        logger.warning("Langfuse Authentication failed. Please check your credentials and host.")
+        # Verify connection
+        if langfuse.auth_check():
+            logger.info("Langfuse client is authenticated and ready!")
+            return True
+        else:
+            logger.warning(
+                "Langfuse Authentication failed. Please check your credentials and host."
+            )
+            return False
+    except Exception as e:
+        logger.error(f"Error setting up Langfuse: {e}")
         return False
+
+
+def setup_langgraph_studio(config: ConfigManager):
+    # Parse the command line arguments
+    if len(sys.argv) == 2 and sys.argv[0].endswith('langgraph') and sys.argv[1] == "dev":
+        config.read_configuration()
+        logger.info("Running default configuration with Langgraph Studio")
 
 
 async def main(config: ConfigManager, graph: CompiledStateGraph):
@@ -715,9 +722,12 @@ async def main(config: ConfigManager, graph: CompiledStateGraph):
     question = args.question
     logger.info(f"Users' question: {question}")
 
-    if (setup_langfuse()):
+    if setup_langfuse():
         langfuse_handler = CallbackHandler()
-        state = await graph.ainvoke(input=InputState({"initial_question": question}), config={"callbacks": [langfuse_handler]})
+        state = await graph.ainvoke(
+            input=InputState({"initial_question": question}),
+            config={"callbacks": [langfuse_handler]},
+        )
     else:
         state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
