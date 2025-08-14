@@ -13,10 +13,27 @@ from langgraph.graph.state import CompiledStateGraph
 
 logger = setup_logger(__package__, __file__)
 
+evaluation_config = {
+    "dataset": "enpkg",
+    "scenario_id": 7,
+    "experiment_name": "enpkg_7_llama-3_1-70",
+    "cosine_model": "all-MiniLM-L6-v2",
+    "scenario_config": {
+        "generate_query": "llama-3_1-70B@ovh",
+        "interpret_results": "llama-3_1-70B@ovh",
+        "judge_query": "llama-3_1-70B@ovh",
+        "judge_regenerate_query": "llama-3_1-70B@ovh",
+        "judging_grade_threshold_retry": 8,
+        "judging_grade_threshold_run": 5,
+        "text_embedding_model": "nomic-embed-text_faiss@local",
+        "validate_question": "llama-3_1-70B@ovh",
+    },
+}
+
 
 async def run_experiment(experiment_name, scenario_id: int):
 
-    dataset = langfuse.get_dataset("enpkg")
+    dataset = langfuse.get_dataset(evaluation_config["dataset"])
 
     langfuse_handler = CallbackHandler()
 
@@ -78,7 +95,7 @@ def levenshtein_evaluation(output, expected_output):
 
 
 def cosine_evaluation(output, expected_output):
-    model = SentenceTransformer("all-MiniLM-L6-v2")
+    model = SentenceTransformer(evaluation_config["cosine_model"])
     emb1 = model.encode(output, convert_to_tensor=True)
     emb2 = model.encode(expected_output, convert_to_tensor=True)
 
@@ -96,8 +113,8 @@ if __name__ == "__main__":
         print("Langfuse client is authenticated and ready!")
         asyncio.run(
             run_experiment(
-                "enpkg_experiment_2",
-                7,
+                experiment_name=evaluation_config["experiment_name"],
+                scenario_id=evaluation_config["scenario_id"],
             )
         )
     else:
