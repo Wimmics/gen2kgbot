@@ -103,6 +103,8 @@ WHERE {
         UNION
         { ?prop a owl:DataTypeProperty. }
         UNION
+        { ?prop a rdf:Property. }
+        UNION
         { ?prop rdfs:subPropertyOf []. }
         UNION
         { ?prop rdf:Property []. }
@@ -149,6 +151,8 @@ WHERE {
           { ?prop dcterms:description ?comment }
           UNION
           { ?prop schema:description ?comment }
+          UNION
+          { ?prop orkgp:description ?comment }
           UNION
           { ?prop obo:IAO_0000115 ?comment }   # definition
           }}

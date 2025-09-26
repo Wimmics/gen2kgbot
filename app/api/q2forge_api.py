@@ -3,7 +3,7 @@ import json
 from fastapi import Depends, FastAPI, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from fastapi_mcp import FastApiMCP
+from fastapi_mcp import AuthConfig, FastApiMCP
 from app.api.database.configuration import (
     add_configuration,
     get_available_configurations,
@@ -34,6 +34,7 @@ from app.api.services.auth import (
     create_access_token,
     create_new_user,
     get_current_active_user,
+    get_current_user,
 )
 from app.api.services.config_manager import (
     add_missing_config_params,
@@ -1239,10 +1240,12 @@ def delete_sparql_chat_endpoint(
 
 
 # Add MCP server to FastAPI app
-mcp = FastApiMCP(fastapi=app, name="Gen²KGBot")
+mcp = FastApiMCP(fastapi=app, name="Gen²KGBot", auth_config=AuthConfig(
+    dependencies=[Depends(get_current_user)]
+))
 
 # Mount the MCP server directly to your FastAPI app
-mcp.mount()
+mcp.mount_sse()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="localhost", port=8000)
