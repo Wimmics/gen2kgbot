@@ -50,7 +50,7 @@ from app.utils.construct_util import ConstructUtil
 from app.utils.logger_manager import setup_logger
 from app.preprocessing.compute_embeddings import ComputeEmbeddings
 import uvicorn
-
+from fastapi.openapi.docs import get_redoc_html
 
 # setup logger
 logger = setup_logger(__package__, __file__)
@@ -60,13 +60,13 @@ app = FastAPI(
     title="Q²Forge API",
     docs_url="/api/q2forge/swagger",
     openapi_url="/api/q2forge/openapi.json",
-    redoc_url="/api/q2forge/docs",
+    redoc_url=None,
     description=(
         "**Q²Forge** is a resource that addresses the challenge of generating new competency questions for a KG and corresponding SPARQL queries that reflect those questions. It iteratively validates those queries with human "
         + "feedback and LLM as a judge. Q²Forge is open source, extensible and modular, meaning that different parts of the system (CQ generation, query generation and query refinement) can be used as a whole or as parts depending on the context, "
         + "or replaced by alternative services. The end result is a complete pipeline from competency question formulation to query evaluation, supporting the creation of reference query sets for any target KG."
     ),
-    version="1.0",
+    version="2.0",
 )
 
 origins = ["*"]
@@ -78,6 +78,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/api/q2forge/docs", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - ReDoc",
+        redoc_js_url="https://unpkg.com/redoc@2/bundles/redoc.standalone.js",
+    )
 
 
 @app.get(

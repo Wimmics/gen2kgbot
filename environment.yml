@@ -30,6 +30,9 @@ dependencies:
   - python-jose[cryptography]=3.3.*
   - pymongo=4.8.*
   - passlib[bcrypt]=1.7.*
+  - langfuse-python
+  - levenshtein
+  - sentence-transformers
 
   - pip:
     - https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0.tar.gz
@@ -46,4 +49,5 @@ dependencies:
     - spacy-legacy==3.*
     - spacy-loggers
     - fastapi-mcp==0.4.*
-    - mcp==1.7.*
+    - rouge==1.0.*
+    - nltk==3.9.*
