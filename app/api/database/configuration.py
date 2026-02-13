@@ -57,7 +57,7 @@ def get_available_configurations() -> list[str]:
 
 def add_configuration(config: dict) -> KGConfig:
     """
-    Add a new user to the database.
+    Add a new configuration to the database.
 
     Args:
         config (KGConfig): The configuration object to be added.
@@ -66,6 +66,7 @@ def add_configuration(config: dict) -> KGConfig:
     Raises:
         Exception: If there is an error adding the configuration to the database.
     """
+
     insertedConfig = db["configurations"].insert_one(config)
     if not insertedConfig:
         return None

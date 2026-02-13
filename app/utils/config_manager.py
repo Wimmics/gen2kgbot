@@ -92,7 +92,11 @@ class ConfigManager:
         Get the url of the SPARQL endpoint hosting the ontologies.
         If not specified, if returns the same as the KG SPARQL endpoint (config param `kg_sparql_endpoint_url`).
         """
-        if "ontologies_sparql_endpoint_url" in self.config.keys():
+        if (
+            "ontologies_sparql_endpoint_url" in self.config.keys()
+            and self.config["ontologies_sparql_endpoint_url"] is not None
+            and self.config["ontologies_sparql_endpoint_url"] != ""
+        ):
             return self.config["ontologies_sparql_endpoint_url"]
         else:
             return self.config["kg_sparql_endpoint_url"]
@@ -700,7 +704,11 @@ def setup_langfuse() -> bool:
 
 def setup_langgraph_studio(config: ConfigManager):
     # Parse the command line arguments
-    if len(sys.argv) == 2 and sys.argv[0].endswith('langgraph') and sys.argv[1] == "dev":
+    if (
+        len(sys.argv) == 2
+        and sys.argv[0].endswith("langgraph")
+        and sys.argv[1] == "dev"
+    ):
         config.read_configuration()
         logger.info("Running default configuration with Langgraph Studio")
 
