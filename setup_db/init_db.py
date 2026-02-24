@@ -275,7 +275,7 @@ def initialize_database():
 
 
 def copy_default_embeddings():
-    source_folder = "setup/data"
+    source_folder = "setup_db/data"
     destination_folder = "data"
 
     # This copies everything from source to destination
