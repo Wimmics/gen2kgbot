@@ -1,4 +1,3 @@
-import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta, timezone
@@ -7,9 +6,10 @@ from passlib.context import CryptContext
 from app.api.database.user import add_user, get_user
 from app.api.models.token import TokenData
 from app.api.models.user import UserInDB, UserSignUp
+from app.utils.envkey_manager import get_q2forge_database_key
 
 
-SECRET_KEY = os.getenv("Q2FORGE_SECRET_KEY")
+SECRET_KEY = get_q2forge_database_key()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 10080  # 7 days in minutes
 
