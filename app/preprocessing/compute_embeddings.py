@@ -176,7 +176,7 @@ class ComputeEmbeddings:
 
         # If the script is called from the API, set the parameters to default values
         if is_api_call:
-            args.classes = "classes_with_instances_description.txt"
+            args.classes = "classes_description.txt"
             args.properties = "properties_description.txt"
             args.sparql = "example_queries"
 

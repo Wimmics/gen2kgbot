@@ -114,7 +114,19 @@ class ConfigManager:
         """
         Get the prefixes and associated namespaces from configuration file
         """
-        return self.config["prefixes"]
+        predefined_prefixes = {
+            "owl": "http://www.w3.org/2002/07/owl#",
+            "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+            "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+            "skos": "http://www.w3.org/2004/02/skos/core#",
+            "schema": "http://schema.org/",
+            "obo": "http://purl.obolibrary.org/obo/",
+            "dc": "http://purl.org/dc/elements/1.1/",
+            "dcterms": "http://purl.org/dc/terms/",
+            "orkgp": "http://orkg.org/orkg/predicate/"
+        }
+
+        return self.config["prefixes"] | predefined_prefixes
 
     def get_prefixes_as_sparql(self) -> str:
         """
