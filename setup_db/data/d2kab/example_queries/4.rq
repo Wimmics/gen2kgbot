@@ -1,0 +1,66 @@
+# Retrieves couples of scientific publications such as a first publication mentions a given phenotype and a gene and the second one mentions the same gene name with a genetic marker.
+
+prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> 
+prefix xsd:     <http://www.w3.org/2001/XMLSchema#> 
+prefix schema:  <http://schema.org/> 
+prefix owl:     <http://www.w3.org/2002/07/owl#> 
+prefix skos:    <http://www.w3.org/2004/02/skos/core#> 
+prefix oa:      <http://www.w3.org/ns/oa#> 
+prefix ncbi:    <http://identifiers.org/taxonomy/> 
+prefix dct:     <http://purl.org/dc/terms/> 
+prefix frbr:    <http://purl.org/vocab/frbr/core#> 
+prefix fabio:   <http://purl.org/spar/fabio/> 
+prefix obo:     <http://purl.obolibrary.org/obo/> 
+prefix bibo:    <http://purl.org/ontology/bibo/> 
+prefix d2kab:   <http://ns.inria.fr/d2kab/> 
+prefix dc:      <http://purl.org/dc/terms/> 
+prefix d2kab_bsv:   <http://ontology.inrae.fr/bsv/ontology/>
+prefix dul: <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#>
+prefix dct:     <http://purl.org/dc/terms/> 
+prefix taxref: <http://taxref.mnhn.fr/lod/property/>
+
+SELECT distinct ?paper1 ?WTOtrait ?Title1 ?geneName ?paper2 ?Title2 (GROUP_CONCAT(distinct ?marker; SEPARATOR="-") as ?markers) 
+FROM <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg>
+FROM <http://ns.inria.fr/d2kab/ontology/wto/v3>
+WHERE {
+{
+
+SELECT distinct ?geneName ?gene ?paper1 ?Title1 ?WTOtrait WHERE 
+{
+    VALUES ?WTOtrait { "resistance to Stripe rust" }
+    ?a1 a oa:Annotation ; 
+        oa:hasTarget [ oa:hasSource ?source1 ] ;
+        oa:hasBody ?body .
+
+    GRAPH <http://ns.inria.fr/d2kab/ontology/wto/v3> {
+        ?body skos:prefLabel ?WTOtrait.
+    }
+
+    ?a2 a oa:Annotation ;
+        oa:hasTarget [ oa:hasSource ?source2 ] ;
+        oa:hasBody ?gene .
+        ?gene a d2kab:Gene ; skos:prefLabel ?geneName . 
+        ?source1 frbr:partOf+ ?paper1 .
+        ?source2 frbr:partOf+ ?paper1 .
+        ?paper1 a fabio:ResearchPaper ; dct:title ?source1 .
+        ?source1 rdf:value ?Title1.
+}
+LIMIT 20
+}
+?a3 a oa:Annotation ;
+    oa:hasTarget [ oa:hasSource ?source3 ] ;
+    oa:hasBody [a d2kab:Marker ; skos:prefLabel ?marker ] .
+ 
+?a4 a oa:Annotation ;
+    oa:hasTarget [ oa:hasSource ?source4 ] ;
+    oa:hasBody ?gene .
+ 
+?source3 frbr:partOf+ ?paper2 .
+?source4 frbr:partOf+ ?paper2 .
+?paper2 a fabio:ResearchPaper ; dct:title ?titleURI .
+?titleURI rdf:value ?Title2.
+FILTER (URI(?paper1) != URI(?paper2))
+}
+GROUP BY ?WTOtrait ?geneName ?paper1 ?Title1 ?paper2 ?Title2
+LIMIT 50

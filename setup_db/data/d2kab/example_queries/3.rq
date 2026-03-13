@@ -1,0 +1,56 @@
+# Retrieve genetic markers mentioned proximal to genes which are in turn mentioned proximal to a wheat phenotype ("resistance to Stripe rust" in this example) considering the same scientific publication.
+
+prefix rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+prefix rdfs:    <http://www.w3.org/2000/01/rdf-schema#> 
+prefix xsd:     <http://www.w3.org/2001/XMLSchema#> 
+prefix schema:  <http://schema.org/> 
+prefix owl:     <http://www.w3.org/2002/07/owl#> 
+prefix skos:    <http://www.w3.org/2004/02/skos/core#> 
+prefix oa:      <http://www.w3.org/ns/oa#> 
+prefix ncbi:    <http://identifiers.org/taxonomy/> 
+prefix dct:     <http://purl.org/dc/terms/> 
+prefix frbr:    <http://purl.org/vocab/frbr/core#> 
+prefix fabio:   <http://purl.org/spar/fabio/> 
+prefix obo:     <http://purl.obolibrary.org/obo/> 
+prefix bibo:    <http://purl.org/ontology/bibo/> 
+prefix d2kab:   <http://ns.inria.fr/d2kab/> 
+prefix dc:      <http://purl.org/dc/terms/> 
+prefix d2kab_bsv:   <http://ontology.inrae.fr/bsv/ontology/>
+prefix dul: <http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#>
+prefix dct:     <http://purl.org/dc/terms/> 
+prefix taxref: <http://taxref.mnhn.fr/lod/property/>
+
+SELECT (GROUP_CONCAT(distinct ?GeneName; SEPARATOR="-") as ?genes) 
+(GROUP_CONCAT(distinct ?marker; SEPARATOR="-") as ?markers) 
+?paper ?year ?WTOtrait
+FROM NAMED <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg>
+FROM NAMED <http://ns.inria.fr/d2kab/ontology/wto/v3>
+WHERE {
+VALUES ?WTOtrait { "resistance to Stripe rust" }
+GRAPH <http://ns.inria.fr/d2kab/graph/wheatgenomicsslkg> { 
+?a1 a oa:Annotation ;
+    oa:hasTarget [ oa:hasSource ?source1 ];
+    oa:hasBody [ a d2kab:Gene ; skos:prefLabel ?GeneName].
+
+?source1 frbr:partOf+ ?paper .
+
+?a2 a oa:Annotation ;
+    oa:hasTarget [ oa:hasSource ?source2 ] ;
+    oa:hasBody [ a d2kab:Marker ; skos:prefLabel ?marker ]. 
+
+?source2 frbr:partOf+ ?paper .
+
+?a3 a oa:Annotation; 
+    oa:hasTarget [ oa:hasSource ?source3 ];
+    oa:hasBody ?WTOtraitURI.
+
+?source3 frbr:partOf+ ?paper . 
+
+?paper a fabio:ResearchPaper; dct:title ?source3; dct:issued ?year .
+FILTER (?year >= "2010"^^xsd:gYear)
+}
+GRAPH <http://ns.inria.fr/d2kab/ontology/wto/v3> {
+       ?WTOtraitURI skos:prefLabel ?WTOtrait.
+}
+}
+GROUP BY ?paper ?year ?WTOtrait

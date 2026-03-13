@@ -21,11 +21,13 @@ The configuration file (default: `config/params.yaml`) prodives the SPARQL endpo
 
 from argparse import Namespace, ArgumentParser
 import os
-import app.utils.config_manager as config
-from app.utils.construct_util import run_sparql_query, fulliri_to_prefixed
+import time
+from app.utils.config_manager import ConfigManager
+from app.utils.construct_util import ConstructUtil, run_sparql_query
+from app.utils.logger_manager import setup_logger
 
 
-logger = config.setup_logger(__package__, __file__)
+logger = setup_logger(__package__, __file__)
 
 
 get_classes_query = """
@@ -101,6 +103,8 @@ WHERE {
         UNION
         { ?prop a owl:DataTypeProperty. }
         UNION
+        { ?prop a rdf:Property. }
+        UNION
         { ?prop rdfs:subPropertyOf []. }
         UNION
         { ?prop rdf:Property []. }
@@ -147,6 +151,8 @@ WHERE {
           { ?prop dcterms:description ?comment }
           UNION
           { ?prop schema:description ?comment }
+          UNION
+          { ?prop orkgp:description ?comment }
           UNION
           { ?prop obo:IAO_0000115 ?comment }   # definition
           }}
@@ -202,234 +208,250 @@ def save_to_txt(filename: str, data: list):
         f.close()
 
 
-def make_classes_description() -> list[tuple]:
+class GenDescriptions:
     """
-    Get a description of all the classes from the ontologies as tuples (class uri, label, description).
-    The URIs are prefixed based on the prefixes defined in the config file.
-
-    Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
-
-    The query is done against the SPARQL endpoint that contains the ontologies
-    (ontologies_sparql_endpoint_url), which may be the same as the one that hosts
-    the KG itself (kg_sparql_endpoint_url), or not.
-
-    Returns:
-        list[tuple]: list of tuples (class uri, label, description)
+    Utility class for generating descriptions of classes and properties to be embedded later.
     """
-    results = []
 
-    query = config.get_prefixes_as_sparql() + get_classes_query.replace(
-        "{from_clauses}", config.get_ontology_named_graphs_as_from()
-    )
-    _sparql_results = run_sparql_query(
-        query, config.get_ontologies_sparql_endpoint_url(), timeout=3600
-    )
-    if _sparql_results is not None:
-        for result in _sparql_results:
-            if (
-                "class" in result.keys()
-                and "label" in result.keys()
-                and "description" in result.keys()
-            ):
-                label = result["label"]["value"]
-                if label == "None":
-                    label = None
+    def __init__(self, config: ConfigManager, constructUtil: ConstructUtil):
+        self.config = config
+        self.constructUtil = constructUtil
 
-                descr = result["description"]["value"]
-                if descr == "None":
-                    descr = None
+    def make_classes_description(self) -> list[tuple]:
+        """
+        Get a description of all the classes from the ontologies as tuples (class uri, label, description).
+        The URIs are prefixed based on the prefixes defined in the config file.
 
-                results.append(
-                    (
-                        fulliri_to_prefixed(result["class"]["value"]),
-                        label,
-                        descr,
-                    )
-                )
-            else:
-                logger.warning(f"Unexpected SPARQL result format: {result}")
-    return results
+        Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
 
+        The query is done against the SPARQL endpoint that contains the ontologies
+        (ontologies_sparql_endpoint_url), which may be the same as the one that hosts
+        the KG itself (kg_sparql_endpoint_url), or not.
 
-def make_properties_description() -> list[tuple]:
-    """
-    Get a description of all the properties from the ontologies as tuples (prop uri, label, description).
-    The URIs are prefixed based on the prefixes defined in the config file.
+        Returns:
+            list[tuple]: list of tuples (class uri, label, description)
+        """
+        results = []
 
-    Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
-
-    The query is done against the SPARQL endpoint that contains the ontologies
-    (ontologies_sparql_endpoint_url), which may be the same as the one that hosts
-    the KG itself (kg_sparql_endpoint_url), or not.
-
-    Returns:
-        list[tuple]: list of tuples (prop uri, label, description)
-    """
-    results = []
-    query = config.get_prefixes_as_sparql() + get_properties_query.replace(
-        "{from_clauses}", config.get_ontology_named_graphs_as_from()
-    )
-    _sparql_results = run_sparql_query(
-        query, config.get_ontologies_sparql_endpoint_url(), timeout=3600
-    )
-    if _sparql_results is not None:
-        for result in _sparql_results:
-            if (
-                "prop" in result.keys()
-                and "label" in result.keys()
-                and "description" in result.keys()
-            ):
-
-                domain_range = ""
-
-                domain = ""
-                if "domain_lbl" in result.keys():
-                    domain += result["domain_lbl"]["value"]
-                    if "domain" in result.keys():
-                        domain += f" ({result["domain"]["value"]})"
-                else:
-                    if "domain" in result.keys():
-                        domain += result["domain"]["value"]
-                if domain.strip() != "":
-                    domain_range += f"The subject of this property is a {fulliri_to_prefixed(domain.strip())}. "
-
-                range = ""
-                if "range_lbl" in result.keys():
-                    range += result["range_lbl"]["value"]
-                    if "range" in result.keys():
-                        range += f" ({result["range"]["value"]})"
-                else:
-                    if "range" in result.keys():
-                        range += result["range"]["value"]
-                if range.strip() != "":
-                    domain_range += f"The object of this property is a {fulliri_to_prefixed(range.strip())}."
-
-                label = ""
-                if result["label"]["value"] != "None":
-                    label = result["label"]["value"] + ". "
-                if domain_range != "":
-                    label += domain_range
-                if label.strip() == "":
-                    label = None
-
-                descr = result["description"]["value"]
-                if descr == "None":
-                    descr = None
-
-                results.append(
-                    (
-                        fulliri_to_prefixed(result["prop"]["value"]),
-                        label,
-                        descr,
-                    )
-                )
-            else:
-                logger.warning(f"Unexpected SPARQL result format: {result}")
-
-    results = list(set(results))  # remove duplicates
-    return results
-
-
-def get_classes_with_instances() -> list[str]:
-    """
-    Retrieve the list of classes that have at least one instance in the KG.
-    The class URIs are prefixed based on the prefixes defined in the config file.
-
-    Data is either read from an existing file if found, or from the SPARQL endpoint and saved in a file.
-
-    Returns:
-        list[str]: list of the class URIS (with prefixed)
-    """
-    results = []
-    _sparql_results = run_sparql_query(
-        get_classes_with_instances_query,
-        config.get_kg_sparql_endpoint_url(),
-        timeout=3600,
-    )
-    if _sparql_results is not None:
-        for result in _sparql_results:
-            if "class" in result.keys():
-                results.append(fulliri_to_prefixed(result["class"]["value"]))
-            else:
-                logger.warning(f"Unexpected SPARQL result format: {result}")
-    return results
-
-
-def generate_descriptions():
-
-    # Parse the command line arguments
-    args = setup_cli()
-
-    # Load the configuration
-    config.read_configuration(args)
-
-    # Collect the description of the properties and save them
-    descr_txt_file = os.path.join(config.get_preprocessing_directory(), args.properties)
-    descriptions = []
-    if os.path.exists(descr_txt_file):
-        logger.info(f"Reading property descriptions from {descr_txt_file}")
-        f = open(descr_txt_file, "r", encoding="utf8")
-        descriptions = [eval(line) for line in f.readlines()]
-        f.close()
-    else:
-        logger.info("Retrieving property descriptions from the SPARQL endpoint")
-        descriptions = make_properties_description()
-        save_to_txt(descr_txt_file, descriptions)
-
-    logger.info(f"Retrieved {len(descriptions)} (property,label,description) tuples.")
-
-    # Collect the description of the classes and save them
-    descr_txt_file = os.path.join(config.get_preprocessing_directory(), args.classes)
-    descriptions = []
-    if os.path.exists(descr_txt_file):
-        logger.info(f"Reading class descriptions from {descr_txt_file}")
-        f = open(descr_txt_file, "r", encoding="utf8")
-        descriptions = [eval(line) for line in f.readlines()]
-        f.close()
-    else:
-        logger.info("Retrieving class descriptions from the SPARQL endpoint")
-        descriptions = make_classes_description()
-        save_to_txt(descr_txt_file, descriptions)
-
-    logger.info(f"Retrieved {len(descriptions)} (class,label,description) tuples.")
-
-    # Retrieve the URIs of the classes with at least 1 instance in the KG
-    classes_with_instances_file = os.path.join(
-        config.get_temp_directory(),
-        config.get_kg_short_name() + "_classes_with_instances.txt",
-    )
-    classes_with_instances = []
-    if os.path.exists(classes_with_instances_file):
-        logger.info(
-            f"Reading classes with instances from {classes_with_instances_file}."
+        query = self.config.get_prefixes_as_sparql() + get_classes_query.replace(
+            "{from_clauses}", self.config.get_ontology_named_graphs_as_from()
         )
-        f = open(classes_with_instances_file, "r", encoding="utf8")
-        classes_with_instances = [line.strip() for line in f.readlines()]
-        f.close()
-    else:
-        logger.info("Retrieving classes with instances from the SPARQL endpoint")
-        classes_with_instances = get_classes_with_instances()
-        save_to_txt(classes_with_instances_file, classes_with_instances)
-        logger.info(f"Saved classes with instances to {classes_with_instances_file}.")
-    logger.info(f"Retrieved {len(classes_with_instances)} classes with instances.")
+        _sparql_results = run_sparql_query(
+            query, self.config.get_ontologies_sparql_endpoint_url(), timeout=3600
+        )
+        if _sparql_results is not None:
+            for result in _sparql_results:
+                if (
+                    "class" in result.keys()
+                    and "label" in result.keys()
+                    and "description" in result.keys()
+                ):
+                    label = result["label"]["value"]
+                    if label == "None":
+                        label = None
 
-    # Filter classes_description to keep only the classes with instances
-    classes_description_filtered = []
-    for c in descriptions:
-        if c[0] in classes_with_instances:
-            classes_description_filtered.append(c)
+                    descr = result["description"]["value"]
+                    if descr == "None":
+                        descr = None
+
+                    results.append(
+                        (
+                            self.constructUtil.fulliri_to_prefixed(result["class"]["value"]),
+                            label,
+                            descr,
+                        )
+                    )
+                else:
+                    logger.warning(f"Unexpected SPARQL result format: {result}")
+        return results
+
+    def make_properties_description(self) -> list[tuple]:
+        """
+        Get a description of all the properties from the ontologies as tuples (prop uri, label, description).
+        The URIs are prefixed based on the prefixes defined in the config file.
+
+        Data is either read from an existing file or from the SPARQL endpoint and saved in a file.
+
+        The query is done against the SPARQL endpoint that contains the ontologies
+        (ontologies_sparql_endpoint_url), which may be the same as the one that hosts
+        the KG itself (kg_sparql_endpoint_url), or not.
+
+        Returns:
+            list[tuple]: list of tuples (prop uri, label, description)
+        """
+        results = []
+        query = self.config.get_prefixes_as_sparql() + get_properties_query.replace(
+            "{from_clauses}", self.config.get_ontology_named_graphs_as_from()
+        )
+        _sparql_results = run_sparql_query(
+            query, self.config.get_ontologies_sparql_endpoint_url(), timeout=3600
+        )
+        if _sparql_results is not None:
+            for result in _sparql_results:
+                if (
+                    "prop" in result.keys()
+                    and "label" in result.keys()
+                    and "description" in result.keys()
+                ):
+
+                    domain_range = ""
+
+                    domain = ""
+                    if "domain_lbl" in result.keys():
+                        domain += result["domain_lbl"]["value"]
+                        if "domain" in result.keys():
+                            domain += f" ({result["domain"]["value"]})"
+                    else:
+                        if "domain" in result.keys():
+                            domain += result["domain"]["value"]
+                    if domain.strip() != "":
+                        domain_range += f"The subject of this property is a {self.constructUtil.fulliri_to_prefixed(domain.strip())}. "
+
+                    range = ""
+                    if "range_lbl" in result.keys():
+                        range += result["range_lbl"]["value"]
+                        if "range" in result.keys():
+                            range += f" ({result["range"]["value"]})"
+                    else:
+                        if "range" in result.keys():
+                            range += result["range"]["value"]
+                    if range.strip() != "":
+                        domain_range += f"The object of this property is a {self.constructUtil.fulliri_to_prefixed(range.strip())}."
+
+                    label = ""
+                    if result["label"]["value"] != "None":
+                        label = result["label"]["value"] + ". "
+                    if domain_range != "":
+                        label += domain_range
+                    if label.strip() == "":
+                        label = None
+
+                    descr = result["description"]["value"]
+                    if descr == "None":
+                        descr = None
+
+                    results.append(
+                        (
+                            self.constructUtil.fulliri_to_prefixed(result["prop"]["value"]),
+                            label,
+                            descr,
+                        )
+                    )
+                else:
+                    logger.warning(f"Unexpected SPARQL result format: {result}")
+
+        results = list(set(results))  # remove duplicates
+        return results
+
+    def get_classes_with_instances(self) -> list[str]:
+        """
+        Retrieve the list of classes that have at least one instance in the KG.
+        The class URIs are prefixed based on the prefixes defined in the config file.
+
+        Data is either read from an existing file if found, or from the SPARQL endpoint and saved in a file.
+
+        Returns:
+            list[str]: list of the class URIS (with prefixed)
+        """
+        results = []
+        _sparql_results = run_sparql_query(
+            get_classes_with_instances_query,
+            self.config.get_kg_sparql_endpoint_url(),
+            timeout=3600,
+        )
+        if _sparql_results is not None:
+            for result in _sparql_results:
+                if "class" in result.keys():
+                    results.append(self.constructUtil.fulliri_to_prefixed(result["class"]["value"]))
+                else:
+                    logger.warning(f"Unexpected SPARQL result format: {result}")
+        return results
+
+    def generate_descriptions(self):
+
+        # Parse the command line arguments
+        args = setup_cli()
+
+        # # Load the configuration
+        # self.config.read_configuration(args)
+
+        # Collect the description of the properties and save them
+        descr_txt_file = os.path.join(self.config.get_preprocessing_directory(), args.properties)
+        descriptions = []
+        if os.path.exists(descr_txt_file):
+            logger.info(f"Reading property descriptions from {descr_txt_file}")
+            f = open(descr_txt_file, "r", encoding="utf8")
+            descriptions = [eval(line) for line in f.readlines()]
+            f.close()
         else:
-            logger.debug(f"Ignoring empty class {c[0]}")
+            logger.info("Retrieving property descriptions from the SPARQL endpoint")
+            descriptions = self.make_properties_description()
+            save_to_txt(descr_txt_file, descriptions)
 
-    logger.info(
-        f"Keeping {len(classes_description_filtered)} classes after removing those with no instance."
-    )
-    classes_with_instances_description_file = os.path.join(
-        config.get_preprocessing_directory(),
-        args.classes_with_instances,
-    )
-    save_to_txt(classes_with_instances_description_file, classes_description_filtered)
+        logger.info(f"Retrieved {len(descriptions)} (property,label,description) tuples.")
+
+        # Collect the description of the classes and save them
+        descr_txt_file = os.path.join(self.config.get_preprocessing_directory(), args.classes)
+        descriptions = []
+        if os.path.exists(descr_txt_file):
+            logger.info(f"Reading class descriptions from {descr_txt_file}")
+            f = open(descr_txt_file, "r", encoding="utf8")
+            descriptions = [eval(line) for line in f.readlines()]
+            f.close()
+        else:
+            logger.info("Retrieving class descriptions from the SPARQL endpoint")
+            descriptions = self.make_classes_description()
+            save_to_txt(descr_txt_file, descriptions)
+
+        logger.info(f"Retrieved {len(descriptions)} (class,label,description) tuples.")
+
+        # Retrieve the URIs of the classes with at least 1 instance in the KG
+        classes_with_instances_file = os.path.join(
+            self.config.get_temp_directory(),
+            self.config.get_kg_short_name() + "_classes_with_instances.txt",
+        )
+        classes_with_instances = []
+        if os.path.exists(classes_with_instances_file):
+            logger.info(
+                f"Reading classes with instances from {classes_with_instances_file}."
+            )
+            f = open(classes_with_instances_file, "r", encoding="utf8")
+            classes_with_instances = [line.strip() for line in f.readlines()]
+            f.close()
+        else:
+            logger.info("Retrieving classes with instances from the SPARQL endpoint")
+            classes_with_instances = self.get_classes_with_instances()
+            save_to_txt(classes_with_instances_file, classes_with_instances)
+            logger.info(f"Saved classes with instances to {classes_with_instances_file}.")
+        logger.info(f"Retrieved {len(classes_with_instances)} classes with instances.")
+
+        # Filter classes_description to keep only the classes with instances
+        classes_description_filtered = []
+        for c in descriptions:
+            if c[0] in classes_with_instances:
+                classes_description_filtered.append(c)
+            else:
+                logger.debug(f"Ignoring empty class {c[0]}")
+
+        logger.info(
+            f"Keeping {len(classes_description_filtered)} classes after removing those with no instance."
+        )
+        classes_with_instances_description_file = os.path.join(
+            self.config.get_preprocessing_directory(),
+            args.classes_with_instances,
+        )
+        save_to_txt(classes_with_instances_description_file, classes_description_filtered)
 
 
 if __name__ == "__main__":
-    generate_descriptions()
+    start_time = time.time()
+
+    config = ConfigManager()
+    config.read_configuration(setup_cli())
+    constructUtil = ConstructUtil(config)
+    gen_descriptions = GenDescriptions(config=config, constructUtil=constructUtil)
+    gen_descriptions.generate_descriptions()
+    
+    end_time = time.time()
+    execution_time_ms = (end_time - start_time) * 1000
+    logger.info(f"Execution time: {execution_time_ms:.1f} ms")

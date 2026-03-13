@@ -1,0 +1,350 @@
+# KG full name (used in prompts)
+kg_full_name: The SciQA Scientific Question Answering Benchmark for Scholarly Knowledge ORKG
+
+# KG short name (used to generate file paths)
+kg_short_name: sciqa
+
+# KG textual description (used in prompts)
+kg_description: >
+  The ORKG structures knowledge about benchmarking in research. It represents datasets, models, metrics, results,
+  and related publications, building a knowledge graph that enables queries about evaluation practices.
+  This structured framework helps researchers compare models, analyze reported performance, and understand benchmarking evidence in a systematic way.
+
+# 1 => 0.6135
+# The Open Research Knowledge Graph (ORKG) aims to transform scholarly communication by representing research contributions
+# in a structured, machine-readable knowledge graph rather than as unstructured text.
+# Its main goal is to make scientific knowledge FAIR—Findable, Accessible, Interoperable, and Reusable—
+# by capturing key aspects of research such as problems, methods, datasets, and results as interconnected entities
+# and relationships. This enables advanced comparison, synthesis, and exploration of scientific work across disciplines,
+# allowing researchers to more easily discover connections, identify trends, and build upon prior findings.
+# In essence, the ORKG provides a living, semantically rich map of global research knowledge that supports
+# both human understanding and machine-driven discovery.
+
+## 2 => 0.7975
+# The ORKG represents structured knowledge about research benchmarking: datasets, models, metrics, results,
+# and scholarly papers. Main concepts concern evaluation metrics, benchmark scores, model performance,
+# or papers reporting benchmarks.
+
+# SPARQL endpoint serving the KG
+kg_sparql_endpoint_url: "http://localhost:8080/sparql" 
+
+# SPARQL endpoint serving the ontologies, if different from the KG SPARQL endpoint (optional)
+# Default: same as kg_sparql_endpoint_url
+ontologies_sparql_endpoint_url: "http://localhost:8080/sparql" 
+
+# Prefixes and namespaces to be used in the Turtle and SPARQL queries
+prefixes:
+  bibo:           "http://purl.org/ontology/bibo/"
+  dc:             "http://purl.org/dc/elements/1.1/"
+  dcterms:        "http://purl.org/dc/terms/"
+  fabio:          "http://purl.org/spar/fabio/"
+  foaf:           "http://xmlns.com/foaf/0.1/"
+  frbr:           "http://purl.org/vocab/frbr/core#"
+  oa:             "http://www.w3.org/ns/oa#"
+  obo:            "http://purl.obolibrary.org/obo/"
+  oio:            "http://www.geneontology.org/formats/oboInOwl#"
+  owl:            "http://www.w3.org/2002/07/owl#"
+  orkgc:          "http://orkg.org/orkg/class/"
+  orkgp:          "http://orkg.org/orkg/predicate/"
+  orkgr:          "http://orkg.org/orkg/resource/"
+  rdf:            "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  rdfs:           "http://www.w3.org/2000/01/rdf-schema#"
+  schema:         "http://schema.org/"
+  skos:           "http://www.w3.org/2004/02/skos/core#"
+  xsd:            "http://www.w3.org/2001/XMLSchema#"
+  wto:            "http://opendata.inrae.fr/wto/"
+  sh:             "http://www.w3.org/ns/shacl#" 
+
+# Named graphs where to look for ontology definitions (optional)
+# ontology_named_graphs:
+  #- "http://purl.obolibrary.org/obo/ncbitaxon/ncbitaxon.owl"
+
+# Properties used to extract context for the Qnames in a SPARQL query used in the Judging process
+properties_qnames_info:
+- rdfs:label
+- skos:prefLabel
+- skos:altLabel
+- schema:name
+- schema:alternateName
+- obo:IAO_0000118       # alt label
+- obo:OBI_9991118       # IEDB alternative term
+- obo:OBI_0001847       # ISA alternative term
+- rdfs:comment
+- skos:definition
+- dc:description
+- dcterms:description
+- schema:description
+- obo:IAO_0000115       # definition
+- orkgp:description
+
+# Max number of classes similar to the user's question (optional)
+# Default: 10
+max_similar_classes: 10
+
+# Expand the initial list of classes similar to the question with additional classes connected to them (optional)
+# Default: false
+expand_similar_classes: false
+
+# Format of the classes context: one of "turtle", "tuple" or "nl" for natural language (optional)
+# Default: "turtle"
+class_context_format: turtle
+
+# Optional list of classes and namespaces to be excluded from the similar classes (optional)
+excluded_classes_namespaces: []
+
+# Root path for the cache of classes context and pre-computed embeddings
+data_directory: "./data"
+
+# Name of the subdirectoties that contain the pre-computed embeddings of classes, properties and queries.
+# These names must be consistent with the chosen embedding model names in section text_embedding_models
+# Parent diectory will be {data_directory}/{graph short name}/{vector_db}_embeddings/ 
+# e.g. ./data/idsm/faiss_embeddings/
+class_embeddings_subdir: "classes_with_instance_nomic"
+property_embeddings_subdir: "properties_nomic"
+queries_embeddings_subdir: "sparql_queries_nomic"
+
+# Path to a usable temporary directory
+temp_directory: "./tmp"
+
+
+# -----------------------------------------------------------
+# LLM configurations
+
+seq2seq_models:
+# Each seq2seq model shall contain the following paramters:
+# - server_type (str): one of "openai", "ollama", "ollama-server", "ovh", "hugface", "google" "deepseek"
+# - id (str): the model identifier as defined by the provider
+# - base_url (str): server's URL. Mandatory if server_type is "ollama-server", "ovh" or "deepseek"
+# - temperature (decimal): the temperature parameter for the generation (optional)
+# - max_retries (int): the maximum number of retries in case of failure (optional)
+# - top_p (decimal): the top_p parameter for the generation (optional), default: 0.95
+# - model_kwargs (str): additional parameters for the model (optional)
+
+# Locally-hosted models
+
+  llama3_2-1b@local:
+    server_type: ollama
+    id: llama3.2:1b
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  llama3_2:3b@local:
+    server_type: ollama
+    id: llama3.2:latest
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  gemma-3_1b@local:
+    server_type: ollama
+    id: gemma3:1b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_4b@local:
+    server_type: ollama
+    id: gemma3:4b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_12b@local:
+    server_type: ollama
+    id: gemma3:12b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  gemma-3_27b@local:
+    server_type: ollama
+    id: gemma3:27b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+
+  deepseek-r1_1_5b@local:
+    server_type: ollama
+    id: deepseek-r1:1.5b
+    temperature: 0
+    max_retries: 3 
+    top_p: 0.95
+  
+# OVH-hosted models
+
+  llama-3_1-70B@ovh:
+    server_type: ovh
+    id: Meta-Llama-3_1-70B-Instruct
+    base_url: https://llama-3-1-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  llama-3_3-70B@ovh:
+    server_type: ovh
+    id: Meta-Llama-3_3-70B-Instruct
+    base_url: https://llama-3-3-70b-instruct.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  deepseek-r1-70B@ovh:
+    server_type: ovh
+    id: DeepSeek-R1-Distill-Llama-70B
+    base_url: https://deepseek-r1-distill-llama-70b.endpoints.kepler.ai.cloud.ovh.net/api/openai_compat/v1
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  # OpenAI models
+
+  gpt-4o@openai:
+    server_type: openai
+    id: gpt-4o
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+    
+  o3-mini@openai:
+    server_type: openai
+    id: o3-mini
+
+  o1@openai:
+    server_type: openai
+    id: o1
+
+  # DeepSeek models
+
+  deepseek-chat@deepseek:
+    server_type: deepseek
+    id: deepseek-chat
+    base_url: https://api.deepseek.com
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  deepseek-reasoner@deepseek:
+    server_type: deepseek
+    id: deepseek-reasoner
+    base_url: https://api.deepseek.com
+    temperature: 0
+    max_retries: 3
+    top_p: 0.95
+
+  # HuggingFace models
+
+  deepseek-reasoner@hf:
+    server_type: hugface
+    id: deepseek-ai/DeepSeek-R1
+    base_url: https://huggingface.co/api/inference-proxy/together
+    top_p: 0.95
+
+
+text_embedding_models:
+# Each text embedding model shall contain the following paramters:
+# - server_type (str): one of "openai-embeddings", "ollama-embeddings"
+# - id (str): the model identifier as defined by the provider
+# - vector_db (str): the type of vector database, one of "faiss", "chroma"
+
+  nomic-embed-text_faiss@local:
+    server_type: ollama-embeddings
+    id: nomic-embed-text
+    vector_db: faiss
+  
+  mxbai-embed-large_faiss@local:
+    server_type: ollama-embeddings
+    id: mxbai-embed-large
+    vector_db: faiss
+
+  nomic-embed-text_chroma@local:
+    server_type: ollama-embeddings
+    id: nomic-embed-text
+    vector_db: chroma
+  
+# -----------------------------------------------------------
+# Scenarios
+      
+scenario_1:
+  validate_question: deepseek-reasoner@hf
+  ask_question: llama3_2-1b@local
+    
+scenario_2:
+  validate_question: llama3_2-1b@local
+  generate_query: llama-3_1-70B@ovh
+  interpret_results: llama3_2-1b@local
+
+scenario_3:
+  validate_question: llama3_2-1b@local
+  generate_query: llama-3_1-70B@ovh
+  interpret_results: llama3_2-1b@local
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_4:
+  validate_question: llama-3_1-70B@ovh
+  generate_query: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_5:
+  validate_question: llama3_2-1b@local
+  generate_query: o1@openai
+  interpret_results: llama-3_1-70B@ovh
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_6:
+  validate_question: gemma-3_4b@local
+  generate_query: gemma-3_4b@local
+  interpret_results: gemma-3_4b@local
+  text_embedding_model: nomic-embed-text_faiss@local
+
+scenario_7:
+  generate_query: llama3_2-1b@local
+  interpret_results: llama3_2-1b@local
+  judge_query: llama3_2-1b@local
+  judge_regenerate_query: llama3_2-1b@local
+  judging_grade_threshold_retry: 8
+  judging_grade_threshold_run: 5
+  text_embedding_model: nomic-embed-text_faiss@local
+  validate_question: llama3_2-1b@local
+
+# --------------------------------------------------------------------
+# Results with the first version of the description of the KG:
+# python -m app.scenarios.scenario_5.scenario_5 --params config/params_d2kab.yml --question "" 
+
+# Example questons:
+# 1. What are the articles whose abstract mentions taxon 'wheat' (Triticum aestivum) and trait 'resistance to Leaf rust'?
+# 	 => Almost ok. Fail to link annotations to parts of abstracts.
+#    Generated: 
+#       ?annotationGene oa:hasTarget ?abstract.
+#    Should be:
+#       ?annotationGene oa:hasTarget [ oa:hasSource ?source ]. ?source frbr:partOf+ ?abstract.
+
+# 2.0 What genes are mentioned proximal to trait 'resistance to Leaf rust'?
+#    => NOK. Link the 2 mentions to the same annotation.
+# 2.1 What genes are mentioned in articles' abstracts that also mention trait 'resistance to Leaf rust'?
+# 	 => Almost ok. Fail to link annotations to parts of abstracts.
+
+# 3.0 Count the number of times that genes are mentioned with phenotype 'resistance to rust'.
+#    => NOK. Link the 2 mentions to the same annotation.
+# 3.1 Count the number of times that genes are mentioned in articles' abstracts that also mention phenotype 'resistance to rust'. Rank the results in decreasing count order.
+# 	 => Almost ok. Fail to link annotations to parts of abstracts.
+#
+# SELECT ?gene (COUNT(DISTINCT ?annotationGene) AS ?mentionCount)
+# WHERE {
+#   ?annotationGene a oa:Annotation ;
+#                   oa:hasBody ?gene ;
+#                   oa:hasTarget ?abstract .
+#   ?gene a d2kab:Gene .
+
+#   ?annotationPheno a oa:Annotation ;
+#                    oa:hasBody ?phenotype ;
+#                    oa:hasTarget ?abstract .
+#   ?phenotype a wto:0000506 .
+# }
+# GROUP BY ?gene
+# ORDER BY DESC(?mentionCount)
+
+# 4.0 Retrieve the genetic markers mentioned in  articles' abstracts that also mention a gene which, in turn, is mentioned in possibly different articles' abstracts that mention trait 'resistance to Stripe Rust'.
+# 	 => Not bad: fail to link annotations to parts of abstracts, but tries to find the 2 articles with (marker,gene) and (gene,trait) mentions.
+#       Use phenotype 'resistance to rust' instead of trait 'resistance to Stripe Rust'.

@@ -2,6 +2,25 @@
 
 Gen²KGBot exposes a Web API to allow applications to use its services remotely, [Q²Forge]([Q²Forge](https://github.com/Wimmics/q2forge)) Application is an example.
 
+## Set up for multiple users
+
+Multiple users can access the Web API. To enable this, you must first set up a MongoDB database. Follow these steps:
+
+1. Install [MongoDB](https://www.mongodb.com/try/download/community).
+2. Configure the environment variables `Q2FORGE_SECRET_KEY` (used when generating users' passwords) and `MONGODB_CONNECTION_STRING`.
+3. Run the following command to initialize the database with a default user and the [d2kab](https://d2kab.mystrikingly.com/) knowledge graph configuration.
+
+
+```bash
+python -m setup_db.init_db
+```
+
+The default values are:
+* `Q2FORGE_SECRET_KEY` = "d7655ea104320f61fc49ac859501609b9595b994472d473ad736dc0ec657d512"
+* `MONGODB_CONNECTION_STRING` = "mongodb://admin:admin@localhost:27017"
+* admin/admin for username/password
+
+
 ## Start the API
 
 To run the API use the following command: `python -m app.api.q2forge_api`

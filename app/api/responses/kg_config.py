@@ -1,11 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class KGConfig(BaseModel):
     """
     This class represents the configuration of a Knowledge Graph (KG) used in the application.
     """
-
+    id: str = Field(..., alias="_id", description="The unique identifier of the Knowledge Graph.")
     kg_full_name: str = Field(..., description="The full name of the Knowledge Graph.")
     kg_short_name: str = Field(..., description="The short name of the Knowledge Graph.")
     kg_description: str = Field(..., description="A brief description of the Knowledge Graph.")
@@ -24,3 +24,22 @@ class KGConfig(BaseModel):
     scenario_5: dict = Field(default=None, description="Configuration for scenario 5.")
     scenario_6: dict = Field(default=None, description="Configuration for scenario 6.")
     scenario_7: dict = Field(default=None, description="Configuration for scenario 7.")
+
+    # TODO create separate model for the following fields
+    data_directory: str = Field(default=None, description="Root path for the cache of classes context and pre-computed embeddings.")
+    class_embeddings_subdir: str = Field(default=None, description="Name of the subdirectoty that contain the pre-computed embeddings of classes.")
+    property_embeddings_subdir: str = Field(default=None, description="Name of the subdirectoty that contain the pre-computed embeddings of properties.")
+    queries_embeddings_subdir: str = Field(default=None, description="Name of the subdirectoty that contain the pre-computed embeddings of queries.")
+    temp_directory: str = Field(default=None, description="Path to a usable temporary directory.")
+    max_similar_classes: int = Field(default=10, description="Max number of classes similar to the user's question.")
+    expand_similar_classes: bool = Field(default=False, description="Expand the initial list of classes similar to the question with additional classes connected to them.")
+    class_context_format: str = Field(default="turtle", description="Format of the classes context: one of `turtle`, `tuple` or `nl` for natural language.")
+
+    @classmethod
+    def from_mongo(cls, doc: dict):
+        """Convert MongoDB document to Pydantic model"""
+        if "_id" in doc:
+            doc["_id"] = str(doc["_id"])
+        return cls(**doc)
+
+    model_config = ConfigDict(populate_by_name=True)

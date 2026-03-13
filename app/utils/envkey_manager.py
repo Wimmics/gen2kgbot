@@ -19,3 +19,7 @@ def get_google_key():
 
 def get_deepseek_key():
     return os.getenv("DEEPSEEK_API_KEY")
+
+
+def get_q2forge_database_key():
+    return os.getenv("Q2FORGE_SECRET_KEY")

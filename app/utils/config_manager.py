@@ -1,5 +1,6 @@
 import importlib
 import os
+import sys
 from typing import Literal
 from pathlib import Path
 import yaml
@@ -22,22 +23,652 @@ from app.utils.envkey_manager import (
 )
 from app.utils.graph_state import InputState
 from app.utils.logger_manager import setup_logger
+from langfuse.langchain import CallbackHandler
+from langfuse import get_client
 
 logger = setup_logger(__package__, __file__)
 
-# Global config. Shall be initialized by read_configuration()
-config = None
 
-# Selected seq2seq LLM. Dictionary with the scenario id as key
-current_llm = {}
+class ConfigManager:
 
-# Vector db that contains the documents describing the classes in the form: "(uri, label, description)".
-# Dictionary with the scenario id as key
-classes_vector_db = {}
+    def __init__(self):
+        self.config = None
+        self.current_llm = {}
+        self.classes_vector_db = {}
+        self.queries_vector_db = {}
 
-# Vector db that contains the example SPARQL queries and associated questions.
-# Dictionary with the scenario id as key
-queries_vector_db = {}
+    def get_configuration(self) -> dict:
+        return self.config
+
+    def set_configuration(self, config: dict) -> dict:
+        self.config = config
+
+    def read_configuration(self, args: Namespace = None):
+        """
+        Load the configuration file and set it in global variable 'config'
+
+        Args:
+            args (Namespace): command line arguments. Optional. If not provided,
+                the default configuration file is used.
+        """
+        if args is None:
+            # Set the default configuration file: used when starting from Langgraph Studio
+            config_path = (
+                Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+            )
+            logger.info(f"Loading default configuration file: {config_path}")
+
+        elif args.params:
+            config_path = args.params
+            logger.info(f"Loading custom configuration file: {config_path}")
+
+        else:
+            # Set the default configuration file
+            config_path = (
+                Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
+            )
+            logger.info(f"Loading default configuration file: {config_path}")
+
+        with open(config_path, "rt", encoding="utf8") as f:
+            config = yaml.safe_load(f.read())
+            f.close()
+
+        self.config = config
+
+    def get_kg_full_name(self) -> str:
+        return self.config["kg_full_name"]
+
+    def get_kg_short_name(self) -> str:
+        return self.config["kg_short_name"]
+
+    def get_kg_description(self) -> str:
+        return self.config["kg_description"]
+
+    def get_kg_sparql_endpoint_url(self) -> str:
+        return self.config["kg_sparql_endpoint_url"]
+
+    def get_ontologies_sparql_endpoint_url(self) -> str:
+        """
+        Get the url of the SPARQL endpoint hosting the ontologies.
+        If not specified, if returns the same as the KG SPARQL endpoint (config param `kg_sparql_endpoint_url`).
+        """
+        if (
+            "ontologies_sparql_endpoint_url" in self.config.keys()
+            and self.config["ontologies_sparql_endpoint_url"] is not None
+            and self.config["ontologies_sparql_endpoint_url"] != ""
+        ):
+            return self.config["ontologies_sparql_endpoint_url"]
+        else:
+            return self.config["kg_sparql_endpoint_url"]
+
+    def get_properties_qnames_info(self) -> str:
+        return self.config["properties_qnames_info"]
+
+    def get_judging_grade_threshold_retry(self, scenario_id: str) -> int:
+        return self.config[scenario_id]["judging_grade_threshold_retry"]
+
+    def get_judging_grade_threshold_run(self, scenario_id: str) -> int:
+        return self.config[scenario_id]["judging_grade_threshold_run"]
+
+    def get_known_prefixes(self) -> dict:
+        """
+        Get the prefixes and associated namespaces from configuration file
+        """
+        predefined_prefixes = {
+            "owl": "http://www.w3.org/2002/07/owl#",
+            "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+            "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+            "skos": "http://www.w3.org/2004/02/skos/core#",
+            "schema": "http://schema.org/",
+            "obo": "http://purl.obolibrary.org/obo/",
+            "dc": "http://purl.org/dc/elements/1.1/",
+            "dcterms": "http://purl.org/dc/terms/",
+            "orkgp": "http://orkg.org/orkg/predicate/"
+        }
+
+        return self.config["prefixes"] | predefined_prefixes
+
+    def get_prefixes_as_sparql(self) -> str:
+        """
+        Get the prefixes and associated namespaces as SPARQL prefix declarations
+        """
+        prefixes = ""
+        for prefix, ns in self.get_known_prefixes().items():
+            prefixes += f"PREFIX {prefix}: <{ns}>\n"
+        return prefixes + "\n"
+
+    def get_ontology_named_graphs(self) -> list:
+        """
+        Get the named graphs where to look for ontology definitions
+        """
+        if "ontology_named_graphs" not in self.config.keys():
+            return []
+        else:
+            return self.config["ontology_named_graphs"]
+
+    def get_ontology_named_graphs_as_from(self) -> str:
+        """
+        Get the named graphs where to look for ontology definitions as FROM clauses
+        """
+        output = ""
+        for ng in self.get_ontology_named_graphs():
+            output += f"FROM <{ng}>\n"
+        return output
+
+    def get_max_similar_classes(self) -> int:
+        if "max_similar_classes" in self.config.keys():
+            return self.config["max_similar_classes"]
+        else:
+            return 10
+
+    def expand_similar_classes(self) -> bool:
+        if "expand_similar_classes" in self.config.keys():
+            return self.config["expand_similar_classes"]
+        else:
+            return False
+
+    def get_class_context_format(self) -> Literal["turtle", "tuple", "nl"]:
+        if "class_context_format" in self.config.keys():
+            format = self.config["class_context_format"]
+            if format not in ["turtle", "tuple", "nl"]:
+                raise ValueError(f"Invalid parameter class_context_format: {format}")
+        else:
+            format = "turtle"
+        return format
+
+    def get_excluded_classes_namespaces(self) -> list[str]:
+        if "excluded_classes_namespaces" in self.config.keys():
+            if self.config["excluded_classes_namespaces"] is None:
+                return []
+            else:
+                return self.config["excluded_classes_namespaces"]
+        else:
+            return []
+
+    def get_kg_data_directory(self) -> Path:
+        """
+        Generate the full path of the data directory for the current knowledge graph,
+        in the form `data_directory/kg_short_name`, E.g. `data/idsm/`.
+
+        Create the directory structure if it does not exist.
+        """
+        str_path = f"{self.config["data_directory"]}/{self.get_kg_short_name().lower()}"
+        if os.path.isabs(str_path):
+            path = Path(str_path)
+        else:
+            path = Path(__file__).resolve().parent.parent.parent / str_path
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
+
+    def get_class_context_cache_directory(self) -> Path:
+        """
+        Generate the path for the cache of class context files, and
+        create the directory structure if it does not exist.
+
+        The path includes sub-dir: KG short name (e.g. "idsm"), "classes_context", the format (e.g. "turtle" or "tuple")
+        E.g. "./data/idsm/classes_context/turtle" or "./data/idsm/classes_context/tuple"
+        """
+
+        # Format "nl" applies to serialization in prompts but is still stored as "tuple"
+        format = self.get_class_context_format()
+        format = "tuple" if format == "nl" else format
+
+        path = self.get_kg_data_directory() / "classes_context" / format
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
+
+    def get_preprocessing_directory(self) -> Path:
+        """
+        Generate the path for the directory where to store the class and property textual descriptions.
+        Create the directory structure if it does not exist.
+        """
+        path = self.get_kg_data_directory() / "preprocessing"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
+
+    def get_class_embeddings_subdir(self) -> str:
+        return self.config["class_embeddings_subdir"]
+
+    def get_property_embeddings_subdir(self) -> str:
+        return self.config["property_embeddings_subdir"]
+
+    def queries_embeddings_subdir(self) -> str:
+        return self.config["queries_embeddings_subdir"]
+
+    def get_temp_directory(self) -> Path:
+        str_path = self.config["temp_directory"]
+        if os.path.isabs(str_path):
+            path = Path(str_path)
+        else:
+            path = Path(__file__).resolve().parent.parent.parent / str_path
+
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
+
+    def get_embedding_model_config_by_name(self, embed_name: str) -> dict:
+        """
+        Return the configuration of a text embedding model given by its name
+        """
+        if embed_name not in self.config["text_embedding_models"]:
+            raise ValueError(f"Unknown text embedding model name: {embed_name}")
+        else:
+            return self.config["text_embedding_models"][embed_name]
+
+    def get_embedding_model_config_by_scenario(self, scenario_id: str) -> dict:
+        """
+        Return the configuration of the text embedding model of a given scenario
+        """
+        embed_name = self.config[scenario_id]["text_embedding_model"]
+        return self.get_embedding_model_config_by_name(embed_name)
+
+    def get_embeddings_directory(self, vector_db_name: str) -> Path:
+        """
+        Generate the path of the pre-computed embedding files, and
+        create the directory structure if it does not exist.
+
+        The path includes the KG short name (e.g. "idsm"), vector db name (e.g. "faiss") sub-directories.
+        E.g. "./data/idsm/faiss_embeddings"
+        """
+        path = self.get_kg_data_directory() / f"{vector_db_name}_embeddings"
+        if not os.path.exists(path):
+            os.makedirs(path)
+        return path
+
+    def get_seq2seq_model(self, scenario_id: str, node_name: str) -> BaseChatModel:
+        """
+        Create a seq2seq LLM based on the scenario configuration
+        """
+        logger.debug(
+            f"Getting seq2seq model for scenario: {scenario_id} and Node: {node_name}"
+        )
+
+        if (
+            scenario_id in self.current_llm.keys()
+            and self.current_llm[scenario_id] is not None
+            and node_name in dict(self.current_llm[scenario_id]).keys()
+            and self.current_llm[scenario_id][node_name] is not None
+        ):
+            logger.debug(f"Using cached current_llm for scenario: {self.current_llm}")
+            return self.current_llm[scenario_id][node_name]
+
+        llm_id = self.config[scenario_id][node_name]
+
+        llm_config = self.get_seq2seq_model_by_config_id(llm_id)
+
+        logger.info(
+            f"Seq2Seq model initialized for {scenario_id} and Node: {node_name} with config: {llm_config}"
+        )
+
+        self.current_llm.setdefault(scenario_id, {}).update({node_name: llm_config})
+        logger.debug(f"Current LLM config used: {self.current_llm}")
+
+        return llm_config
+
+    def get_seq2seq_model_by_config_id(self, model_config_id: str) -> BaseChatModel:
+        """
+        Create a seq2seq LLM based on the model configuration ID
+
+        Args:
+            model_config_id (str): model configuration ID
+        Returns:
+            BaseChatModel: instantiated LLM with the given configuration
+        """
+
+        llm_config = self.config["seq2seq_models"][model_config_id]
+
+        server_type = llm_config["server_type"]
+        model_id = llm_config["id"]
+
+        if "temperature" in llm_config.keys():
+            temperature = llm_config["temperature"]
+        else:
+            temperature = None
+
+        if "max_retries" in llm_config.keys():
+            max_retries = llm_config["max_retries"]
+        else:
+            max_retries = None
+
+        if "model_kwargs" in llm_config.keys():
+            model_kwargs = llm_config["model_kwargs"]
+        else:
+            model_kwargs = {}
+
+        if "top_p" in llm_config.keys():
+            top_p = llm_config["top_p"]
+        else:
+            top_p = 0.95
+
+        if "max_tokens" in llm_config.keys():
+            max_tokens = llm_config["max_tokens"]
+        else:
+            max_tokens = None
+
+        if server_type == "openai":
+            if model_id.startswith("o"):  # o1/o3 do not support parameter top_p
+                llm_config = ChatOpenAI(
+                    temperature=temperature,
+                    model=model_id,
+                    max_retries=max_retries,
+                    verbose=True,
+                    openai_api_key=get_openai_key(),
+                    model_kwargs=model_kwargs,
+                    max_tokens=max_tokens,
+                )
+            else:
+                llm_config = ChatOpenAI(
+                    temperature=temperature,
+                    model=model_id,
+                    max_retries=max_retries,
+                    verbose=True,
+                    openai_api_key=get_openai_key(),
+                    model_kwargs=model_kwargs,
+                    top_p=top_p,
+                    max_tokens=max_tokens,
+                )
+
+        elif server_type == "ollama":
+            llm_config = ChatOllama(
+                temperature=temperature,
+                model=model_id,
+                max_retries=max_retries,
+                verbose=True,
+                top_p=top_p,
+                model_kwargs=model_kwargs,
+                max_tokens=max_tokens,
+            )
+
+        elif server_type == "ollama-server":
+            base_url = llm_config["base_url"]
+
+            # TODO Hundle Ollama Servers with Auth
+            llm_config = ChatOllama(
+                temperature=temperature,
+                model=model_id,
+                max_retries=max_retries,
+                verbose=True,
+                top_p=top_p,
+                model_kwargs=model_kwargs,
+                auth=("username", "password"),
+                max_tokens=max_tokens,
+            )
+
+        elif server_type == "ovh":
+            base_url = llm_config["base_url"]
+
+            llm_config = ChatOpenAI(
+                temperature=temperature,
+                model=model_id,
+                max_retries=max_retries,
+                verbose=True,
+                base_url=base_url,
+                api_key=get_ovh_key(),
+                top_p=top_p,
+                model_kwargs=model_kwargs,
+                max_tokens=max_tokens,
+            )
+
+        elif server_type == "hugface":
+
+            hfe = HuggingFaceEndpoint(
+                repo_id=model_id,
+                task="text-generation",
+                do_sample=False,
+                repetition_penalty=1.03,
+                top_p=top_p,
+                max_tokens=max_tokens,
+            )
+
+            llm_config = ChatHuggingFace(llm=hfe)
+
+        elif server_type == "google":
+            llm_config = ChatGoogleGenerativeAI(
+                model=model_id,
+                temperature=temperature,
+                max_retries=max_retries,
+                api_key=get_google_key(),
+                verbose=True,
+                top_p=top_p,
+                model_kwargs=model_kwargs,
+                max_tokens=max_tokens,
+            )
+
+        elif server_type == "deepseek":
+            base_url = llm_config["base_url"]
+            llm_config = ChatOpenAI(
+                temperature=temperature,
+                model=model_id,
+                max_retries=max_retries,
+                verbose=True,
+                openai_api_base=base_url,
+                openai_api_key=get_deepseek_key(),
+                top_p=top_p,
+                model_kwargs=model_kwargs,
+                max_tokens=max_tokens,
+            )
+
+        else:
+            logger.error(f"Unsupported type of seq2seq model: {server_type}")
+            raise Exception(f"Unsupported type of seq2seq model: {server_type}")
+
+        return llm_config
+
+    def get_embedding_model_by_embed_name(self, embed_name: str) -> Embeddings:
+        """
+        Instantiate a text embedding model based on the model name in the configuration
+
+        Args:
+            embed_name (str): name of the config in section text_embedding_models of the configuration file
+
+        Returns:
+            Embeddings: text embedding model
+        """
+
+        embed_config = self.get_embedding_model_config_by_name(embed_name)
+        server_type = embed_config["server_type"]
+        model_id = embed_config["id"]
+
+        if server_type == "ollama-embeddings":
+            embeddings = OllamaEmbeddings(model=model_id)
+
+        elif server_type == "openai-embeddings":
+            embeddings = OpenAIEmbeddings(model=model_id)
+
+        else:
+            logger.error(f"Unsupported type of embedding model: {server_type}")
+            raise Exception(f"Unsupported type of embedding model: {server_type}")
+
+        logger.info(f"Text embedding model initialized: {server_type} - {model_id} ")
+        return embeddings
+
+    def get_embedding_model_by_scenario(self, scenario_id: str) -> Embeddings:
+        """
+        Instantiate a text embedding model based on the scenario configuration
+
+        Args:
+            scenario_id (str): scenario ID
+
+        Returns:
+            Embeddings: text embedding model
+        """
+        embed_name = self.config[scenario_id]["text_embedding_model"]
+        return self.get_embedding_model_by_embed_name(embed_name)
+
+    def create_vector_db(
+        self, embeddings: Embeddings, vector_db_name: str, embeddings_directory: str
+    ) -> VectorStore:
+        """
+        Create a vector db based on the configuration,
+        and load the pre-computed embeddings from the given directory
+
+        Args:
+            embeddings (Embeddings): instantiated embeddings model
+            vector_db_name (str): type of vector db (currently supported: "faiss", "chroma")
+            embeddings_directory (str): directory containing the pre-computed embeddings
+
+        Returns:
+            VectorStore: vector db
+        """
+
+        if vector_db_name == "faiss":
+            db = FAISS.load_local(
+                embeddings_directory,
+                embeddings=embeddings,
+                allow_dangerous_deserialization=True,
+            )
+        elif vector_db_name == "chroma":
+            db = Chroma(
+                persist_directory=embeddings_directory, embedding_function=embeddings
+            )
+        else:
+            logger.error(f"Unsupported type of vector DB: {vector_db_name}")
+            raise Exception(f"Unsupported type of vector DB: {vector_db_name}")
+
+        return db
+
+    def create_vector_db_by_scenario(
+        self, scenario_id: str, embeddings_dir_name
+    ) -> VectorStore:
+        """
+        Create a vector db based on the configuration,
+        and load the pre-computed embeddings from the given directory
+
+        Args:
+            scenario_id (str): scenario ID
+            vector_db_name (str): type of vector db (currently supported: "faiss", "chroma")
+            embeddings_directory_name (str): name of the subdirectory that contains the pre-computed embeddings
+
+        Returns:
+            VectorStore: vector db
+        """
+
+        vector_db_name = self.get_embedding_model_config_by_scenario(scenario_id)[
+            "vector_db"
+        ]
+
+        embeddings_directory = (
+            f"{self.get_embeddings_directory(vector_db_name)}/{embeddings_dir_name}"
+        )
+        logger.debug(f"Embeddings directory: {embeddings_directory}")
+
+        embeddings = self.get_embedding_model_by_scenario(scenario_id)
+
+        return self.create_vector_db(embeddings, vector_db_name, embeddings_directory)
+
+    def get_class_context_vector_db(self, scenario_id: str) -> VectorStore:
+        """
+        Create a vector db based on the scenario configuration,
+        and load the pre-computed embeddings of the RDFS/OWL classes
+
+        Args:
+            scenario_id (str): scenario ID
+
+        Returns:
+            VectorStore: vector db
+        """
+
+        # Already initialized?
+        if (
+            scenario_id in self.classes_vector_db.keys()
+            and self.classes_vector_db[scenario_id] is not None
+        ):
+            return self.classes_vector_db[scenario_id]
+
+        db = self.create_vector_db_by_scenario(
+            scenario_id, self.config["class_embeddings_subdir"]
+        )
+        logger.info("Classes context vector DB initialized.")
+        self.classes_vector_db[scenario_id] = db
+        return db
+
+    def get_query_vector_db(self, scenario_id: str) -> VectorStore:
+        """
+        Create a vector db based on the scenario configuration,
+        and load the pre-computed embeddings of the SPARQL queries
+
+        Args:
+            scenario_id (str): scenario ID
+
+        Returns:
+            VectorStore: vector db
+        """
+
+        # Already initialized?
+        if (
+            scenario_id in self.queries_vector_db.keys()
+            and self.queries_vector_db[scenario_id] is not None
+        ):
+            return self.queries_vector_db[scenario_id]
+
+        db = self.create_vector_db_by_scenario(
+            scenario_id, self.config["queries_embeddings_subdir"]
+        )
+        logger.info("SPARQL queries vector DB initialized.")
+        self.queries_vector_db[scenario_id] = db
+        return db
+
+    def set_custom_scenario_configuration(
+        self,
+        scenario_id: str,
+        validate_question_model: str,
+        ask_question_model: str,
+        generate_query_model: str,
+        judge_query_model: str,
+        judge_regenerate_query_model: str,
+        interpret_results_model: str,
+        text_embedding_model: str,
+    ):
+        """
+        Set a custom configuration to use in a scenario
+        """
+
+        self.config[f"scenario_{scenario_id}"][
+            "validate_question"
+        ] = validate_question_model
+
+        if ask_question_model is not None:
+            self.config[f"scenario_{scenario_id}"]["ask_question"] = ask_question_model
+
+        if generate_query_model is not None:
+            self.config[f"scenario_{scenario_id}"][
+                "generate_query"
+            ] = generate_query_model
+
+        if judge_query_model is not None:
+            self.config[f"scenario_{scenario_id}"]["judge_query"] = judge_query_model
+
+        if judge_regenerate_query_model is not None:
+            self.config[f"scenario_{scenario_id}"][
+                "judge_regenerate_query"
+            ] = judge_regenerate_query_model
+
+        if interpret_results_model is not None:
+            self.config[f"scenario_{scenario_id}"][
+                "interpret_results"
+            ] = interpret_results_model
+
+        if f"scenario_{scenario_id}" in self.current_llm.keys():
+            del self.current_llm[f"scenario_{scenario_id}"]
+
+        if text_embedding_model is not None:
+            self.config[f"scenario_{scenario_id}"][
+                "text_embedding_model"
+            ] = text_embedding_model
+
+            if f"scenario_{scenario_id}" in self.classes_vector_db.keys():
+                del self.classes_vector_db[f"scenario_{scenario_id}"]
+
+            if f"scenario_{scenario_id}" in self.queries_vector_db.keys():
+                self.queries_vector_db[f"scenario_{scenario_id}"]
+
+        logger.info(f"Custom configuration set for scenario_{scenario_id}")
+        logger.debug(
+            f"The custom configuration for scenario_{scenario_id} is : {self.config[f"scenario_{scenario_id}"]}"
+        )
 
 
 def setup_cli() -> Namespace:
@@ -58,595 +689,6 @@ def setup_cli() -> Namespace:
     return parser.parse_args()
 
 
-def get_configuration() -> dict:
-    return config
-
-
-def read_configuration(args: Namespace = None):
-    """
-    Load the configuration file and set it in global variable 'config'
-
-    Args:
-        args (Namespace): command line arguments. Optional. If not provided,
-            the default configuration file is used.
-    """
-    if args is None:
-        # Set the default configuration file: used when starting from Langgraph Studio
-        config_path = (
-            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
-        )
-        logger.info(f"Loading default configuration file: {config_path}")
-
-    elif args.params:
-        config_path = args.params
-        logger.info(f"Loading custom configuration file: {config_path}")
-
-    else:
-        # Set the default configuration file
-        config_path = (
-            Path(__file__).resolve().parent.parent.parent / "config" / "params.yml"
-        )
-        logger.info(f"Loading default configuration file: {config_path}")
-
-    with open(config_path, "rt", encoding="utf8") as f:
-        config = yaml.safe_load(f.read())
-        f.close()
-
-    globals()["config"] = config
-
-
-# Load the default config file.
-# Necessary when using Langragraph Studio as it loads the scenarios without CLI arguments.
-# If calling from CLI, the default config will be overridden.
-read_configuration()
-
-
-def get_kg_full_name() -> str:
-    return config["kg_full_name"]
-
-
-def get_kg_short_name() -> str:
-    return config["kg_short_name"]
-
-
-def get_kg_description() -> str:
-    return config["kg_description"]
-
-
-def get_kg_sparql_endpoint_url() -> str:
-    return config["kg_sparql_endpoint_url"]
-
-
-def get_ontologies_sparql_endpoint_url() -> str:
-    """
-    Get the url of the SPARQL endpoint hosting the ontologies.
-    If not specified, if returns the same as the KG SPARQL endpoint (config param `kg_sparql_endpoint_url`).
-    """
-    if "ontologies_sparql_endpoint_url" in config.keys():
-        return config["ontologies_sparql_endpoint_url"]
-    else:
-        return config["kg_sparql_endpoint_url"]
-
-
-def get_properties_qnames_info() -> str:
-    return config["properties_qnames_info"]
-
-
-def get_judging_grade_threshold_retry(scenario_id: str) -> int:
-    return config[scenario_id]["judging_grade_threshold_retry"]
-
-
-def get_judging_grade_threshold_run(scenario_id: str) -> int:
-    return config[scenario_id]["judging_grade_threshold_run"]
-
-
-def get_known_prefixes() -> dict:
-    """
-    Get the prefixes and associated namespaces from configuration file
-    """
-    return config["prefixes"]
-
-
-def get_prefixes_as_sparql() -> str:
-    """
-    Get the prefixes and associated namespaces as SPARQL prefix declarations
-    """
-    prefixes = ""
-    for prefix, ns in get_known_prefixes().items():
-        prefixes += f"PREFIX {prefix}: <{ns}>\n"
-    return prefixes + "\n"
-
-
-def get_ontology_named_graphs() -> list:
-    """
-    Get the named graphs where to look for ontology definitions
-    """
-    if "ontology_named_graphs" not in config.keys():
-        return []
-    else:
-        return config["ontology_named_graphs"]
-
-
-def get_ontology_named_graphs_as_from() -> str:
-    """
-    Get the named graphs where to look for ontology definitions as FROM clauses
-    """
-    output = ""
-    for ng in get_ontology_named_graphs():
-        output += f"FROM <{ng}>\n"
-    return output
-
-
-def get_max_similar_classes() -> int:
-    if "max_similar_classes" in config.keys():
-        return config["max_similar_classes"]
-    else:
-        return 10
-
-
-def expand_similar_classes() -> bool:
-    if "expand_similar_classes" in config.keys():
-        return config["expand_similar_classes"]
-    else:
-        return False
-
-
-def get_class_context_format() -> Literal["turtle", "tuple", "nl"]:
-    if "class_context_format" in config.keys():
-        format = config["class_context_format"]
-        if format not in ["turtle", "tuple", "nl"]:
-            raise ValueError(f"Invalid parameter class_context_format: {format}")
-    else:
-        format = "turtle"
-    return format
-
-
-def get_excluded_classes_namespaces() -> list[str]:
-    if "excluded_classes_namespaces" in config.keys():
-        if config["excluded_classes_namespaces"] is None:
-            return []
-        else:
-            return config["excluded_classes_namespaces"]
-    else:
-        return []
-
-
-def get_kg_data_directory() -> Path:
-    """
-    Generate the full path of the data directory for the current knowledge graph,
-    in the form `data_directory/kg_short_name`, E.g. `data/idsm/`.
-
-    Create the directory structure if it does not exist.
-    """
-    str_path = f"{config["data_directory"]}/{get_kg_short_name().lower()}"
-    if os.path.isabs(str_path):
-        path = Path(str_path)
-    else:
-        path = Path(__file__).resolve().parent.parent.parent / str_path
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
-def get_class_context_cache_directory() -> Path:
-    """
-    Generate the path for the cache of class context files, and
-    create the directory structure if it does not exist.
-
-    The path includes sub-dir: KG short name (e.g. "idsm"), "classes_context", the format (e.g. "turtle" or "tuple")
-    E.g. "./data/idsm/classes_context/turtle" or "./data/idsm/classes_context/tuple"
-    """
-
-    # Format "nl" applies to serialization in prompts but is still stored as "tuple"
-    format = get_class_context_format()
-    format = "tuple" if format == "nl" else format
-
-    path = get_kg_data_directory() / "classes_context" / format
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
-def get_preprocessing_directory() -> Path:
-    """
-    Generate the path for the directory where to store the class and property textual descriptions.
-    Create the directory structure if it does not exist.
-    """
-    path = get_kg_data_directory() / "preprocessing"
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
-def get_class_embeddings_subdir() -> str:
-    return config["class_embeddings_subdir"]
-
-
-def get_property_embeddings_subdir() -> str:
-    return config["property_embeddings_subdir"]
-
-
-def queries_embeddings_subdir() -> str:
-    return config["queries_embeddings_subdir"]
-
-
-def get_temp_directory() -> Path:
-    str_path = config["temp_directory"]
-    if os.path.isabs(str_path):
-        path = Path(str_path)
-    else:
-        path = Path(__file__).resolve().parent.parent.parent / str_path
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
-def get_embedding_model_config_by_name(embed_name: str) -> dict:
-    """
-    Return the configuration of a text embedding model given by its name
-    """
-    if embed_name not in config["text_embedding_models"]:
-        raise ValueError(f"Unknown text embedding model name: {embed_name}")
-    else:
-        return config["text_embedding_models"][embed_name]
-
-
-def get_embedding_model_config_by_scenario(scenario_id: str) -> dict:
-    """
-    Return the configuration of the text embedding model of a given scenario
-    """
-    embed_name = config[scenario_id]["text_embedding_model"]
-    return get_embedding_model_config_by_name(embed_name)
-
-
-def get_embeddings_directory(vector_db_name: str) -> Path:
-    """
-    Generate the path of the pre-computed embedding files, and
-    create the directory structure if it does not exist.
-
-    The path includes the KG short name (e.g. "idsm"), vector db name (e.g. "faiss") sub-directories.
-    E.g. "./data/idsm/faiss_embeddings"
-    """
-    path = get_kg_data_directory() / f"{vector_db_name}_embeddings"
-    if not os.path.exists(path):
-        os.makedirs(path)
-    return path
-
-
-def get_seq2seq_model(scenario_id: str, node_name: str) -> BaseChatModel:
-    """
-    Create a seq2seq LLM based on the scenario configuration
-    """
-    logger.debug(
-        f"Getting seq2seq model for scenario: {scenario_id} and Node: {node_name}"
-    )
-
-    if (
-        scenario_id in current_llm.keys()
-        and current_llm[scenario_id] is not None
-        and node_name in dict(current_llm[scenario_id]).keys()
-        and current_llm[scenario_id][node_name] is not None
-    ):
-        logger.debug(f"Using cached current_llm for scenario: {current_llm}")
-        return current_llm[scenario_id][node_name]
-
-    llm_id = config[scenario_id][node_name]
-
-    llm_config = get_seq2seq_model_by_config_id(llm_id)
-
-    logger.info(
-        f"Seq2Seq model initialized for {scenario_id} and Node: {node_name} with config: {llm_config}"
-    )
-
-    globals()["current_llm"].setdefault(scenario_id, {}).update({node_name: llm_config})
-    logger.debug(f"Current LLM config used: {current_llm}")
-
-    return llm_config
-
-
-def get_seq2seq_model_by_config_id(model_config_id: str) -> BaseChatModel:
-    """
-    Create a seq2seq LLM based on the model configuration ID
-
-    Args:
-        model_config_id (str): model configuration ID
-    Returns:
-        BaseChatModel: instantiated LLM with the given configuration
-    """
-
-    llm_config = config["seq2seq_models"][model_config_id]
-
-    server_type = llm_config["server_type"]
-    model_id = llm_config["id"]
-
-    if "temperature" in llm_config.keys():
-        temperature = llm_config["temperature"]
-    else:
-        temperature = None
-
-    if "max_retries" in llm_config.keys():
-        max_retries = llm_config["max_retries"]
-    else:
-        max_retries = None
-
-    if "model_kwargs" in llm_config.keys():
-        model_kwargs = llm_config["model_kwargs"]
-    else:
-        model_kwargs = {}
-
-    if "top_p" in llm_config.keys():
-        top_p = llm_config["top_p"]
-    else:
-        top_p = 0.95
-
-    if "max_tokens" in llm_config.keys():
-        max_tokens = llm_config["max_tokens"]
-    else:
-        max_tokens = None
-
-    if server_type == "openai":
-        if model_id.startswith("o"):  # o1/o3 do not support parameter top_p
-            llm_config = ChatOpenAI(
-                temperature=temperature,
-                model=model_id,
-                max_retries=max_retries,
-                verbose=True,
-                openai_api_key=get_openai_key(),
-                model_kwargs=model_kwargs,
-                max_tokens=max_tokens,
-            )
-        else:
-            llm_config = ChatOpenAI(
-                temperature=temperature,
-                model=model_id,
-                max_retries=max_retries,
-                verbose=True,
-                openai_api_key=get_openai_key(),
-                model_kwargs=model_kwargs,
-                top_p=top_p,
-                max_tokens=max_tokens,
-            )
-
-    elif server_type == "ollama":
-        llm_config = ChatOllama(
-            temperature=temperature,
-            model=model_id,
-            max_retries=max_retries,
-            verbose=True,
-            top_p=top_p,
-            model_kwargs=model_kwargs,
-            max_tokens=max_tokens,
-        )
-
-    elif server_type == "ollama-server":
-        base_url = llm_config["base_url"]
-
-        # TODO Hundle Ollama Servers with Auth
-        llm_config = ChatOllama(
-            temperature=temperature,
-            model=model_id,
-            max_retries=max_retries,
-            verbose=True,
-            top_p=top_p,
-            model_kwargs=model_kwargs,
-            auth=("username", "password"),
-            max_tokens=max_tokens,
-        )
-
-    elif server_type == "ovh":
-        base_url = llm_config["base_url"]
-
-        llm_config = ChatOpenAI(
-            temperature=temperature,
-            model=model_id,
-            max_retries=max_retries,
-            verbose=True,
-            base_url=base_url,
-            api_key=get_ovh_key(),
-            top_p=top_p,
-            model_kwargs=model_kwargs,
-            max_tokens=max_tokens,
-        )
-
-    elif server_type == "hugface":
-
-        hfe = HuggingFaceEndpoint(
-            repo_id=model_id,
-            task="text-generation",
-            do_sample=False,
-            repetition_penalty=1.03,
-            top_p=top_p,
-            max_tokens=max_tokens,
-        )
-
-        llm_config = ChatHuggingFace(llm=hfe)
-
-    elif server_type == "google":
-        llm_config = ChatGoogleGenerativeAI(
-            model=model_id,
-            temperature=temperature,
-            max_retries=max_retries,
-            api_key=get_google_key(),
-            verbose=True,
-            top_p=top_p,
-            model_kwargs=model_kwargs,
-            max_tokens=max_tokens,
-        )
-
-    elif server_type == "deepseek":
-        base_url = llm_config["base_url"]
-        llm_config = ChatOpenAI(
-            temperature=temperature,
-            model=model_id,
-            max_retries=max_retries,
-            verbose=True,
-            openai_api_base=base_url,
-            openai_api_key=get_deepseek_key(),
-            top_p=top_p,
-            model_kwargs=model_kwargs,
-            max_tokens=max_tokens,
-        )
-
-    else:
-        logger.error(f"Unsupported type of seq2seq model: {server_type}")
-        raise Exception(f"Unsupported type of seq2seq model: {server_type}")
-
-    return llm_config
-
-
-def get_embedding_model_by_embed_name(embed_name: str) -> Embeddings:
-    """
-    Instantiate a text embedding model based on the model name in the configuration
-
-    Args:
-        embed_name (str): name of the config in section text_embedding_models of the configuration file
-
-    Returns:
-        Embeddings: text embedding model
-    """
-
-    embed_config = get_embedding_model_config_by_name(embed_name)
-    server_type = embed_config["server_type"]
-    model_id = embed_config["id"]
-
-    if server_type == "ollama-embeddings":
-        embeddings = OllamaEmbeddings(model=model_id)
-
-    elif server_type == "openai-embeddings":
-        embeddings = OpenAIEmbeddings(model=model_id)
-
-    else:
-        logger.error(f"Unsupported type of embedding model: {server_type}")
-        raise Exception(f"Unsupported type of embedding model: {server_type}")
-
-    logger.info(f"Text embedding model initialized: {server_type} - {model_id} ")
-    return embeddings
-
-
-def get_embedding_model_by_scenario(scenario_id: str) -> Embeddings:
-    """
-    Instantiate a text embedding model based on the scenario configuration
-
-    Args:
-        scenario_id (str): scenario ID
-
-    Returns:
-        Embeddings: text embedding model
-    """
-    embed_name = config[scenario_id]["text_embedding_model"]
-    return get_embedding_model_by_embed_name(embed_name)
-
-
-def create_vector_db(
-    embeddings: Embeddings, vector_db_name: str, embeddings_directory: str
-) -> VectorStore:
-    """
-    Create a vector db based on the configuration,
-    and load the pre-computed embeddings from the given directory
-
-    Args:
-        embeddings (Embeddings): instantiated embeddings model
-        vector_db_name (str): type of vector db (currently supported: "faiss", "chroma")
-        embeddings_directory (str): directory containing the pre-computed embeddings
-
-    Returns:
-        VectorStore: vector db
-    """
-
-    if vector_db_name == "faiss":
-        db = FAISS.load_local(
-            embeddings_directory,
-            embeddings=embeddings,
-            allow_dangerous_deserialization=True,
-        )
-    elif vector_db_name == "chroma":
-        db = Chroma(
-            persist_directory=embeddings_directory, embedding_function=embeddings
-        )
-    else:
-        logger.error(f"Unsupported type of vector DB: {vector_db_name}")
-        raise Exception(f"Unsupported type of vector DB: {vector_db_name}")
-
-    return db
-
-
-def create_vector_db_by_scenario(scenario_id: str, embeddings_dir_name) -> VectorStore:
-    """
-    Create a vector db based on the configuration,
-    and load the pre-computed embeddings from the given directory
-
-    Args:
-        scenario_id (str): scenario ID
-        vector_db_name (str): type of vector db (currently supported: "faiss", "chroma")
-        embeddings_directory_name (str): name of the subdirectory that contains the pre-computed embeddings
-
-    Returns:
-        VectorStore: vector db
-    """
-
-    vector_db_name = get_embedding_model_config_by_scenario(scenario_id)["vector_db"]
-
-    embeddings_directory = (
-        f"{get_embeddings_directory(vector_db_name)}/{embeddings_dir_name}"
-    )
-    logger.debug(f"Embeddings directory: {embeddings_directory}")
-
-    embeddings = get_embedding_model_by_scenario(scenario_id)
-
-    return create_vector_db(embeddings, vector_db_name, embeddings_directory)
-
-
-def get_class_context_vector_db(scenario_id: str) -> VectorStore:
-    """
-    Create a vector db based on the scenario configuration,
-    and load the pre-computed embeddings of the RDFS/OWL classes
-
-    Args:
-        scenario_id (str): scenario ID
-
-    Returns:
-        VectorStore: vector db
-    """
-
-    # Already initialized?
-    if (
-        scenario_id in classes_vector_db.keys()
-        and classes_vector_db[scenario_id] is not None
-    ):
-        return classes_vector_db[scenario_id]
-
-    db = create_vector_db_by_scenario(scenario_id, config["class_embeddings_subdir"])
-    logger.info("Classes context vector DB initialized.")
-    globals()["classes_vector_db"][scenario_id] = db
-    return db
-
-
-def get_query_vector_db(scenario_id: str) -> VectorStore:
-    """
-    Create a vector db based on the scenario configuration,
-    and load the pre-computed embeddings of the SPARQL queries
-
-    Args:
-        scenario_id (str): scenario ID
-
-    Returns:
-        VectorStore: vector db
-    """
-
-    # Already initialized?
-    if (
-        scenario_id in queries_vector_db.keys()
-        and queries_vector_db[scenario_id] is not None
-    ):
-        return queries_vector_db[scenario_id]
-
-    db = create_vector_db_by_scenario(scenario_id, config["queries_embeddings_subdir"])
-    logger.info("SPARQL queries vector DB initialized.")
-    globals()["queries_vector_db"][scenario_id] = db
-    return db
-
-
 def get_scenario_module(scenario_id: int):
     scenario_module = importlib.import_module(
         f"app.scenarios.scenario_{scenario_id}.scenario_{scenario_id}"
@@ -654,58 +696,36 @@ def get_scenario_module(scenario_id: int):
     return scenario_module
 
 
-def set_custom_scenario_configuration(
-    scenario_id: str,
-    validate_question_model: str,
-    ask_question_model: str,
-    generate_query_model: str,
-    judge_query_model: str,
-    judge_regenerate_query_model: str,
-    interpret_results_model: str,
-    text_embedding_model: str,
-):
-    """
-    Set a custom configuration to use in a scenario
-    """
+def setup_langfuse() -> bool:
+    try:
+        langfuse = get_client()
 
-    config[f"scenario_{scenario_id}"]["validate_question"] = validate_question_model
-
-    if ask_question_model is not None:
-        config[f"scenario_{scenario_id}"]["ask_question"] = ask_question_model
-
-    if generate_query_model is not None:
-        config[f"scenario_{scenario_id}"]["generate_query"] = generate_query_model
-
-    if judge_query_model is not None:
-        config[f"scenario_{scenario_id}"]["judge_query"] = judge_query_model
-
-    if judge_regenerate_query_model is not None:
-        config[f"scenario_{scenario_id}"][
-            "judge_regenerate_query"
-        ] = judge_regenerate_query_model
-
-    if interpret_results_model is not None:
-        config[f"scenario_{scenario_id}"]["interpret_results"] = interpret_results_model
-
-    if f"scenario_{scenario_id}" in globals()["current_llm"].keys():
-        del globals()["current_llm"][f"scenario_{scenario_id}"]
-
-    if text_embedding_model is not None:
-        config[f"scenario_{scenario_id}"]["text_embedding_model"] = text_embedding_model
-
-        if f"scenario_{scenario_id}" in globals()["classes_vector_db"].keys():
-            del globals()["classes_vector_db"][f"scenario_{scenario_id}"]
-
-        if f"scenario_{scenario_id}" in globals()["queries_vector_db"].keys():
-            globals()["queries_vector_db"][f"scenario_{scenario_id}"]
-
-    logger.info(f"Custom configuration set for scenario_{scenario_id}")
-    logger.debug(
-        f"The custom configuration for scenario_{scenario_id} is : {config[f"scenario_{scenario_id}"]}"
-    )
+        # Verify connection
+        if langfuse.auth_check():
+            logger.info("Langfuse client is authenticated and ready!")
+            return True
+        else:
+            logger.warning(
+                "Langfuse Authentication failed. Please check your credentials and host."
+            )
+            return False
+    except Exception as e:
+        logger.error(f"Error setting up Langfuse: {e}")
+        return False
 
 
-async def main(graph: CompiledStateGraph):
+def setup_langgraph_studio(config: ConfigManager):
+    # Parse the command line arguments
+    if (
+        len(sys.argv) == 2
+        and sys.argv[0].endswith("langgraph")
+        and sys.argv[1] == "dev"
+    ):
+        config.read_configuration()
+        logger.info("Running default configuration with Langgraph Studio")
+
+
+async def main(config: ConfigManager, graph: CompiledStateGraph):
     """
     Entry point when invoked from the CLI
 
@@ -717,16 +737,24 @@ async def main(graph: CompiledStateGraph):
     args = setup_cli()
 
     # Load the configuration file and assign to global variable 'config'
-    read_configuration(args)
+    config.read_configuration(args)
 
     question = args.question
     logger.info(f"Users' question: {question}")
-    state = await graph.ainvoke(input=InputState({"initial_question": question}))
 
-    # logger.info("==============================================================")
-    # for m in state["messages"]:
-    #     logger.info(m.pretty_repr())
-    # if "last_generated_query" in state:
-    #     logger.info("==============================================================")
-    #     logger.info("last_generated_query: " + state["last_generated_query"])
-    # logger.info("==============================================================")
+    if setup_langfuse():
+        langfuse_handler = CallbackHandler()
+        state = await graph.ainvoke(
+            input=InputState({"initial_question": question}),
+            config={"callbacks": [langfuse_handler]},
+        )
+    else:
+        state = await graph.ainvoke(input=InputState({"initial_question": question}))
+
+    logger.info("==============================================================")
+    for m in state["messages"]:
+        logger.info(m.pretty_repr())
+    if "last_generated_query" in state:
+        logger.info("==============================================================")
+        logger.info("last_generated_query: " + state["last_generated_query"])
+    logger.info("==============================================================")

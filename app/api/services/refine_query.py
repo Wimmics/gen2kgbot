@@ -3,10 +3,11 @@ from langchain_core.language_models import BaseChatModel
 from app.api.services.prompts.refine_query import refine_query_prompt
 import json
 from app.api.services.utils import serialize_aimessagechunk
-import app.utils.config_manager as config
+from app.utils.config_manager import ConfigManager
 
 
 async def refine_query(
+    config: ConfigManager,
     model_config_id: str,
     question: str,
     sparql_query: str,
@@ -24,6 +25,7 @@ async def refine_query(
     Yields:
         str: A stream of the generated questions in JSON format containing the keys "event" and "data"
     """
+
     query_test_prompt_template = ChatPromptTemplate.from_template(refine_query_prompt)
 
     llm: BaseChatModel = config.get_seq2seq_model_by_config_id(model_config_id)

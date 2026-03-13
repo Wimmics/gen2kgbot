@@ -9,13 +9,14 @@ The output is saved to the directory defined respectively in configuration param
 """
 
 from argparse import Namespace, ArgumentParser
+import time
 import faiss
 import os
 from tqdm import tqdm
 from langchain_community.vectorstores import FAISS, VectorStore
 from langchain_community.docstore import InMemoryDocstore
 from langchain_chroma import Chroma
-import app.utils.config_manager as config
+from app.utils.config_manager import ConfigManager
 from app.utils.logger_manager import setup_logger
 
 logger = setup_logger(__package__, __file__)
@@ -62,150 +63,161 @@ def setup_cli() -> Namespace:
 def chunks(lst: list, n):
     """Yield successive n-sized chunks from lst."""
     for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+        yield lst[i: i + n]
 
 
-def get_vector_store(embed_name: str) -> VectorStore:
+class ComputeEmbeddings:
     """
-    Create a vector store based on the configuration of the embedding model.
-
-    Args:
-        embed_name: name of the embedding model (refers to the configuration file)
-
-    Returns:
-        VectorStore: the vector store
+    Utility class for computing embeddings of class and property descriptions, or example SPARQL queries.
     """
-    embed_config = config.get_embedding_model_config_by_name(embed_name)
-    vector_db_name = embed_config["vector_db"]
-    embedding_model = config.get_embedding_model_by_embed_name(embed_name)
 
-    if vector_db_name == "faiss":
-        db = FAISS(
-            embedding_function=embedding_model,
-            docstore=InMemoryDocstore(),
-            index=faiss.IndexFlatL2(len(embedding_model.embed_query("hello world"))),
-            index_to_docstore_id={},
-        )
-    elif vector_db_name == "chroma":
-        embeddings_dir = f"{config.get_embeddings_directory(vector_db_name)}/{config.get_class_embeddings_subdir()}"
-        db = Chroma(
-            persist_directory=embeddings_dir, embedding_function=embedding_model
-        )
-    else:
-        logger.error(f"Unsupported type of vector DB: {vector_db_name}")
-        raise Exception(f"Unsupported type of vector DB: {vector_db_name}")
+    def __init__(self, config: ConfigManager):
+        self.config = config
 
-    return db
+    def get_vector_store(self, embed_name: str) -> VectorStore:
+        """
+        Create a vector store based on the configuration of the embedding model.
 
+        Args:
+            embed_name: name of the embedding model (refers to the configuration file)
 
-def compute_embeddings_from_file(embed_name: str, text_file: str, output_dir: str):
-    """
-    Compute the embeddings for each line of a text file, and save them to a file.
+        Returns:
+            VectorStore: the vector store
+        """
+        embed_config = self.config.get_embedding_model_config_by_name(embed_name)
+        vector_db_name = embed_config["vector_db"]
+        embedding_model = self.config.get_embedding_model_by_embed_name(embed_name)
 
-    Args:
-        embed_name: name of the embedding model (refers to the configuration file)
-        text_file: file where each line represents a text to compute the embedding for
-    """
-    # Create a vector store
-    vectorstore = get_vector_store(embed_name)
+        if vector_db_name == "faiss":
+            db = FAISS(
+                embedding_function=embedding_model,
+                docstore=InMemoryDocstore(),
+                index=faiss.IndexFlatL2(len(embedding_model.embed_query("hello world"))),
+                index_to_docstore_id={},
+            )
+        elif vector_db_name == "chroma":
+            embeddings_dir = f"{self.config.get_embeddings_directory(vector_db_name)}/{self.config.get_class_embeddings_subdir()}"
+            db = Chroma(
+                persist_directory=embeddings_dir, embedding_function=embedding_model
+            )
+        else:
+            logger.error(f"Unsupported type of vector DB: {vector_db_name}")
+            raise Exception(f"Unsupported type of vector DB: {vector_db_name}")
 
-    # Load the descriptions
-    if not os.path.exists(text_file):
-        logger.error(f"Description file not found: {text_file}")
-        raise Exception(f"Description file not found: {text_file}")
-    logger.info(f"Loading descriptions from {text_file}")
-    f = open(text_file, "r", encoding="utf8")
-    documents = [line.strip() for line in f.readlines()]
-    f.close()
-    logger.info(f"Loaded {len(documents)} descriptions")
+        return db
 
-    # Compute the embeddings and add them the vector store
-    with tqdm(total=len(documents), desc="Ingesting documents") as pbar:
-        for sublist in chunks(documents, 10):
-            vectorstore.add_texts(sublist)
-            pbar.update(len(sublist))
+    def compute_embeddings_from_file(self, embed_name: str, text_file: str, output_dir: str):
+        """
+        Compute the embeddings for each line of a text file, and save them to a file.
 
-    # Saving the embeddings
-    logger.info(f"Saving embeddings to directory: {output_dir}")
-    vectorstore.save_local(output_dir)
+        Args:
+            embed_name: name of the embedding model (refers to the configuration file)
+            text_file: file where each line represents a text to compute the embedding for
+        """
+        # Create a vector store
+        vectorstore = self.get_vector_store(embed_name)
 
+        # Load the descriptions
+        if not os.path.exists(text_file):
+            logger.error(f"Description file not found: {text_file}")
+            raise Exception(f"Description file not found: {text_file}")
+        logger.info(f"Loading descriptions from {text_file}")
+        f = open(text_file, "r", encoding="utf8")
+        documents = [line.strip() for line in f.readlines()]
+        f.close()
+        logger.info(f"Loaded {len(documents)} descriptions")
 
-def compute_embeddings_from_directory(embed_name: str, directory: str, output_dir: str):
-    """
-    Compute the embeddings for the text files of a directory, and save them to a file.
+        # Compute the embeddings and add them the vector store
+        with tqdm(total=len(documents), desc="Ingesting documents") as pbar:
+            for sublist in chunks(documents, 10):
+                vectorstore.add_texts(sublist)
+                pbar.update(len(sublist))
 
-    Args:
-        embed_name: name of the embedding model (refers to the configuration file)
-        directory: where the text files are located
-    """
-    # Create a vector store
-    vectorstore = get_vector_store(embed_name)
+        # Saving the embeddings
+        logger.info(f"Saving embeddings to directory: {output_dir}")
+        vectorstore.save_local(output_dir)
 
-    # Load the descriptions
-    if not os.path.exists(directory):
-        logger.error(f"Directory not found: {directory}")
-        raise Exception(f"Directory file not found: {directory}")
-    logger.info(f"Loading files from {directory}")
+    def compute_embeddings_from_directory(self, embed_name: str, directory: str, output_dir: str):
+        """
+        Compute the embeddings for the text files of a directory, and save them to a file.
 
-    documents = []
-    for filename in os.listdir(directory):
-        with open(file=os.path.join(directory, filename), mode="r") as f:
-            documents.append(f.read())
-    logger.info(f"Loaded {len(documents)} documents")
+        Args:
+            embed_name: name of the embedding model (refers to the configuration file)
+            directory: where the text files are located
+        """
+        # Create a vector store
+        vectorstore = self.get_vector_store(embed_name)
 
-    # Compute the embeddings and add them the vector store
-    with tqdm(total=len(documents), desc="Ingesting documents") as pbar:
-        for sublist in chunks(documents, 1):
-            vectorstore.add_texts(sublist)
-            pbar.update(len(sublist))
+        # Load the descriptions
+        if not os.path.exists(directory):
+            logger.error(f"Directory not found: {directory}")
+            raise Exception(f"Directory file not found: {directory}")
+        logger.info(f"Loading files from {directory}")
 
-    # Saving the embeddings
-    logger.info(f"Saving embeddings to directory: {output_dir}")
-    vectorstore.save_local(output_dir)
+        documents = []
+        for filename in os.listdir(directory):
+            with open(file=os.path.join(directory, filename), mode="r") as f:
+                documents.append(f.read())
+        logger.info(f"Loaded {len(documents)} documents")
 
+        # Compute the embeddings and add them the vector store
+        with tqdm(total=len(documents), desc="Ingesting documents") as pbar:
+            for sublist in chunks(documents, 1):
+                vectorstore.add_texts(sublist)
+                pbar.update(len(sublist))
 
-def start_compute_embeddings(is_api_call: bool = False):
-    # Parse the command line arguments
-    args = setup_cli()
+        # Saving the embeddings
+        logger.info(f"Saving embeddings to directory: {output_dir}")
+        vectorstore.save_local(output_dir)
 
-    # If the script is called from the API, set the parameters to default values
-    if is_api_call:
-        args.classes = "classes_with_instances_description.txt"
-        args.properties = "properties_description.txt"
-        args.sparql = "example_queries"
+    def start_compute_embeddings(self, is_api_call: bool = False):
+        # Parse the command line arguments
+        args = setup_cli()
 
-    # Load the configuration
-    config.read_configuration(args)
+        # If the script is called from the API, set the parameters to default values
+        if is_api_call:
+            args.classes = "classes_description.txt"
+            args.properties = "properties_description.txt"
+            args.sparql = "example_queries"
 
-    # The name of the embedding model as described in the configuration file
-    embed_name = args.model
-    embed_config = config.get_embedding_model_config_by_name(embed_name)
-    vector_db_name = embed_config["vector_db"]
+        # The name of the embedding model as described in the configuration file
+        embed_name = args.model
+        embed_config = self.config.get_embedding_model_config_by_name(embed_name)
+        vector_db_name = embed_config["vector_db"]
 
-    # Compute the embeddings of the class descriptions
-    if args.classes is not None:
-        description_file = config.get_preprocessing_directory() / args.classes
-        embeddings_dir = (
-            config.get_embeddings_directory(vector_db_name)
-            / config.get_class_embeddings_subdir()
-        )
-        compute_embeddings_from_file(embed_name, description_file, embeddings_dir)
+        # Compute the embeddings of the class descriptions
+        if args.classes is not None:
+            description_file = self.config.get_preprocessing_directory() / args.classes
+            embeddings_dir = (
+                self.config.get_embeddings_directory(vector_db_name)
+                / self.config.get_class_embeddings_subdir()
+            )
+            self.compute_embeddings_from_file(embed_name, description_file, embeddings_dir)
 
-    # Compute and save the embeddings of the property descriptions
-    if args.properties is not None:
-        description_file = config.get_preprocessing_directory() / args.properties
-        embeddings_dir = (
-            config.get_embeddings_directory(vector_db_name)
-            / config.get_property_embeddings_subdir()
-        )
-        compute_embeddings_from_file(embed_name, description_file, embeddings_dir)
+        # Compute and save the embeddings of the property descriptions
+        if args.properties is not None:
+            description_file = self.config.get_preprocessing_directory() / args.properties
+            embeddings_dir = (
+                self.config.get_embeddings_directory(vector_db_name)
+                / self.config.get_property_embeddings_subdir()
+            )
+            self.compute_embeddings_from_file(embed_name, description_file, embeddings_dir)
 
-    # Compute and save the embeddings of the example SPARQL queries
-    if args.sparql is not None:
-        queries_dir = config.get_kg_data_directory() / args.sparql
-        embeddings_dir = f"{config.get_embeddings_directory(vector_db_name)}/{config.queries_embeddings_subdir()}"
-        compute_embeddings_from_directory(embed_name, queries_dir, embeddings_dir)
+        # Compute and save the embeddings of the example SPARQL queries
+        if args.sparql is not None:
+            queries_dir = self.config.get_kg_data_directory() / args.sparql
+            embeddings_dir = f"{self.config.get_embeddings_directory(vector_db_name)}/{self.config.queries_embeddings_subdir()}"
+            self.compute_embeddings_from_directory(embed_name, queries_dir, embeddings_dir)
 
 
 if __name__ == "__main__":
-    start_compute_embeddings()
+    start_time = time.time()
+
+    config = ConfigManager()
+    config.read_configuration(setup_cli())
+    compute_embeddings = ComputeEmbeddings(config=config)
+    compute_embeddings.start_compute_embeddings()
+
+    end_time = time.time()
+    execution_time_ms = (end_time - start_time) * 1000
+    logger.info(f"Execution time: {execution_time_ms:.1f} ms")

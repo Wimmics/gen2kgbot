@@ -9,6 +9,7 @@ Requirements:
 3. Include Basic, Intermediate, and Advanced levels of question complexity.
 4. Provide examples of each complexity level.
 5. Ensure clarity, precision, and thematic grouping.
+6. Provide only questions that are answerable based on the KG schema. Do not include any vague or ambiguous questions.
 
 Output:
 - Clearly categorized and labeled questions by subtopic in the "question" key.

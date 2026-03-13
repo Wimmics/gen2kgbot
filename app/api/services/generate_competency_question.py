@@ -6,10 +6,11 @@ from app.api.services.prompts.generate_competency_question import (
 )
 import json
 from app.api.services.utils import serialize_aimessagechunk
-import app.utils.config_manager as config
+from app.utils.config_manager import ConfigManager
 
 
 async def generate_competency_questions(
+    config: ConfigManager,
     model_config_id: str,
     kg_schema: str,
     kg_description: str,

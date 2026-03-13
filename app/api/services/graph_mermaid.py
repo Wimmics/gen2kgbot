@@ -1,5 +1,7 @@
+import os
+from pathlib import Path
 from app.api.responses.scenario_schema import ScenarioSchema
-from app.utils.config_manager import get_configuration, get_scenario_module
+from app.utils.config_manager import get_scenario_module
 
 
 def get_scenarios_schema() -> list[ScenarioSchema]:
@@ -11,11 +13,9 @@ def get_scenarios_schema() -> list[ScenarioSchema]:
             (schema) in a mermaid code block.
     """
 
-    config = get_configuration()
+    scenarios_path = Path(__file__).resolve().parent.parent.parent / "scenarios"
+    scenario_ids = [int(f.split("_")[1]) for f in os.listdir(scenarios_path) if os.path.isdir(os.path.join(scenarios_path, f))]
 
-    scenario_ids = [
-        int(id.split("_")[1]) for id in config.keys() if id.startswith("scenario_")
-    ]
     scenarios_schema = []
     for scenario_id in scenario_ids:
         scenarios_schema.append(

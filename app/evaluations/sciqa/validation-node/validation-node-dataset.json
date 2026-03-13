@@ -1,0 +1,1306 @@
+[
+  {
+    "question": "What is the best performing model benchmarking the CIFAR-10 dataset in terms of Percentage correct metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Could you provide a list of models that have been tested on the AAN Corpus benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which model has achieved the highest F1 score on the GENIA - LAS benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the ModelNet40 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What models are being evaluated on the Atari 2600 Pitfall! dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of SOFT_SPL score when benchmarked on the Habitat 2020 Point Nav test-std dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the ShARe/CLEF eHealth corpus benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the modified TSE-NER model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the TRE model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of Params metric on the CIFAR-10 Image Classification benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of research paper titles and IDs that have benchmarked models on the PROTEINS dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the Atari 2600 James Bond dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of research paper titles and IDs that have benchmarked models on the seel.cse.lsu.edu/data/re17.zip  dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the models that have been evaluated on the ChemProt dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the Bipartite flows (8 flows) model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Could you provide a list of models that have been tested on the Dmlab-30 benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the ACE 2005 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the NAT-M2 model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which model has achieved the highest Accuracy score on the Birdsnap benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the PubMed 20k RCT dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the metrics of evaluation over the REDDIT-B dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Name the datasets that have been used for benchmarking in the Sentence Embeddings For Biomedical Texts research problem?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the CeiT-S (384 finetune resolution) model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the WLPC dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What museums were involved in the IntARSI project?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of research paper titles and IDs that have benchmarked models on the CL-SciSumm dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the most commonly used benchmark datasets for the Question Answering research field?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the average energy generation for each energy source considered in 5 year intervals?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the BilBOWA model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the HMDB51 (finetuned) benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the EBM-NLP dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the Hendrycks Test dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of NER Micro F1 score when benchmarked on the ACE 2004 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which model has achieved the highest spl score on the Gibson PointGoal Navigation benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the Atari 2600 Demon Attack dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the ChemProt dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the models that have been evaluated on the MLDoc Zero-Shot English-to-Spanish dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the Bi-RNN model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of ROUGE-2 score when benchmarked on the GigaWord dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of Error score when benchmarked on the TREC-6 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the RACE dataset in terms of RACE-m metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of Accuracy score when benchmarked on the Stanford Dogs dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of research paper titles and IDs that have benchmarked models on the JNLPBA dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the Pubmed dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the STL-10 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of FLOPS metric on the DTD benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide links to code used in papers that benchmark the Pattern Matching and Learning model?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the SciCite benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the Baseline tf-idf NPs model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the DQNMMCe model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the Cheetah, run (DMControl100k) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide links to code used in papers that benchmark the Neural Architecture Search model?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the Ball in cup, catch (DMControl500k) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide links to code used in papers that benchmark the LUKE model?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the highest benchmark result achieved on the MultiRC dataset, including the metric and its value?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the Atari 2600 Gravitar benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the ESIM + ELMo model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide links to code used in papers that benchmark the LeViT-128S model?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark score and its metric on the STL-10, 1000 Labels dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the models that have been evaluated on the One Billion Word dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What models are being evaluated on the Atari 2600 Bowling dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the metrics of evaluation over the Atari 2600 Asteroids dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What models are being evaluated on the Atari 2600 Pong dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What models are being evaluated on the Amazon-2 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What models are being evaluated on the MAZEA dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the most common type of biosensor?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the Atari 2600 Alien benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide links to code used in papers that benchmark the BioSentVec (MIMIC-III) model?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Could you provide a list of models that have been tested on the WMT2016 Czech-English benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the CoNLL04 dataset in terms of NER Macro F1 metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the Atari 2600 Time Pilot dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the metrics of evaluation over the Atari 2600 Name This Game dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the BUCC Chinese-to-English dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the WikiText-103 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the datasets benchmarked under the Optical Character Recognition research problem?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the Longformer (30 layers, h=512) model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the Classic dataset in terms of Accuracy metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which model has achieved the highest Number of params score on the WikiText-103 benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the Cartpole, swingup (DMControl500k) dataset in terms of Score metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset Atari 2600 Assault?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the Winograd Schema Challenge dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the Transformer-XL + RMS dynamic eval + decay model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the NCBI-disease dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the Atari 2600 Chopper Command dataset in terms of Score metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the AWD-LSTM 3-layer with Fraternal dropout model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset CoNLL04?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of research paper titles and IDs that have benchmarked models on the PolyAI Reddit dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the PopArt-IMPALA model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the CRF layer with RNNs model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of research paper titles and IDs that have benchmarked models on the BC5CDR-chemical dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the AudioSet dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the Transformer-XL Standard model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the Atari 2600 HERO dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the Alt et al. (2019) model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the Scholarly entity usage detection dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the average installed capacity for each energy source considered?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which system has the worst recall?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the WOS-11967 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Could you provide a list of models that have been tested on the Atari 2600 Double Dunk benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the metrics of evaluation over the TREC-6 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset GigaWord?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of EM metric on the SearchQA benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the SQuAD1.1 dev dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Could you provide a list of models that have been tested on the 20NEWS benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the multi-head + AT model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide the highest benchmark result, including the metric and score, for the Classic dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the STEM-ECR v1.0 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the Sandwich Transformer model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the 24L Transformer + 8K adaptive span model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the ObjectNet (Bounding Box) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of Validation perplexity score when benchmarked on the WikiText-103 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the ELMO model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which energy system modeling papers indicate where to find their simulation software?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the DY-ResNet-18 model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the highest benchmark result achieved on the Reacher, easy (DMControl100k) dataset, including the metric and its value?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the Fashion-MNIST dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide links to code used in papers that benchmark the FusionNet (ensemble) model?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the FB15k dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the AVID+CMA (Modified R2+1D-18 on Audioset) model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark score and its metric on the Amazon-5 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the models that have been evaluated on the SoMeSci dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Name the datasets that have been used for benchmarking in the Self-Supervised Action Recognition research problem?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the Reuters De-En dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of Accuracy metric on the Food-101 benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the highest benchmark result achieved on the DCASE dataset, including the metric and its value?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the maximum reaction yield for the studies? ",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "For which region of data collection the number of sampling stations is the largest?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark score and its metric on the SciERC dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the Inan et al. (2016) - Variational LSTM (tied) (h=650) model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the SQuAD2.0 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What models are being evaluated on the IMDb dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the BioSentVec (PubMed) model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark score and its metric on the SemEval-2018 Task 7 dataset dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the R-Transformer model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the Synthesizer model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the BiLSTM-TDN model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of F1 score when benchmarked on the BC5CDR-chemical dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of ROUGE-1 score when benchmarked on the X-Sum dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the Atari 2600 Venture dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the BiT-L (ResNet-152x4) model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which model has achieved the highest Score score on the Atari 2600 Space Invaders benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the Classical music, 5 seconds at 12 kHz dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the Atari 2600 HERO dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the Natural Questions (short) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Could you provide a list of models that have been tested on the Walker, walk (DMControl100k) benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the MAZEA dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the PBSMT + NMT model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the BiDAF + Self Attention (single model) model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the MLDoc Zero-Shot English-to-Chinese dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the Food-101 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of EM score when benchmarked on the SQuAD2.0 dev dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of Score metric on the Cheetah, run (DMControl100k) benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the VGG11B(2x) + LocalLearning + CO model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of Score score when benchmarked on the Atari 2600 Video Pinball dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the CeiT-S (384 finetune res) model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark score and its metric on the IMDb dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the Bipartite Flow model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the Gorila model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the STL-10, 1000 Labels dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "When MedPost model was published?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset DuIE?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the Atari 2600 Breakout dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Name the datasets that have been used for benchmarking in the Visual Navigation research problem?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of Params score when benchmarked on the ImageNet dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the Video model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the CoNLL++ dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark score and its metric on the Atari 2600 Fishing Derby dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the Reactor model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the MPQA dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the Atari 2600 Tutankham dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide the highest benchmark result, including the metric and score, for the DDI dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of SPL score when benchmarked on the Habitat 2020 Point Nav test-std dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset Atari 2600 Bank Heist?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What models are being evaluated on the RotoWire (Content Ordering) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the Atari 2600 Kung-Fu Master benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Could you provide a list of models that have been tested on the arXiv benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark score and its metric on the Recipe dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the CIFAR-10 Image Classification benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the Baseline : Lead-3 model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the highest benchmark result achieved on the WMT2016 English-Czech dataset, including the metric and its value?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the DCASE dataset in terms of Top-1 Accuracy metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the datasets benchmarked under the Cross-Lingual Document Classification research problem?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the Sequential CIFAR-10 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the metrics of evaluation over the Kuzushiji-MNIST dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the GCNN-14 model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the Softcite dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the Yelp-2 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset ADE Corpus?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the metrics of evaluation over the AudioSet dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the DROP Test dataset in terms of F1 metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of Parameters score when benchmarked on the SNLI dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of research paper titles and IDs that have benchmarked models on the Birdsnap dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of DLD score when benchmarked on the RotoWire (Content Ordering) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of benchmarked datasets related to the Video Classification research area?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which sector is the most commonly modeled energy sector?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Is Cobb-Douglas functional applied in the studies?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the CIFAR-10 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the Atari 2600 Asterix dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the models that have been evaluated on the Sequential CIFAR-10 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide the highest benchmark result, including the metric and score, for the Penn Treebank (Character Level) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the Atari 2600 Assault dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the models that have been evaluated on the NCBI Disease dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Could you provide a list of models that have been tested on the Atari 2600 Q*Bert benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the Reuters-21578 benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the CeiT-S model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of F1 metric on the SQuAD2.0 dev benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide the highest benchmark result, including the metric and score, for the GENIA - LAS dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the Massively Multilingual Sentence Embeddings model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What models are being evaluated on the ObjectNet dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which model has achieved the highest Accuracy score on the MRPC benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the SentEval dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the AWD-LSTM + ATOI model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Name the datasets that have been used for benchmarking in the Coreference Resolution research problem?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the Yelp Fine-grained classification dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset JNLPBA?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the least common metric used?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of F1 metric on the WLPC benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the COPA dataset in terms of Accuracy metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the NYT dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of Top-1 Accuracy metric on the ESC-50 benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the smallNLP-KG dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the WMT2014 French-English dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of F1 metric on the TACRED benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the Reacher, easy (DMControl500k) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the titles and IDs of research papers that include a benchmark for the Yelp-5 dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset Natural Questions?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Indicate the model that performed best in terms of RE+ Micro F1 metric on the ACE 2005 benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the best performing model benchmarking the Atari 2600 HERO dataset in terms of Score metric?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the ACL-ARC dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the models that have been evaluated on the SciGEN dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the top benchmark result (metric and value) over the dataset BioASQ?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the CvT-13 (384 res) model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the datasets benchmarked under the Named Entity Recognition research problem?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the Reuters RCV1/RCV2 English-to-German dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the name of the top performing model in terms of Score score when benchmarked on the Atari 2600 Wizard of Wor dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the code links in papers that use the L3 model in any benchmark?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the metrics used to evaluate models on the One Billion Word dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Where can I find code references in papers that have used the DDQN+Pop-Art noop model for benchmarking purposes?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the PubMedQA dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What type of data does the system proposed in paper titled \"Open Research Knowledge Graph\" support?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of papers that have utilized the OTF dict+spelling (single) model and include the links to their code?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the Atari 2600 Wizard of Wor benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the metrics that are used to evaluate models on the FGVC Aircraft benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the FSNS - Test dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the CNN / Daily Mail dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you list the models that have been evaluated on the RotoWire (Relation Generation) dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Which model has achieved the highest Score score on the Atari 2600 Boxing benchmark dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide links to code used in papers that benchmark the CvT-13 model?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the SoMeSci dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Can you provide links to code used in papers that benchmark the Triplet model?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Give me a list of research papers along with their titles and IDs, that have performed benchmarks on the WMT2016 English-Czech dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "List the title and ID of research papers that contain a benchmark over the X-Sum dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What evaluation metrics are commonly used when benchmarking models on the X-Sum dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the metrics of evaluation over the ImageNet ReaL dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What is the highest benchmark result achieved on the UCF101 dataset, including the metric and its value?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the models that have been benchmarked on the RACE dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "Provide a list of research paper titles and IDs that have benchmarked models on the BoolQ dataset?",
+    "output": "preprocess_question"
+  },
+  {
+    "question": "What are the chemical structure ISDB annotations for Lovoa trichilioides ?",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the top 5 tissues used to produce lab extracts that contain compounds with inhibition activity greater than 70% against Leishmania donovani target at 10 \u00b5g/mL.",
+    "output": "__end__"
+  },
+  {
+    "question": "How does LC-MS technology contribute to the study of plant metabolomics?",
+    "output": "__end__"
+  },
+  {
+    "question": "What role do secondary metabolites play in plants, and how does mass spectrometry help identify them?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the challenges of isolating and characterizing alkaloids using mass spectrometry?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the retention times, parent masses, and associated Spec2Vec peaks for features in the LC-MS analysis of the plant Rumex nepalensis in positive ion mode?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the retention times and adduct types of LCMS features from Desmodium heterophyllum annotated by SIRIUS with a cosmic score greater than 0.4??",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the CANOPUS annotations for pairs of features from Desmodium heterophyllum extracts that share a cosine similarity score greater than 0.8? Provide the features and annotations for each feature.",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the Wikidata IDs of chemical entities from Desmodium heterophyllum that are annotated as rotenoids by CANOPUS and have ChEMBL assay results showing activity against Trypanosoma cruzi. Provide also the USIs to the corresponding MS/MS spectra",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the retention times and molecular masses of compounds identified in the negative ionization mode LCMS analysis from  Lovoa trichilioides extracts, and what are the CANOPUS chemical class annotations for those features?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the most frequent SIRIUS chemical structure annotations (planar structure) observed from the extracts belonging to Hibiscus syriacus?",
+    "output": "__end__"
+  },
+  {
+    "question": "Can you provide the SMILES notation and the Wikidata IDs for the compound with the highest precursor ion mass in the MS2 spectra from extracts of Lovoa trichilioides by looking at SIRIUS annotations?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are SIRIUS structural annotations for LCMS features with cosmic scores above 0.3 associated with Tabernaemontana coffeoides? Report their ZODIAC scores.",
+    "output": "__end__"
+  },
+  {
+    "question": "How does the concept of hybridization explain the geometry of molecules like methane and ethylene?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the mass spectrometry features detected only in the plant Rumex nepalensis?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the key principles of effective time management, and how can they improve productivity?",
+    "output": "__end__"
+  },
+  {
+    "question": "Which extracts have features (pos ionization mode) annotated as the class, aspidosperma-type alkaloids, by CANOPUS with a probability score above 0.5, ordered by the decreasing count of features as aspidosperma-type alkaloids? Group by extract.",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the Wikidata IDs of chemical entities that have ChEMBL activity against Trypanosoma cruzi target?",
+    "output": "__end__"
+  },
+  {
+    "question": "Provide the wikidata ids of the chemical entities annotated by SIRIUS for Tabernaemontana coffeoides seeds extract taxon obtained in positive mode which are also reported in the Tabernaemontana genus in Wikidata.",
+    "output": "__end__"
+  },
+  {
+    "question": "What are mass spectral libraries, and how are they used in compound identification?",
+    "output": "__end__"
+  },
+  {
+    "question": "Which molecules (represented by their InChIkey) have reported ChEMBL activity with activity type  IC50 and activity values below 500 nM against Leishmania donovani target?",
+    "output": "__end__"
+  },
+  {
+    "question": "Which lab extracts from Melochia umbellata  yield compounds that, when analyzed in positive ionization mode LCMS, have a retention time of less than 6 minutes and demonstrate an inhibition percentage greater than 70% in bioassay results? Provide lab extracts, retention times and inhibition percentage.",
+    "output": "__end__"
+  },
+  {
+    "question": "How unique InChIKey2D are among the structural annotations?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the ChEMBL targets  linked to ChEMBL assay results for chemicals sharing InChIKeys  with SIRIUS structural annotations ?",
+    "output": "__end__"
+  },
+  {
+    "question": "Which compounds from Desmodium heterophyllum extracts have annotations from both ISDB and SIRIUS, and what are their molecular masses?",
+    "output": "__end__"
+  },
+  {
+    "question": "Count the number of LCMS features in negative ionization mode",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the top-10 lab extracts with the most unique features detected (minimum feature area intensity of 500,000).",
+    "output": "__end__"
+  },
+  {
+    "question": "Which lab extracts have bioassay results with inhibition percentages above 50% against Leishmania donovani target at 10 \u00b5g/mL?",
+    "output": "__end__"
+  },
+  {
+    "question": "For the LC-MS feature observed in the extracts of Tabernaemontana coffeoides, retrieve those that are annotated with a NPCPathways with CANOPUS.",
+    "output": "__end__"
+  },
+  {
+    "question": "What is linear regression?",
+    "output": "__end__"
+  },
+  {
+    "question": "Among the structural annotations from Tabernaemontana coffeoides (Apocynaceae) seeds extract, which ones contain an aspidospermidine substructure?",
+    "output": "__end__"
+  },
+  {
+    "question": "For features from the Melochia umbellata taxon in pos ionization mode with SIRIUS annotations, get the ones for which a feature in neg ionization mode with the same retention time (+/- 0.05 minutes) has the same SIRIUS annotation by comparing the InCHIKey 2D. Return the features, retention times, and InChIKey2D",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the lab extracts that have more than 2,000 features detected. ",
+    "output": "__end__"
+  },
+  {
+    "question": "Which ISDB annotations  have consistency scores  above 0.7 and taxonomic scores above 0.5 for LCMS features from Tabernaemontana coffeoides? Provide annotations.",
+    "output": "__end__"
+  },
+  {
+    "question": "List the tissue types used to produce the lab extracts of Tabernaemontana coffeoides. Provide the tissue types  and lab extracts. ",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the LC-MS features that have GNPS library analogs annotation in Tabernaemontana coffeoides? Provide the features.",
+    "output": "__end__"
+  },
+  {
+    "question": "What are plant-specific biomarkers, and how can mass spectrometry assist in their identification?",
+    "output": "__end__"
+  },
+  {
+    "question": "List the LC-MS features that have a chemical class annotation by CANOPUS and have a retention time between 5-7 minutes.",
+    "output": "__end__"
+  },
+  {
+    "question": "How many features (pos ionization and neg ionization modes) have the same SIRIUS/CSI:FingerID and ISDB annotation by comparing the InCHIKey2D of the annotations?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the LCMS features with the highest area annotated as alkaloids by CANOPUS in Tabernaemontana coffeoides extracts?",
+    "output": "__end__"
+  },
+  {
+    "question": "List the bioassay results at 10\u00b5g/mL against T.cruzi for lab extracts of Tabernaemontana coffeoides.",
+    "output": "__end__"
+  },
+  {
+    "question": "How is mass spectrometry used in pharmacological screening of plant extracts for therapeutic potential",
+    "output": "__end__"
+  },
+  {
+    "question": "What role do catalysts play in green chemistry, and how are they designed for efficiency?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the taxons, lab process and label (if one exists) for each sample? Sort by sample and then lab process",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the most frequent Spec2Vec peaks and losses characterizing the MS2 spectra from the lab extracts of Tabernaemontana coffeoides.",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the SIRIUS structural annotations associated with the MS2 spectra from the lab extracts of Tabernaemontana coffeoides ?",
+    "output": "__end__"
+  },
+  {
+    "question": "List the lab extracts that have inhibition percentages above 50% bioassay results  at 2\u00b5g/mL against Trypanosoma brucei rhodesiense .",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the most frequent adducts of LCMS features annotated by SIRIUS detected in positive ionization mode from Tabernaemontana coffeoides?",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the mass differences and cosine similarity scores for spectral pairs involving MS2 spectra from Desmodium heterophyllum.",
+    "output": "__end__"
+  },
+  {
+    "question": "How does machine learning transform industries like healthcare and finance?",
+    "output": "__end__"
+  },
+  {
+    "question": "How can mass spectrometry contribute to the creation of natural product libraries from plants?",
+    "output": "__end__"
+  },
+  {
+    "question": "Filter the pos ionization mode features of the Melochia umbellata taxon annotated as [M+H]+ by SIRIUS to keep the ones for which a feature in neg ionization mode is detected with the same retention time (+/- 3 seconds) and a mass corresponding to the [M-H]- SIRIUS adduct (+/- 5ppm). Provide the features and retention time.",
+    "output": "__end__"
+  },
+  {
+    "question": "What is Markov chain?",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the Spec2Vec documents associated with MS2 spectra  from the lab extracts  of Tabernaemontana coffeoides",
+    "output": "__end__"
+  },
+  {
+    "question": "Which plant has extracts containing compounds that demonstrated inhibition rates above 50% against Trypanosoma cruzi and are above 800 Da in mass? Provide the lab extracts",
+    "output": "__end__"
+  },
+  {
+    "question": "How many distinct Wikidata identifiers (WD IDs) have the same metabolite annotation (considering only the plannar structure)?",
+    "output": "__end__"
+  },
+  {
+    "question": "What is the distribution of chemical superclasses in the LCMS features annotated by CANOPUS identified from Desmodium heterophyllum extracts?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the chemical compounds annotated by ISDB in extracts of Brassica oleracea plant?",
+    "output": "__end__"
+  },
+  {
+    "question": "List the growth conditions used to produce the lab extracts of Tabernaemontana coffeoides",
+    "output": "__end__"
+  },
+  {
+    "question": "What is the highest inhibition percentage recorded for compounds observed in Rauvolfia vomitoria extract?",
+    "output": "__end__"
+  },
+  {
+    "question": "How many features annotated as 'Tetraketide meroterpenoids' by CANOPUS are found for each submitted taxon and extract in database?",
+    "output": "__end__"
+  },
+  {
+    "question": "How can mass spectrometry be employed to study potential herb-drug interactions involving plant-derived compounds?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the LCMS features  that have feature areas  greater than 1,000,000 in positive ionization mode? Sort by decreasing feature area value.",
+    "output": "__end__"
+  },
+  {
+    "question": "Which ChEMBL documents cited in ChEMBL assay results involve compounds (identified by InChIKeys) that are also observed in SIRIUS structural annotations within lab extracts, and which lab extracts contain the highest number of these shared compounds?",
+    "output": "__end__"
+  },
+  {
+    "question": "What are the key differences between covalent and ionic bonding, and how do these differences influence the properties of compounds?",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the Wikidata IDs  of chemical entities  classified as Terpenoids in the lab extracts of Tabernaemontana coffeoides.",
+    "output": "__end__"
+  },
+  {
+    "question": "Compare the working principles of time-of-flight (TOF) and ion trap detectors in mass spectrometry.",
+    "output": "__end__"
+  },
+  {
+    "question": "List the top 3 lab extracts with the highest number of unique compounds annotated by CANOPUS with a probability greater than 0.9.",
+    "output": "__end__"
+  },
+  {
+    "question": "Retrieve the retention times and parent masses of LCMS features annotated as Terpenoids by CANOPUS in Tabernaemontana coffeoides.",
+    "output": "__end__"
+  }
+]

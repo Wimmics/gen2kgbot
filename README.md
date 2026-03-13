@@ -27,17 +27,24 @@ AGPLv3: see the [LICENSE file](LICENSE).
 
 ## Cite this work
 
-Yousouf TAGHZOUTI, Franck MICHEL, Tao JIANG, Louis-Félix NOTHIAS, Fabien GANDON (2025). **Gen²KGBot - Generic Generative Knowledge Graph Robot**. <https://github.com/Wimmics/gen2kgbot> 
+Yousouf Taghzouti, Franck Michel, Tao Jiang, Louis Felix Nothias, and Fabien Gandon. 2025. Q²Forge: Minting Competency Questions and SPARQL Queries for Question-Answering Over Knowledge Graphs. In Proceedings of the 13th Knowledge Capture Conference 2025 (K-CAP '25). Association for Computing Machinery, New York, NY, USA, 74–81. https://doi.org/10.1145/3731443.3771350
 
 
 <details>
 <summary>See BibTex</summary>
-@software{taghzouti_gen2kgbot:2025,
-    author = {TAGHZOUTI, Yousouf and MICHEL, Franck and JIANG, Tao and NOTHIAS, Louis-Félix , and GANDON Fabien},
-    title = {{Gen²KGBot - Generic Generative Knowledge Graph Robot}},
-    url = {https://github.com/Wimmics/gen2kgbot},
-    version = {1.0},
-    year = {2025}
+@inproceedings{10.1145/3731443.3771350,
+author = {Taghzouti, Yousouf and Michel, Franck and Jiang, Tao and Nothias, Louis Felix and Gandon, Fabien},
+title = {Q²Forge: Minting Competency Questions and SPARQL Queries for Question-Answering Over Knowledge Graphs},
+year = {2025},
+isbn = {9798400718670},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3731443.3771350},
+doi = {10.1145/3731443.3771350},
+booktitle = {Proceedings of the 13th Knowledge Capture Conference 2025},
+pages = {74–81},
+numpages = {8},
+series = {K-CAP '25}
 }
 </details>
 

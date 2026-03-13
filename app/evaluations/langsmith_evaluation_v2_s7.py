@@ -2,7 +2,7 @@ import asyncio
 from langsmith import Client
 from pandas import DataFrame
 from langgraph.graph.state import CompiledStateGraph
-from app.utils.config_manager import get_scenario_module
+from app.utils.config_manager import ConfigManager
 from app.utils.graph_state import InputState
 
 
@@ -25,8 +25,8 @@ def evaluate_last_judging_score(outputs: dict, reference_outputs: dict) -> dict:
 
 
 async def run_example(input):
-
-    graph: CompiledStateGraph = get_scenario_module(scenario).graph
+    config = ConfigManager()
+    graph: CompiledStateGraph = config.get_scenario_module(scenario).graph
 
     return await graph.ainvoke(
         input=InputState({"initial_question": input["initial_question"]})
